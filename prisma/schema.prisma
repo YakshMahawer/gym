@@ -14,16 +14,157 @@ enum MembershipStatus {
   EXPIRED
 }
 
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  FROZEN
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+  CARD
+  BANK_TRANSFER
+  CHEQUE
+}
+
+enum EnquiryStatus {
+  NEW
+  FOLLOW_UP
+  TRIAL_SCHEDULED
+  CONVERTED
+  LOST
+}
+
 model Member {
   id               String           @id @default(cuid())
+  memberId         String           @unique
+  firstName        String
+  lastName         String?
   fullName         String
-  email            String?          @unique
+  email            String?
   phone            String
-  membershipStatus MembershipStatus @default(ACTIVE)
-  joinDate         DateTime         @default(now())
+  gender           String?          @default("Male")
+  dob              DateTime?
+  address          String?
+  enrollDate       DateTime         @default(now())
+  representative   String?
+  referredBy       String?
+  
+  // Additional Info
+  isMarried        Boolean          @default(false)
+  spouseName       String?
+  spouseBirthDate  DateTime?
+  anniversaryDate  DateTime?
+  occupation       String?
+  designation      String?
+  source           String?          @default("Walk-in")
+  phoneOffice      String?
+  phoneResidence   String?
+  programme        String?          @default("General Fitness")
   notes            String?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+
+  // Medical Questionnaire
+  qFaintOrDizzy      Boolean        @default(false)
+  qChestPain         Boolean        @default(false)
+  qRecentChestPain   Boolean        @default(false)
+  qBloodPressureHeart Boolean       @default(false)
+  qDiabetes          Boolean        @default(false)
+  qJointBoneProblem  Boolean        @default(false)
+  qPregnant          Boolean        @default(false)
+  qOver65            Boolean        @default(false)
+  qOtherHealthIssues String?
+
+  membershipStatus   MembershipStatus @default(ACTIVE)
+  
+  subscriptions      MemberSubscription[]
+  payments           Payment[]
+
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
   @@index([fullName])
+  @@index([phone])
+  @@index([memberId])
+}
+
+model MembershipPlan {
+  id             String               @id @default(cuid())
+  name           String
+  durationInDays Int
+  price          Float
+  description    String?
+  isActive       Boolean              @default(true)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  subscriptions  MemberSubscription[]
+}
+
+model MemberSubscription {
+  id          String             @id @default(cuid())
+  memberId    String
+  member      Member             @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  planId      String?
+  plan        MembershipPlan?    @relation(fields: [planId], references: [id], onDelete: SetNull)
+  planName    String
+  startDate   DateTime
+  endDate     DateTime
+  totalAmount Float
+  paidAmount  Float              @default(0)
+  dueAmount   Float              @default(0)
+  status      SubscriptionStatus @default(ACTIVE)
+
+  payments    Payment[]
+
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([memberId])
+  @@index([status])
+  @@index([endDate])
+}
+
+model Payment {
+  id             String              @id @default(cuid())
+  receiptNo      String              @unique
+  memberId       String
+  member         Member              @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  subscriptionId String?
+  subscription   MemberSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  amount         Float
+  paymentDate    DateTime            @default(now())
+  paymentMethod  PaymentMethod       @default(UPI)
+  paymentType    String              @default("MEMBERSHIP_FEE")
+  notes          String?
+
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([memberId])
+  @@index([paymentDate])
+}
+
+model Enquiry {
+  id                String        @id @default(cuid())
+  name              String
+  phone             String
+  email             String?
+  gender            String?       @default("Male")
+  source            String?       @default("Walk-in")
+  preferredPlan     String?
+  budget            Float?
+  followUpDate      DateTime?
+  status            EnquiryStatus @default(NEW)
+  notes             String?
+  assignedStaff     String?
+  convertedMemberId String?
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([phone])
+  @@index([status])
+  @@index([followUpDate])
 }

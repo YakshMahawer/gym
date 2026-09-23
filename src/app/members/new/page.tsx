@@ -1,11 +1,22 @@
-import { MemberForm } from "../MemberForm";
-import { createMember } from "../actions";
+import { getPlans } from "@/lib/actions/plans";
+import { getMembersLookup, getNextMemberId } from "@/lib/actions/members";
+import { MemberForm } from "@/components/members/MemberForm";
 
-export default function NewMemberPage() {
+export const dynamic = "force-dynamic";
+
+export default async function NewMemberPage() {
+  const [plans, membersLookup, nextMemberId] = await Promise.all([
+    getPlans(),
+    getMembersLookup(),
+    getNextMemberId(),
+  ]);
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-slate-900">Add Member</h1>
-      <MemberForm action={createMember} submitLabel="Add Member" />
-    </div>
+    <MemberForm
+      plans={plans}
+      membersLookup={membersLookup}
+      initialMemberId={nextMemberId}
+      isEdit={false}
+    />
   );
 }

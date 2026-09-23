@@ -1,0 +1,709 @@
+"use client";
+
+import React, { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  Phone,
+  Mail,
+  Calendar,
+  MapPin,
+  Briefcase,
+  Heart,
+  CreditCard,
+  Plus,
+  Edit,
+  Trash2,
+  AlertTriangle,
+  CheckCircle,
+  MessageCircle,
+  ShieldAlert,
+  IndianRupee,
+  RefreshCw,
+  Printer,
+  Sparkles,
+} from "lucide-react";
+import { formatINR, formatDate, formatDateTime, calculateDaysRemaining } from "@/lib/utils";
+import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
+import { ReceiptModal } from "@/components/payments/ReceiptModal";
+import { renewSubscription, deleteMember } from "@/lib/actions/members";
+import { PaymentMethod } from "@prisma/client";
+
+interface MemberDetailClientProps {
+  member: any;
+  plans: any[];
+}
+
+export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<"overview" | "payments" | "health">("overview");
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [renewalModalOpen, setRenewalModalOpen] = useState(false);
+  const [selectedReceiptForPrint, setSelectedReceiptForPrint] = useState<any | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const activeSub = member.subscriptions?.[0];
+  const daysLeft = activeSub ? calculateDaysRemaining(activeSub.endDate) : 0;
+  const isExpired = daysLeft < 0 || member.membershipStatus === "EXPIRED";
+  const isOngoing = activeSub && new Date(activeSub.endDate) > new Date();
+  const dueAmount = activeSub?.dueAmount || 0;
+
+  // Extension Start Date Logic: If member has an active package, new extension starts from day current plan ends!
+  const defaultCalculatedStartDate = isOngoing
+    ? new Date(activeSub.endDate).toISOString().split("T")[0]
+    : new Date().toISOString().split("T")[0];
+
+  // Renewal Form state
+  const [selectedPlanId, setSelectedPlanId] = useState(plans[0]?.id || "");
+  const [renewalStartDate, setRenewalStartDate] = useState(defaultCalculatedStartDate);
+  const selectedPlan = plans.find((p) => p.id === selectedPlanId) || plans[0];
+  const [renewalTotal, setRenewalTotal] = useState(selectedPlan?.price || 5000);
+  const [renewalPaid, setRenewalPaid] = useState(selectedPlan?.price || 5000);
+  const [renewalMethod, setRenewalMethod] = useState<PaymentMethod>("UPI");
+  const [renewalLoading, setRenewalLoading] = useState(false);
+
+  const handlePlanChange = (planId: string) => {
+    setSelectedPlanId(planId);
+    const p = plans.find((item) => item.id === planId);
+    if (p) {
+      setRenewalTotal(p.price);
+      setRenewalPaid(p.price);
+    }
+  };
+
+  const handleOpenRenewal = () => {
+    setRenewalStartDate(
+      isOngoing
+        ? new Date(activeSub.endDate).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0]
+    );
+    setRenewalModalOpen(true);
+  };
+
+  const handleRenew = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPlan) return;
+
+    setRenewalLoading(true);
+    const start = new Date(renewalStartDate);
+    const end = new Date(start.getTime() + selectedPlan.durationInDays * 24 * 60 * 60 * 1000);
+
+    const res = await renewSubscription({
+      memberId: member.id,
+      planId: selectedPlan.id,
+      planName: selectedPlan.name,
+      startDate: start.toISOString().split("T")[0],
+      endDate: end.toISOString().split("T")[0],
+      totalAmount: renewalTotal,
+      paidAmount: renewalPaid,
+      paymentMethod: renewalMethod,
+      notes: "Membership renewal",
+    });
+
+    setRenewalLoading(false);
+    if (res.success) {
+      setRenewalModalOpen(false);
+      router.refresh();
+    } else {
+      alert(res.error || "Failed to renew subscription");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (confirm(`Are you sure you want to delete member ${member.fullName}?`)) {
+      setDeleting(true);
+      const res = await deleteMember(member.id);
+      if (res.success) {
+        router.push("/members");
+        router.refresh();
+      } else {
+        alert(res.error || "Failed to delete");
+        setDeleting(false);
+      }
+    }
+  };
+
+  const hasHealthFlags =
+    member.qFaintOrDizzy ||
+    member.qChestPain ||
+    member.qRecentChestPain ||
+    member.qBloodPressureHeart ||
+    member.qDiabetes ||
+    member.qJointBoneProblem ||
+    member.qPregnant ||
+    member.qOver65 ||
+    Boolean(member.qOtherHealthIssues);
+
+  return (
+    <div className="space-y-5">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/members"
+            className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-900 transition active:bg-slate-100"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-base sm:text-xl font-bold text-slate-900">{member.fullName}</h1>
+              <span className="font-mono text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                #{member.memberId}
+              </span>
+              <span
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
+                  member.membershipStatus === "ACTIVE"
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    : "bg-red-50 text-red-700 border border-red-200"
+                }`}
+              >
+                {member.membershipStatus}
+              </span>
+            </div>
+            <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
+              Enrolled: {formatDate(member.enrollDate)} • Trainer: {member.representative || "None"}
+            </p>
+          </div>
+        </div>
+
+        {/* Action Buttons - Mobile friendly full width / desktop inline */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+          <a
+            href={`https://wa.me/91${member.phone}`}
+            target="_blank"
+            rel="noreferrer"
+            className="flex-1 sm:flex-none px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold border border-slate-200 flex items-center justify-center gap-1.5 transition active:bg-slate-100"
+          >
+            <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+            <span>WhatsApp</span>
+          </a>
+
+          {/* Primary Action Button based on member status and dues */}
+          {dueAmount > 0 ? (
+            <button
+              onClick={() => setPaymentModalOpen(true)}
+              className="flex-1 sm:flex-none px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition active:bg-rose-800"
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              <span>Collect Due ({formatINR(dueAmount)})</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleOpenRenewal}
+              className="flex-1 sm:flex-none px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition active:bg-slate-800"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
+              <span>{isOngoing ? "Extend Plan" : "Renew"}</span>
+            </button>
+          )}
+
+          <Link
+            href={`/members/${member.id}/edit`}
+            className="p-1.5 sm:p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition"
+            title="Edit Details"
+          >
+            <Edit className="w-4 h-4" />
+          </Link>
+
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="p-1.5 sm:p-2 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 rounded-lg transition"
+            title="Delete Member"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Main Grid: Info + Detailed Tabs */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+        
+        {/* Left Column: Membership Card & Validity */}
+        <div className="space-y-3.5 sm:space-y-4">
+          <div className="bg-white rounded-xl p-4 sm:p-5 border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)] space-y-3 sm:space-y-4">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 text-xs">
+              <span className="font-semibold text-slate-500 uppercase tracking-wider">Membership Pass</span>
+              <span className="font-mono font-bold text-slate-800">#{member.memberId}</span>
+            </div>
+
+            <div>
+              <h3 className="text-base font-bold text-slate-900">{member.fullName}</h3>
+              <p className="text-xs text-slate-400 mt-0.5">{member.phone}</p>
+            </div>
+
+            <div className="p-3 bg-slate-50 rounded-lg space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Plan:</span>
+                <span className="font-semibold text-slate-900">{activeSub?.planName || "No Active Plan"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Expires:</span>
+                <span className="font-medium text-slate-800">{formatDate(activeSub?.endDate)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Status:</span>
+                <span className={`font-semibold ${isExpired ? "text-rose-600" : "text-emerald-700"}`}>
+                  {isExpired ? "Expired" : `${daysLeft} Days Left`}
+                </span>
+              </div>
+            </div>
+
+            {isOngoing && (
+              <p className="text-[11px] text-emerald-800 bg-emerald-50/70 p-2 rounded-lg border border-emerald-100 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Renewal will automatically start on {formatDate(activeSub.endDate)}.</span>
+              </p>
+            )}
+
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] text-slate-400">
+              <span>Goal: {member.programme || "Fitness"}</span>
+              <span>Source: {member.source || "Walk-in"}</span>
+            </div>
+          </div>
+
+          {/* Pending Due Box if any */}
+          {dueAmount > 0 && (
+            <div className="p-4 bg-white border border-rose-200/80 rounded-xl space-y-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-rose-700 flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Pending Balance</span>
+                </span>
+                <span className="text-sm font-bold text-rose-700">{formatINR(dueAmount)}</span>
+              </div>
+              <button
+                onClick={() => setPaymentModalOpen(true)}
+                className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition active:bg-slate-800"
+              >
+                Collect Balance
+              </button>
+            </div>
+          )}
+
+          {/* Health Alert Callout */}
+          {hasHealthFlags && (
+            <div className="p-3.5 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-800 space-y-1">
+              <div className="flex items-center gap-1.5 font-semibold">
+                <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+                <span>Trainer Medical Notice</span>
+              </div>
+              <p className="text-[11px] text-amber-900 leading-normal">
+                Check Health Questionnaire before prescribing heavy workout loads.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: Tabbed Detailed Views */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="bg-white rounded-xl border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
+            <div className="flex items-center gap-1 p-2 bg-slate-50/70 border-b border-slate-200/80 overflow-x-auto no-scrollbar">
+              <button
+                onClick={() => setActiveTab("overview")}
+                className={`px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+                  activeTab === "overview"
+                    ? "bg-white text-slate-900 shadow-xs border border-slate-200/60"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Profile Details
+              </button>
+
+              <button
+                onClick={() => setActiveTab("payments")}
+                className={`px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+                  activeTab === "payments"
+                    ? "bg-white text-slate-900 shadow-xs border border-slate-200/60"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Payments & Receipts ({member.payments?.length || 0})
+              </button>
+
+              <button
+                onClick={() => setActiveTab("health")}
+                className={`px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+                  activeTab === "health"
+                    ? "bg-white text-slate-900 shadow-xs border border-slate-200/60"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Health Questionnaire
+              </button>
+            </div>
+
+            {/* TAB 1: Profile Details */}
+            {activeTab === "overview" && (
+              <div className="p-4 sm:p-5 space-y-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                  <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-100">
+                    <span className="text-slate-400 font-medium block">Phone</span>
+                    <span className="font-semibold text-slate-800 text-sm">{member.phone}</span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-100">
+                    <span className="text-slate-400 font-medium block">Email</span>
+                    <span className="font-semibold text-slate-800">{member.email || "None"}</span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-100">
+                    <span className="text-slate-400 font-medium block">Date of Birth</span>
+                    <span className="font-semibold text-slate-800">{formatDate(member.dob)}</span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-100">
+                    <span className="text-slate-400 font-medium block">Gender</span>
+                    <span className="font-semibold text-slate-800">{member.gender || "Male"}</span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-100">
+                    <span className="text-slate-400 font-medium block">Occupation & Designation</span>
+                    <span className="font-semibold text-slate-800">
+                      {member.occupation ? `${member.occupation} (${member.designation || "Staff"})` : "None"}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-100">
+                    <span className="text-slate-400 font-medium block">Marital Status</span>
+                    <span className="font-semibold text-slate-800">
+                      {member.isMarried
+                        ? `Married (${member.spouseName || "Spouse"})${
+                            member.anniversaryDate ? ` • Anni: ${formatDate(member.anniversaryDate)}` : ""
+                          }`
+                        : "Single"}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-100">
+                    <span className="text-slate-400 font-medium block">Referred By</span>
+                    <span className="font-semibold text-slate-800">{member.referredBy || "Direct Walk-in"}</span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-100">
+                    <span className="text-slate-400 font-medium block">Assigned Representative</span>
+                    <span className="font-semibold text-slate-800">{member.representative || "None"}</span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-100">
+                  <span className="text-slate-400 font-medium block">Address</span>
+                  <span className="font-medium text-slate-800">{member.address || "No address on record"}</span>
+                </div>
+
+                {member.notes && (
+                  <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-100">
+                    <span className="text-slate-400 font-medium block">Notes</span>
+                    <p className="text-slate-700 mt-1">{member.notes}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 2: Payments with Print Receipt */}
+            {activeTab === "payments" && (
+              <div className="p-4 sm:p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-xs text-slate-800">Payment Transactions</h4>
+                  
+                  <div className="flex items-center gap-2">
+                    {dueAmount > 0 ? (
+                      <button
+                        onClick={() => setPaymentModalOpen(true)}
+                        className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-xs font-semibold transition"
+                      >
+                        Collect Due ({formatINR(dueAmount)})
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleOpenRenewal}
+                        className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold transition flex items-center gap-1"
+                      >
+                        <RefreshCw className="w-3 h-3 text-amber-400" />
+                        <span>Renew / Extend</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {member.payments?.length === 0 ? (
+                  <div className="p-6 text-center bg-slate-50 rounded-lg">
+                    <p className="text-xs text-slate-400">No payment records found.</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Mobile Transactions List (block md:hidden) */}
+                    <div className="grid grid-cols-1 gap-2.5 md:hidden">
+                      {member.payments.map((pm: any) => (
+                        <div
+                          key={pm.id}
+                          className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/70 space-y-2"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <span className="font-mono font-bold text-xs text-slate-900 block">
+                                {pm.receiptNo}
+                              </span>
+                              <span className="text-[10px] text-slate-400">
+                                {formatDateTime(pm.paymentDate)}
+                              </span>
+                            </div>
+                            <span className="text-sm font-bold text-emerald-700">
+                              {formatINR(pm.amount)}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[11px] text-slate-600 pt-1 border-t border-slate-200/50">
+                            <span>Mode: <strong className="font-semibold">{pm.paymentMethod}</strong> ({pm.paymentType?.replace(/_/g, " ")})</span>
+                            <button
+                              onClick={() =>
+                                setSelectedReceiptForPrint({
+                                  ...pm,
+                                  member: {
+                                    fullName: member.fullName,
+                                    memberId: member.memberId,
+                                    phone: member.phone,
+                                  },
+                                })
+                              }
+                              className="px-2 py-1 bg-white border border-slate-200 text-slate-700 rounded text-xs font-semibold inline-flex items-center gap-1 active:bg-slate-100"
+                            >
+                              <Printer className="w-3 h-3" />
+                              <span>Receipt</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Desktop Table View (hidden md:block) */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-slate-100 text-[10px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-50/50">
+                            <th className="py-2.5 px-3">Receipt</th>
+                            <th className="py-2.5 px-3">Date</th>
+                            <th className="py-2.5 px-3">Mode</th>
+                            <th className="py-2.5 px-3">Type</th>
+                            <th className="py-2.5 px-3">Amount</th>
+                            <th className="py-2.5 px-3 text-right">Receipt</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-xs">
+                          {member.payments.map((pm: any) => (
+                            <tr key={pm.id} className="hover:bg-slate-50/60">
+                              <td className="py-2.5 px-3 font-mono font-semibold text-slate-900">{pm.receiptNo}</td>
+                              <td className="py-2.5 px-3 text-slate-500">{formatDateTime(pm.paymentDate)}</td>
+                              <td className="py-2.5 px-3 font-medium text-slate-700">{pm.paymentMethod}</td>
+                              <td className="py-2.5 px-3 text-slate-500">{pm.paymentType?.replace(/_/g, " ")}</td>
+                              <td className="py-2.5 px-3 font-bold text-emerald-700">{formatINR(pm.amount)}</td>
+                              <td className="py-2.5 px-3 text-right">
+                                <button
+                                  onClick={() =>
+                                    setSelectedReceiptForPrint({
+                                      ...pm,
+                                      member: {
+                                        fullName: member.fullName,
+                                        memberId: member.memberId,
+                                        phone: member.phone,
+                                      },
+                                    })
+                                  }
+                                  className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded text-xs font-medium inline-flex items-center gap-1 transition"
+                                >
+                                  <Printer className="w-3 h-3" />
+                                  <span>Receipt</span>
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* TAB 3: Health */}
+            {activeTab === "health" && (
+              <div className="p-5 space-y-3">
+                <h4 className="font-semibold text-xs text-slate-800">Physical Readiness Questionnaire</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {[
+                    { label: "Ever faint / get dizzy / loss of balance?", val: member.qFaintOrDizzy },
+                    { label: "Chest pain during physical activity?", val: member.qChestPain },
+                    { label: "Chest pain in past month at rest?", val: member.qRecentChestPain },
+                    { label: "High Blood Pressure / Heart condition?", val: member.qBloodPressureHeart },
+                    { label: "Insulin-dependent diabetes?", val: member.qDiabetes },
+                    { label: "Joint, bone or spinal orthopedic injury?", val: member.qJointBoneProblem },
+                    { label: "Currently pregnant or nursing?", val: member.qPregnant },
+                    { label: "Age 65+ and new to exercise?", val: member.qOver65 },
+                  ].map((q, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-2.5 rounded-lg border flex items-center justify-between gap-2 text-xs ${
+                        q.val ? "bg-rose-50/50 border-rose-200 text-rose-900" : "bg-slate-50 border-slate-100 text-slate-700"
+                      }`}
+                    >
+                      <span>{q.label}</span>
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                          q.val ? "bg-rose-600 text-white" : "bg-slate-200 text-slate-600"
+                        }`}
+                      >
+                        {q.val ? "YES" : "NO"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {member.qOtherHealthIssues && (
+                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs">
+                    <span className="text-slate-400 block font-medium">Remarks</span>
+                    <p className="text-slate-800 mt-0.5">{member.qOtherHealthIssues}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Collect Payment Modal */}
+      <AddPaymentModal
+        isOpen={paymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
+        prefillMemberId={member.id}
+        prefillMemberName={member.fullName}
+        prefillDueAmount={dueAmount}
+        onSuccess={() => {
+          router.refresh();
+        }}
+      />
+
+      {/* Renewal Modal */}
+      {renewalModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-sm text-slate-900">
+                  {isOngoing ? "Renew / Extend Plan" : "Renew Membership"}
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  {member.fullName} ({member.memberId})
+                </p>
+              </div>
+              <button onClick={() => setRenewalModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleRenew} className="p-6 space-y-4">
+              {isOngoing && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 space-y-0.5">
+                  <p className="font-bold">Current Active Plan: {activeSub?.planName}</p>
+                  <p className="text-[11px]">
+                    Valid till {formatDate(activeSub?.endDate)}. Renewal automatically begins on <strong className="font-semibold">{formatDate(renewalStartDate)}</strong>.
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Choose Package</label>
+                <select
+                  value={selectedPlanId}
+                  onChange={(e) => handlePlanChange(e.target.value)}
+                  className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg bg-white font-medium"
+                >
+                  {plans.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} - ₹{p.price.toLocaleString("en-IN")} ({p.durationInDays} days)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Extension Start Date {isOngoing && <span className="text-emerald-600">(From Expiry)</span>}
+                </label>
+                <input
+                  type="date"
+                  value={renewalStartDate}
+                  onChange={(e) => setRenewalStartDate(e.target.value)}
+                  className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Package Fee (₹)</label>
+                  <input
+                    type="number"
+                    value={renewalTotal}
+                    onChange={(e) => setRenewalTotal(Number(e.target.value))}
+                    className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Paid Today (₹)</label>
+                  <input
+                    type="number"
+                    value={renewalPaid}
+                    onChange={(e) => setRenewalPaid(Number(e.target.value))}
+                    className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg font-semibold text-emerald-700"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Payment Method</label>
+                <select
+                  value={renewalMethod}
+                  onChange={(e) => setRenewalMethod(e.target.value as PaymentMethod)}
+                  className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg bg-white"
+                >
+                  <option value="UPI">UPI (GPay / PhonePe / Paytm)</option>
+                  <option value="CASH">Cash</option>
+                  <option value="CARD">Card / POS</option>
+                  <option value="BANK_TRANSFER">Bank Transfer</option>
+                  <option value="CHEQUE">Cheque</option>
+                </select>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRenewalModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={renewalLoading}
+                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition"
+                >
+                  {renewalLoading ? "Saving..." : "Confirm Extension"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Printable Receipt Modal */}
+      {selectedReceiptForPrint && (
+        <ReceiptModal
+          receipt={selectedReceiptForPrint}
+          onClose={() => setSelectedReceiptForPrint(null)}
+        />
+      )}
+    </div>
+  );
+}
