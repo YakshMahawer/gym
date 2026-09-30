@@ -184,8 +184,8 @@ export function MemberForm({
     formData.firstName.trim() && formData.phone.trim().length >= 7
   );
 
-  // Auto-save or explicit save member
-  const handleSaveMember = async (targetNextTab?: "additional" | "health" | "membership") => {
+  // Explicit save member
+  const handleSaveMember = async () => {
     if (!formData.firstName.trim() || !formData.phone.trim()) {
       setError("Please fill required fields (First Name and Mobile Phone)");
       setActiveTab("basic");
@@ -196,7 +196,9 @@ export function MemberForm({
     setError(null);
 
     let res;
-    if (currentMemberId) {
+    if (isEdit && initialData?.id) {
+      res = await updateMember(initialData.id, formData);
+    } else if (currentMemberId) {
       res = await updateMember(currentMemberId, formData);
     } else {
       res = await createMember(formData);
@@ -208,14 +210,11 @@ export function MemberForm({
     setLoading(false);
 
     if (res.success) {
-      setSavedSuccessMsg("Member saved to directory");
-      setTimeout(() => setSavedSuccessMsg(null), 3000);
-      if (targetNextTab) {
-        setActiveTab(targetNextTab);
-      } else if (!isEdit && !targetNextTab) {
+      setSavedSuccessMsg(isEdit ? "Member updated successfully!" : "Member successfully registered!");
+      setTimeout(() => {
         router.push("/members");
         router.refresh();
-      }
+      }, 700);
     } else {
       setError(res.error || "Failed to save member profile");
     }
@@ -239,7 +238,7 @@ export function MemberForm({
               {isEdit ? `Edit: ${initialData?.fullName || "Member"}` : "Register New Member"}
             </h1>
             <p className="text-xs text-slate-400">
-              {isEdit ? "Update member details & package renewals" : "Basic info instantly adds member to directory"}
+              {isEdit ? "Update member details & package renewals" : "Fill details across steps to register member"}
             </p>
           </div>
         </div>
@@ -279,7 +278,7 @@ export function MemberForm({
             disabled={!isBasicInfoValid}
             onClick={() => {
               if (isBasicInfoValid) {
-                handleSaveMember("additional");
+                setActiveTab("additional");
               }
             }}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed ${
@@ -297,7 +296,7 @@ export function MemberForm({
             disabled={!isBasicInfoValid}
             onClick={() => {
               if (isBasicInfoValid) {
-                handleSaveMember("health");
+                setActiveTab("health");
               }
             }}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed ${
@@ -315,7 +314,7 @@ export function MemberForm({
             disabled={!isBasicInfoValid}
             onClick={() => {
               if (isBasicInfoValid) {
-                handleSaveMember("membership");
+                setActiveTab("membership");
               }
             }}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed ${
@@ -544,7 +543,7 @@ export function MemberForm({
 
               <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                 <p className="text-[11px] text-slate-400">
-                  {!isBasicInfoValid ? "Fill Name & Phone to save" : "Ready to save to directory"}
+                  {!isBasicInfoValid ? "Fill Name & Phone to proceed" : "Ready to proceed to next step"}
                 </p>
 
                 <div className="flex items-center gap-2">
@@ -554,16 +553,16 @@ export function MemberForm({
                     onClick={() => handleSaveMember()}
                     className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg transition disabled:opacity-40"
                   >
-                    {loading ? "Saving..." : "Save Member"}
+                    {loading ? "Saving..." : isEdit ? "Save Changes" : "Quick Save"}
                   </button>
 
                   <button
                     type="button"
-                    disabled={!isBasicInfoValid || loading}
-                    onClick={() => handleSaveMember("additional")}
+                    disabled={!isBasicInfoValid}
+                    onClick={() => setActiveTab("additional")}
                     className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition disabled:opacity-40"
                   >
-                    Save & Next: Additional Info →
+                    Next: Additional Info →
                   </button>
                 </div>
               </div>
@@ -686,14 +685,25 @@ export function MemberForm({
                 >
                   ← Back to Basic Info
                 </button>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => handleSaveMember("health")}
-                  className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition"
-                >
-                  Save & Next: Health Questionnaire →
-                </button>
+                <div className="flex items-center gap-2">
+                  {isEdit && (
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => handleSaveMember()}
+                      className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg transition"
+                    >
+                      {loading ? "Saving..." : "Save Changes"}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("health")}
+                    className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition"
+                  >
+                    Next: Health Questionnaire →
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -766,14 +776,25 @@ export function MemberForm({
                 >
                   ← Back
                 </button>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => handleSaveMember("membership")}
-                  className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition"
-                >
-                  Save & Next: Plan & Payments →
-                </button>
+                <div className="flex items-center gap-2">
+                  {isEdit && (
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => handleSaveMember()}
+                      className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg transition"
+                    >
+                      {loading ? "Saving..." : "Save Changes"}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("membership")}
+                    className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition"
+                  >
+                    Next: Plan & Payments →
+                  </button>
+                </div>
               </div>
             </div>
           )}
