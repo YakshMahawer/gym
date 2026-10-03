@@ -13,7 +13,8 @@ import {
   Printer,
   AlertTriangle,
 } from "lucide-react";
-import { addOrRenewMemberPT, STANDARD_PT_PLANS } from "@/lib/actions/pt";
+import { addOrRenewMemberPT } from "@/lib/actions/pt";
+import { STANDARD_PT_PLANS } from "@/lib/pt-constants";
 import { formatINR, formatDate } from "@/lib/utils";
 import { PaymentMethod } from "@prisma/client";
 
@@ -48,6 +49,14 @@ const TRAINER_SUGGESTIONS = [
   "Head Coach Aman",
 ];
 
+const DEFAULT_FALLBACK_PLAN = {
+  name: "1 Month PT (12 Sessions)",
+  price: 6000,
+  durationInDays: 30,
+  sessions: 12,
+  description: "12 One-on-one personal training sessions in 1 month",
+};
+
 export function AddPTModal({
   isOpen,
   onClose,
@@ -67,7 +76,7 @@ export function AddPTModal({
   const [customPlanName, setCustomPlanName] = useState("");
   const [isCustomPlan, setIsCustomPlan] = useState(false);
 
-  const initialPlan = STANDARD_PT_PLANS[0];
+  const initialPlan = STANDARD_PT_PLANS[0] || DEFAULT_FALLBACK_PLAN;
 
   const [trainerName, setTrainerName] = useState(
     member.activePT?.trainerName || member.representative || "Coach Vikram"
@@ -100,12 +109,11 @@ export function AddPTModal({
 
       setStartDate(defaultStart);
       setTrainerName(member.activePT?.trainerName || member.representative || "Coach Vikram");
-      setSelectedPlanIndex(0);
-      setIsCustomPlan(false);
-      setTotalSessions(STANDARD_PT_PLANS[0].sessions);
-      setDurationInDays(STANDARD_PT_PLANS[0].durationInDays);
-      setTotalAmount(STANDARD_PT_PLANS[0].price);
-      setPaidAmount(STANDARD_PT_PLANS[0].price);
+      const defaultP = STANDARD_PT_PLANS[0] || DEFAULT_FALLBACK_PLAN;
+      setTotalSessions(defaultP.sessions);
+      setDurationInDays(defaultP.durationInDays);
+      setTotalAmount(defaultP.price);
+      setPaidAmount(defaultP.price);
       setPaymentMethod("UPI");
       setNotes("");
       setError(null);
