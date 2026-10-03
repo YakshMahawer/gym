@@ -4,8 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { generateReceiptNo } from "@/lib/utils";
 import { PaymentMethod, PTStatus } from "@prisma/client";
-import { STANDARD_PT_PLANS } from "@/lib/pt-constants";
-export { STANDARD_PT_PLANS };
 
 export interface AddMemberPTInput {
   memberId: string;
@@ -25,15 +23,17 @@ export async function addOrRenewMemberPT(input: AddMemberPTInput) {
     const total = Number(input.totalAmount);
     const paid = Number(input.paidAmount || 0);
     const due = Math.max(0, total - paid);
-    const startDate = new Date(input.startDate);
-    const endDate = new Date(input.endDate);
+    
+    // Parse dates safely
+    const startDate = new Date(input.startDate.includes("T") ? input.startDate : `${input.startDate}T00:00:00.000Z`);
+    const endDate = new Date(input.endDate.includes("T") ? input.endDate : `${input.endDate}T23:59:59.999Z`);
     const sessions = input.totalSessions ? Number(input.totalSessions) : 12;
 
     const pt = await prisma.memberPT.create({
       data: {
         memberId: input.memberId,
         planName: input.planName,
-        trainerName: input.trainerName || "General Trainer",
+        trainerName: input.trainerName?.trim() || "Coach Vikram",
         totalSessions: sessions,
         completedSessions: 0,
         startDate,
@@ -64,11 +64,15 @@ export async function addOrRenewMemberPT(input: AddMemberPTInput) {
       });
     }
 
-    revalidatePath(`/members/${input.memberId}`);
-    revalidatePath("/members");
-    revalidatePath("/payments");
-    revalidatePath("/reports");
-    revalidatePath("/");
+    try {
+      revalidatePath(`/members/${input.memberId}`);
+      revalidatePath("/members");
+      revalidatePath("/payments");
+      revalidatePath("/reports");
+      revalidatePath("/");
+    } catch {
+      // Ignore revalidation outside request context
+    }
 
     return { success: true, pt, payment };
   } catch (error: any) {
@@ -99,8 +103,13 @@ export async function updatePTSessions(ptId: string, completedSessions: number) 
       },
     });
 
-    revalidatePath(`/members/${pt.memberId}`);
-    revalidatePath("/members");
+    try {
+      revalidatePath(`/members/${pt.memberId}`);
+      revalidatePath("/members");
+    } catch {
+      // Ignore
+    }
+    
     return { success: true, pt: updated };
   } catch (error: any) {
     console.error("Update PT sessions error:", error);

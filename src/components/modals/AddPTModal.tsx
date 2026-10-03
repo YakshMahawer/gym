@@ -34,13 +34,15 @@ interface AddPTModalProps {
   onPrintReceipt?: (receipt: any) => void;
 }
 
-const TRAINER_SUGGESTIONS = [
+const TRAINER_OPTIONS = [
   "Coach Vikram",
   "Coach Rahul",
   "Coach Priya",
   "Coach Simran",
   "Coach Alex",
   "Head Coach Aman",
+  "General Trainer",
+  "Other / Custom",
 ];
 
 const DEFAULT_FALLBACK_PLAN = {
@@ -80,9 +82,8 @@ export function AddPTModal({
   const initialPlan = STANDARD_PT_PLANS[0] || DEFAULT_FALLBACK_PLAN;
 
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
-  const [trainerName, setTrainerName] = useState(
-    member.activePT?.trainerName || member.representative || "Coach Vikram"
-  );
+  const [selectedTrainerOption, setSelectedTrainerOption] = useState<string>("Coach Vikram");
+  const [customTrainerName, setCustomTrainerName] = useState("");
   const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
   const [endDate, setEndDate] = useState(
     calculateExpiryDate(new Date().toISOString().split("T")[0], initialPlan.durationInDays)
@@ -108,7 +109,20 @@ export function AddPTModal({
       setSelectedPlanIndex(0);
       setStartDate(defaultStart);
       setEndDate(calculateExpiryDate(defaultStart, defaultPlan.durationInDays));
-      setTrainerName(member.activePT?.trainerName || member.representative || "Coach Vikram");
+
+      // Check if existing trainer matches pre-defined options
+      const existingTrainer = member.activePT?.trainerName || member.representative || "Coach Vikram";
+      if (TRAINER_OPTIONS.includes(existingTrainer)) {
+        setSelectedTrainerOption(existingTrainer);
+        setCustomTrainerName("");
+      } else if (existingTrainer) {
+        setSelectedTrainerOption("Other / Custom");
+        setCustomTrainerName(existingTrainer);
+      } else {
+        setSelectedTrainerOption("Coach Vikram");
+        setCustomTrainerName("");
+      }
+
       setTotalAmount(defaultPlan.price);
       setPaidAmount(defaultPlan.price);
       setPaymentMethod("UPI");
@@ -136,6 +150,13 @@ export function AddPTModal({
     setEndDate(calculateExpiryDate(newStartDate, plan.durationInDays));
   };
 
+  const getEffectiveTrainerName = (): string => {
+    if (selectedTrainerOption === "Other / Custom") {
+      return customTrainerName.trim() || "General Trainer";
+    }
+    return selectedTrainerOption;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (totalAmount <= 0) {
@@ -147,6 +168,12 @@ export function AddPTModal({
       return;
     }
 
+    const trainer = getEffectiveTrainerName();
+    if (!trainer) {
+      setError("Please select or specify a trainer");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -154,40 +181,46 @@ export function AddPTModal({
     const planName = plan.name;
     const sessions = plan.sessions || 12;
 
-    const res = await addOrRenewMemberPT({
-      memberId: member.id,
-      planName,
-      trainerName: trainerName.trim() || "General Trainer",
-      totalSessions: sessions,
-      startDate,
-      endDate,
-      totalAmount: Number(totalAmount),
-      paidAmount: Number(paidAmount),
-      paymentMethod,
-      notes: notes.trim() || undefined,
-    });
+    try {
+      const res = await addOrRenewMemberPT({
+        memberId: member.id,
+        planName,
+        trainerName: trainer,
+        totalSessions: sessions,
+        startDate,
+        endDate,
+        totalAmount: Number(totalAmount),
+        paidAmount: Number(paidAmount),
+        paymentMethod,
+        notes: notes.trim() || undefined,
+      });
 
-    setLoading(false);
+      setLoading(false);
 
-    if (res.success) {
-      if (res.payment && onPrintReceipt) {
-        onPrintReceipt({
-          ...res.payment,
-          member: {
-            fullName: member.fullName,
-            memberId: member.memberId,
-            phone: member.phone,
-          },
-          ptSubscription: res.pt,
-          planName: `PT: ${planName} (${trainerName})`,
-          startDate,
-          endDate,
-        });
+      if (res?.success) {
+        if (res.payment && onPrintReceipt) {
+          onPrintReceipt({
+            ...res.payment,
+            member: {
+              fullName: member.fullName,
+              memberId: member.memberId,
+              phone: member.phone,
+            },
+            ptSubscription: res.pt,
+            planName: `PT: ${planName} (${trainer})`,
+            startDate,
+            endDate,
+          });
+        }
+        if (onSuccess) onSuccess();
+        onClose();
+      } else {
+        setError(res?.error || "Failed to activate PT package");
       }
-      if (onSuccess) onSuccess();
-      onClose();
-    } else {
-      setError(res.error || "Failed to activate PT package");
+    } catch (err: any) {
+      console.error("PT Activation error:", err);
+      setLoading(false);
+      setError(err?.message || "An unexpected error occurred while activating PT");
     }
   };
 
@@ -256,33 +289,35 @@ export function AddPTModal({
             </select>
           </div>
 
-          {/* Assigned Trainer */}
+          {/* Assigned Personal Trainer - Clean Dropdown */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Assigned Personal Trainer
             </label>
-            <div className="space-y-1.5">
-              <input
-                type="text"
-                value={trainerName}
-                onChange={(e) => setTrainerName(e.target.value)}
-                placeholder="Enter Trainer Name..."
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 text-xs sm:text-sm"
-                required
-              />
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-0.5">
-                {TRAINER_SUGGESTIONS.map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setTrainerName(t)}
-                    className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-[11px] whitespace-nowrap transition"
-                  >
-                    {t}
-                  </button>
-                ))}
+            <select
+              value={selectedTrainerOption}
+              onChange={(e) => setSelectedTrainerOption(e.target.value)}
+              className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+            >
+              {TRAINER_OPTIONS.map((trainer) => (
+                <option key={trainer} value={trainer}>
+                  {trainer}
+                </option>
+              ))}
+            </select>
+
+            {selectedTrainerOption === "Other / Custom" && (
+              <div className="mt-2">
+                <input
+                  type="text"
+                  value={customTrainerName}
+                  onChange={(e) => setCustomTrainerName(e.target.value)}
+                  placeholder="Enter Trainer's Full Name..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 text-xs sm:text-sm"
+                  required
+                />
               </div>
-            </div>
+            )}
           </div>
 
           {/* Start Date & Auto-Calculated Editable Expiry Date */}
