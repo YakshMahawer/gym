@@ -293,50 +293,50 @@ export async function updateReceiptNumber(input: {
 
     const resequence = input.resequenceSubsequent ?? true;
 
-    if (!resequence) {
-      const existing = await prisma.payment.findUnique({
-        where: { receiptNo: desiredReceiptNo },
-      });
-      if (existing && existing.id !== targetPayment.id) {
-        return {
-          success: false,
-          error: `Receipt number "${desiredReceiptNo}" is already in use by another payment.`,
-        };
-      }
-
-      const updated = await prisma.payment.update({
-        where: { id: targetPayment.id },
-        data: { receiptNo: desiredReceiptNo },
-      });
-
-      try {
-        revalidatePath("/payments");
-        revalidatePath(`/members/${targetPayment.memberId}`);
-        revalidatePath("/members");
-        revalidatePath("/reports");
-        revalidatePath("/");
-      } catch {}
-
-      return { success: true, count: 1, payment: updated };
-    }
-
-    // Resequence subsequent payments chronologically
-    // Match prefix and trailing number: e.g. "REC-261003-005" -> prefix "REC-261003-", number 5, padLength 3
+    // Parse prefix and number: e.g. "REC-261003-002" -> prefix="REC-261003-", number=2, padLength=3
     const match = desiredReceiptNo.match(/^(.*?)(\d+)$/);
-    if (!match) {
+    if (!match || !resequence) {
+      // Direct update or swap if exists
       const existing = await prisma.payment.findUnique({
         where: { receiptNo: desiredReceiptNo },
       });
       if (existing && existing.id !== targetPayment.id) {
-        return {
-          success: false,
-          error: `Receipt number "${desiredReceiptNo}" is already in use.`,
-        };
+        const timestamp = Date.now();
+        await prisma.$transaction([
+          prisma.payment.update({
+            where: { id: targetPayment.id },
+            data: { receiptNo: `__TEMP_SWAP_${timestamp}_1__` },
+          }),
+          prisma.payment.update({
+            where: { id: existing.id },
+            data: { receiptNo: `__TEMP_SWAP_${timestamp}_2__` },
+          }),
+          prisma.payment.update({
+            where: { id: targetPayment.id },
+            data: { receiptNo: desiredReceiptNo },
+          }),
+          prisma.payment.update({
+            where: { id: existing.id },
+            data: { receiptNo: targetPayment.receiptNo },
+          }),
+        ]);
+
+        try {
+          revalidatePath("/payments");
+          revalidatePath(`/members/${targetPayment.memberId}`);
+          revalidatePath("/members");
+          revalidatePath("/reports");
+          revalidatePath("/");
+        } catch {}
+
+        return { success: true, count: 2 };
       }
+
       const updated = await prisma.payment.update({
         where: { id: targetPayment.id },
         data: { receiptNo: desiredReceiptNo },
       });
+
       try {
         revalidatePath("/payments");
         revalidatePath(`/members/${targetPayment.memberId}`);
@@ -344,52 +344,75 @@ export async function updateReceiptNumber(input: {
         revalidatePath("/reports");
         revalidatePath("/");
       } catch {}
+
       return { success: true, count: 1, payment: updated };
     }
 
     const prefix = match[1];
     const startingNumStr = match[2];
     const padLength = Math.max(3, startingNumStr.length);
-    let currentNum = parseInt(startingNumStr, 10);
+    const startNum = parseInt(startingNumStr, 10);
 
-    // Get all payments that occurred on or after the target payment
-    const allSubsequent = await prisma.payment.findMany({
-      where: {
-        OR: [
-          { paymentDate: { gt: targetPayment.paymentDate } },
-          {
-            paymentDate: targetPayment.paymentDate,
-            createdAt: { gte: targetPayment.createdAt },
-          },
-        ],
-      },
+    // Fetch ALL payments from DB ordered chronologically
+    const allPayments = await prisma.payment.findMany({
       orderBy: [
         { paymentDate: "asc" },
         { createdAt: "asc" },
       ],
     });
 
-    const toUpdate: { id: string; oldReceiptNo: string; newReceiptNo: string }[] = [];
+    // 1. Assign targetPayment the exact desired receipt number
+    const newAssignments = new Map<string, string>();
+    newAssignments.set(targetPayment.id, `${prefix}${startNum.toString().padStart(padLength, "0")}`);
 
-    // Target payment first
-    toUpdate.push({
-      id: targetPayment.id,
-      oldReceiptNo: targetPayment.receiptNo,
-      newReceiptNo: `${prefix}${currentNum.toString().padStart(padLength, "0")}`,
-    });
+    // 2. Identify all other payments that need to shift
+    const otherPayments = allPayments.filter((p) => p.id !== targetPayment.id);
+    const affectedPayments: typeof otherPayments = [];
 
-    // Subsequent payments
-    for (const p of allSubsequent) {
-      if (p.id === targetPayment.id) continue;
-      currentNum++;
-      toUpdate.push({
-        id: p.id,
-        oldReceiptNo: p.receiptNo,
-        newReceiptNo: `${prefix}${currentNum.toString().padStart(padLength, "0")}`,
-      });
+    for (const p of otherPayments) {
+      const pMatch = p.receiptNo.match(/^(.*?)(\d+)$/);
+      if (pMatch && pMatch[1] === prefix) {
+        const pNum = parseInt(pMatch[2], 10);
+        if (pNum >= startNum) {
+          affectedPayments.push(p);
+        }
+      } else if (
+        p.paymentDate > targetPayment.paymentDate ||
+        (p.paymentDate.getTime() === targetPayment.paymentDate.getTime() && p.createdAt >= targetPayment.createdAt)
+      ) {
+        affectedPayments.push(p);
+      }
     }
 
-    // Perform atomic batch transaction with temporary IDs to prevent unique constraint collisions
+    // Sort affected payments chronologically
+    affectedPayments.sort((a, b) => {
+      const dateDiff = a.paymentDate.getTime() - b.paymentDate.getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return a.createdAt.getTime() - b.createdAt.getTime();
+    });
+
+    let nextSeq = startNum + 1;
+    for (const p of affectedPayments) {
+      if (!newAssignments.has(p.id)) {
+        newAssignments.set(p.id, `${prefix}${nextSeq.toString().padStart(padLength, "0")}`);
+        nextSeq++;
+      }
+    }
+
+    // Prepare list of payments to update
+    const toUpdate: { id: string; oldReceiptNo: string; newReceiptNo: string }[] = [];
+    for (const [id, newNo] of newAssignments.entries()) {
+      const original = allPayments.find((p) => p.id === id);
+      if (original) {
+        toUpdate.push({
+          id,
+          oldReceiptNo: original.receiptNo,
+          newReceiptNo: newNo,
+        });
+      }
+    }
+
+    // Perform two-phase batch transaction with temporary identifiers
     const timestamp = Date.now();
     const phase1Updates = toUpdate.map((item, i) =>
       prisma.payment.update({
