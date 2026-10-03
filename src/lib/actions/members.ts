@@ -50,7 +50,7 @@ export interface CreateMemberInput {
   paymentNotes?: string;
 }
 
-// Get the next natural sequential Member ID with GYM- prefix (e.g. GYM-1007)
+// Get the next natural sequential Member ID with GYM- prefix (e.g. GYM-1001, GYM-1002...)
 export async function getNextMemberId(): Promise<string> {
   try {
     const allMembers = await prisma.member.findMany({
@@ -69,124 +69,6 @@ export async function getNextMemberId(): Promise<string> {
   } catch (error) {
     console.error("Failed to calculate next member ID:", error);
     return "GYM-1001";
-  }
-}
-
-// Automatic Sequence Shift:
-// When owner assigns a number (e.g. GYM-1003) and that ID already exists,
-// shift all members with numeric ID >= 1003 up by 1 (+1) to maintain exact unbroken sequence with GYM- prefix!
-async function resequenceShift(targetId: string, excludeMemberDbId?: string): Promise<string> {
-  const normalizedTargetId = normalizeMemberId(targetId);
-  const targetNum = extractNumericId(normalizedTargetId);
-  if (targetNum === null) return normalizedTargetId;
-
-  // Check if target ID is currently taken by another member
-  const collision = await prisma.member.findFirst({
-    where: {
-      memberId: normalizedTargetId,
-      ...(excludeMemberDbId ? { id: { not: excludeMemberDbId } } : {}),
-    },
-  });
-
-  if (!collision) {
-    return normalizedTargetId;
-  }
-
-  // Fetch all existing members that need to be shifted (numericId >= targetNum)
-  const allMembers = await prisma.member.findMany({
-    where: {
-      ...(excludeMemberDbId ? { id: { not: excludeMemberDbId } } : {}),
-    },
-    select: { id: true, memberId: true },
-  });
-
-  const membersToShift: Array<{ id: string; oldNum: number; newId: string }> = [];
-
-  for (const m of allMembers) {
-    const num = extractNumericId(m.memberId);
-    if (num !== null && num >= targetNum) {
-      membersToShift.push({
-        id: m.id,
-        oldNum: num,
-        newId: `GYM-${num + 1}`,
-      });
-    }
-  }
-
-  if (membersToShift.length > 0) {
-    // Sort descending so highest numbers shift first
-    membersToShift.sort((a, b) => b.oldNum - a.oldNum);
-
-    // Two-phase safe transaction to prevent unique constraint collisions
-    await prisma.$transaction(async (tx) => {
-      // Phase 1: Assign temporary non-colliding IDs
-      for (const item of membersToShift) {
-        await tx.member.update({
-          where: { id: item.id },
-          data: { memberId: `__SHIFT_TEMP_${item.id}__` },
-        });
-      }
-
-      // Phase 2: Assign final shifted sequential IDs with GYM- prefix
-      for (const item of membersToShift) {
-        await tx.member.update({
-          where: { id: item.id },
-          data: { memberId: item.newId },
-        });
-      }
-    });
-  }
-
-  return normalizedTargetId;
-}
-
-// Bulk Re-sequence All Members:
-// Cleanly renumbers all lifetime members starting from startNumber (default: 1001)
-// ordered by enrollment date with GYM- prefix
-export async function resequenceAllMembers(startNumber: number = 1001) {
-  try {
-    const allMembers = await prisma.member.findMany({
-      orderBy: [{ enrollDate: "asc" }, { createdAt: "asc" }],
-      select: { id: true, memberId: true, fullName: true },
-    });
-
-    if (allMembers.length === 0) {
-      return { success: true, count: 0 };
-    }
-
-    const resequencePlan = allMembers.map((m, index) => ({
-      id: m.id,
-      oldMemberId: m.memberId,
-      newMemberId: `GYM-${startNumber + index}`,
-    }));
-
-    // Safe two-phase batch transaction
-    await prisma.$transaction(async (tx) => {
-      // Step 1: Temporarily unbind all member IDs
-      for (const item of resequencePlan) {
-        await tx.member.update({
-          where: { id: item.id },
-          data: { memberId: `__RESEQ_TEMP_${item.id}__` },
-        });
-      }
-
-      // Step 2: Assign strict clean sequence with GYM- prefix
-      for (const item of resequencePlan) {
-        await tx.member.update({
-          where: { id: item.id },
-          data: { memberId: item.newMemberId },
-        });
-      }
-    });
-
-    revalidatePath("/members");
-    revalidatePath("/payments");
-    revalidatePath("/reports");
-    revalidatePath("/");
-    return { success: true, count: resequencePlan.length };
-  } catch (error: any) {
-    console.error("Bulk re-sequence error:", error);
-    return { success: false, error: error.message || "Failed to re-sequence members" };
   }
 }
 
@@ -321,10 +203,21 @@ export async function createMember(input: CreateMemberInput) {
     let desiredId = input.memberId?.trim();
     if (!desiredId) {
       desiredId = await getNextMemberId();
+    } else {
+      desiredId = normalizeMemberId(desiredId);
+      // Validate uniqueness
+      const existing = await prisma.member.findUnique({
+        where: { memberId: desiredId },
+      });
+      if (existing) {
+        return {
+          success: false,
+          error: `Member ID "${desiredId}" is already taken by ${existing.fullName}. Please choose a unique ID.`,
+        };
+      }
     }
 
-    // Auto shift existing members if desiredId conflicts in sequence
-    const finalMemberId = await resequenceShift(desiredId);
+    const finalMemberId = desiredId;
 
     const fullName = `${input.firstName.trim()} ${input.lastName ? input.lastName.trim() : ""}`.trim();
 
@@ -420,8 +313,20 @@ export async function updateMember(id: string, input: Partial<CreateMemberInput>
   try {
     let finalMemberId: string | undefined = undefined;
     if (input.memberId) {
-      const desiredId = input.memberId.trim();
-      finalMemberId = await resequenceShift(desiredId, id);
+      const desiredId = normalizeMemberId(input.memberId.trim());
+      const existing = await prisma.member.findFirst({
+        where: {
+          memberId: desiredId,
+          id: { not: id },
+        },
+      });
+      if (existing) {
+        return {
+          success: false,
+          error: `Member ID "${desiredId}" is already taken by ${existing.fullName}. Please choose a unique ID.`,
+        };
+      }
+      finalMemberId = desiredId;
     }
 
     const fullName = input.firstName

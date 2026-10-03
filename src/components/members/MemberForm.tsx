@@ -87,7 +87,7 @@ export function MemberForm({
     .split("T")[0];
 
   const [formData, setFormData] = useState<CreateMemberInput>({
-    memberId: initialData?.memberId || initialMemberId || "1001",
+    memberId: initialData?.memberId || initialMemberId || "GYM-1001",
     firstName: initialData?.firstName || defaultFirstName,
     lastName: initialData?.lastName || defaultLastName,
     email: initialData?.email || "",
@@ -336,7 +336,7 @@ export function MemberForm({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                    Member Sequence ID
+                    Member ID
                   </label>
                   <input
                     type="text"
@@ -345,7 +345,7 @@ export function MemberForm({
                     className="w-full px-3 py-1.5 text-xs sm:text-sm border border-slate-300 rounded-lg bg-slate-50 font-mono font-bold text-slate-900 focus:ring-2 focus:ring-slate-900"
                   />
                   <span className="text-[10px] text-slate-400 mt-0.5 block">
-                    Custom ID (e.g. 1003). If assigned to an existing slot, all subsequent IDs shift by +1 automatically.
+                    Unique 4-digit ID (e.g. GYM-1001). Auto-generated sequentially from the last entry.
                   </span>
                 </div>
 

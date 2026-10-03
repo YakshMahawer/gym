@@ -13,14 +13,12 @@ import {
   AlertTriangle,
   CheckCircle,
   ArrowUpDown,
-  Hash,
   X,
   Sparkles,
   Phone,
 } from "lucide-react";
 import { formatINR, formatDate, calculateDaysRemaining } from "@/lib/utils";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
-import { resequenceAllMembers } from "@/lib/actions/members";
 
 interface MemberListClientProps {
   members: any[];
@@ -39,12 +37,6 @@ export function MemberListClient({ members }: MemberListClientProps) {
     name: string;
     dueAmount: number;
   } | null>(null);
-
-  // Resequencing modal state
-  const [reseqModalOpen, setReseqModalOpen] = useState(false);
-  const [startSeqNum, setStartSeqNum] = useState(1001);
-  const [resequencing, setResequencing] = useState(false);
-  const [reseqMsg, setReseqMsg] = useState<string | null>(null);
 
   const filteredMembers = members.filter((m) => {
     const q = search.toLowerCase();
@@ -83,23 +75,6 @@ export function MemberListClient({ members }: MemberListClientProps) {
     setPaymentModalOpen(true);
   };
 
-  const handleResequence = async () => {
-    setResequencing(true);
-    const res = await resequenceAllMembers(Number(startSeqNum) || 1001);
-    setResequencing(false);
-
-    if (res.success) {
-      setReseqMsg(`Successfully re-sequenced all ${res.count} members!`);
-      setTimeout(() => {
-        setReseqMsg(null);
-        setReseqModalOpen(false);
-        router.refresh();
-      }, 1500);
-    } else {
-      alert(res.error || "Failed to re-sequence members");
-    }
-  };
-
   return (
     <div className="space-y-4 sm:space-y-5">
       {/* Top Header */}
@@ -114,16 +89,6 @@ export function MemberListClient({ members }: MemberListClientProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Re-sequence IDs Tool Button */}
-          <button
-            onClick={() => setReseqModalOpen(true)}
-            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
-            title="Cleanly re-sequence all Member IDs sequentially starting from 1001"
-          >
-            <Hash className="w-3.5 h-3.5 text-slate-600" />
-            <span>Re-sequence Sequence</span>
-          </button>
-
           <Link
             href="/members/new"
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-sm transition active:scale-[0.99]"
@@ -496,83 +461,6 @@ export function MemberListClient({ members }: MemberListClientProps) {
         />
       )}
 
-      {/* Re-sequence All Members Modal */}
-      {reseqModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100">
-              <div>
-                <h3 className="font-bold text-base text-slate-900 flex items-center gap-1.5">
-                  <Hash className="w-4 h-4 text-slate-700" />
-                  <span>Re-sequence Member IDs</span>
-                </h3>
-                <p className="text-xs text-slate-400">Maintain clean unbroken numbering</p>
-              </div>
-              <button
-                onClick={() => setReseqModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4 text-xs text-slate-600">
-              {reseqMsg && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg font-semibold flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-600" />
-                  <span>{reseqMsg}</span>
-                </div>
-              )}
-
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
-                <p className="font-bold text-slate-800">
-                  How Sequence Ordering Works:
-                </p>
-                <p className="text-slate-600 leading-relaxed">
-                  All <strong>{members.length} members</strong> will be renumbered consecutively starting from the base number based on enrollment chronology.
-                </p>
-                <p className="text-[11px] text-slate-500 pt-1">
-                  💡 <em>Whenever you assign a custom number (e.g. 1003) to any member, all members after that number are automatically shifted by +1 to maintain sequence.</em>
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Starting Sequence Number
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={startSeqNum}
-                  onChange={(e) => setStartSeqNum(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-sm font-bold border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900"
-                />
-                <span className="text-[10px] text-slate-400 mt-1 block">
-                  Sequence will range from <strong>{startSeqNum}</strong> to <strong>{startSeqNum + Math.max(0, members.length - 1)}</strong>.
-                </span>
-              </div>
-
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setReseqModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={resequencing}
-                  onClick={handleResequence}
-                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg shadow-sm transition disabled:opacity-50"
-                >
-                  {resequencing ? "Re-sequencing..." : "Confirm & Re-sequence"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
