@@ -46,11 +46,10 @@ const TRAINER_OPTIONS = [
 ];
 
 const DEFAULT_FALLBACK_PLAN = {
-  name: "1 Month PT (12 Sessions)",
+  name: "1 Month Personal Training",
   price: 6000,
   durationInDays: 30,
-  sessions: 12,
-  description: "12 One-on-one personal training sessions in 1 month",
+  description: "1 Month dedicated personal training package",
 };
 
 const calculateExpiryDate = (startDateStr: string, days: number): string => {
@@ -283,7 +282,7 @@ export function AddPTModal({
             >
               {STANDARD_PT_PLANS.map((plan, idx) => (
                 <option key={idx} value={idx}>
-                  {plan.name} - ₹{plan.price.toLocaleString("en-IN")} ({plan.sessions} Sessions, {plan.durationInDays} days)
+                  {plan.name} - ₹{plan.price.toLocaleString("en-IN")} ({plan.durationInDays} days)
                 </option>
               ))}
             </select>

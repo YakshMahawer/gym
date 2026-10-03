@@ -46,7 +46,6 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
   const [ptModalOpen, setPtModalOpen] = useState(false);
   const [selectedReceiptForPrint, setSelectedReceiptForPrint] = useState<any | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [sessionUpdating, setSessionUpdating] = useState(false);
 
   const activeSub = member.subscriptions?.[0];
   const daysLeft = activeSub ? calculateDaysRemaining(activeSub.endDate) : 0;
@@ -119,26 +118,6 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
       router.refresh();
     } else {
       alert(res.error || "Failed to renew subscription");
-    }
-  };
-
-  const handleIncrementPTSession = async () => {
-    if (!latestPT || sessionUpdating) return;
-    const currentCompleted = latestPT.completedSessions || 0;
-    const total = latestPT.totalSessions || 12;
-    if (currentCompleted >= total) {
-      alert("All sessions for this package have already been completed.");
-      return;
-    }
-
-    setSessionUpdating(true);
-    const res = await updatePTSessions(latestPT.id, currentCompleted + 1);
-    setSessionUpdating(false);
-
-    if (res.success) {
-      router.refresh();
-    } else {
-      alert(res.error || "Failed to log session");
     }
   };
 
@@ -339,7 +318,7 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
 
             {latestPT ? (
               <div className="space-y-3">
-                <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100/80 space-y-2 text-xs">
+                <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100/80 space-y-2.5 text-xs">
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="font-bold text-slate-900 block">{latestPT.planName}</span>
@@ -358,48 +337,23 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                     </span>
                   </div>
 
-                  {/* Sessions Completed Progress */}
-                  <div className="pt-1.5 border-t border-indigo-100/60 space-y-1.5">
-                    <div className="flex justify-between items-center text-[11px]">
-                      <span className="text-slate-500">Sessions Completed:</span>
-                      <span className="font-bold text-slate-800 font-mono">
-                        {latestPT.completedSessions || 0} / {latestPT.totalSessions || 12}
-                      </span>
+                  <div className="pt-2 border-t border-indigo-100/60 space-y-1 text-[11px]">
+                    <div className="flex justify-between text-slate-600">
+                      <span>Start Date:</span>
+                      <span className="font-medium text-slate-800">{formatDate(latestPT.startDate)}</span>
                     </div>
-                    <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                      <div
-                        className="bg-indigo-600 h-1.5 rounded-full transition-all duration-300"
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            Math.round(
-                              ((latestPT.completedSessions || 0) / (latestPT.totalSessions || 12)) * 100
-                            )
-                          )}%`,
-                        }}
-                      />
+                    <div className="flex justify-between text-slate-600">
+                      <span>Expiry Date:</span>
+                      <span className="font-semibold text-slate-900">{formatDate(latestPT.endDate)}</span>
                     </div>
-                  </div>
-
-                  <div className="flex justify-between text-[11px] text-slate-500 pt-1">
-                    <span>Expiry: {formatDate(latestPT.endDate)}</span>
                     {latestPT.dueAmount > 0 && (
-                      <span className="font-bold text-rose-600">Due: {formatINR(latestPT.dueAmount)}</span>
+                      <div className="flex justify-between text-rose-600 pt-1 font-bold">
+                        <span>Pending Due:</span>
+                        <span>{formatINR(latestPT.dueAmount)}</span>
+                      </div>
                     )}
                   </div>
                 </div>
-
-                {/* Quick Log Session Button */}
-                {isPTOngoing && (
-                  <button
-                    onClick={handleIncrementPTSession}
-                    disabled={sessionUpdating || (latestPT.completedSessions || 0) >= (latestPT.totalSessions || 12)}
-                    className="w-full py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold text-xs rounded-lg flex items-center justify-center gap-1.5 transition active:scale-[0.99] disabled:opacity-50"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>{sessionUpdating ? "Logging..." : "Log +1 Session Completed"}</span>
-                  </button>
-                )}
               </div>
             ) : (
               <div className="p-4 bg-slate-50/70 border border-dashed border-slate-200 rounded-xl text-center space-y-2">

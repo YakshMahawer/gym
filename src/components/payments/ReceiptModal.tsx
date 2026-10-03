@@ -185,12 +185,6 @@ export function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
                   <span className="font-semibold text-slate-800">{ptTrainer}</span>
                 </div>
               )}
-              {ptSessions && (
-                <div>
-                  <span className="text-slate-400 text-[10px] uppercase font-semibold block">Sessions:</span>
-                  <span className="font-semibold text-slate-800">{ptSessions} Sessions</span>
-                </div>
-              )}
               {startDate && (
                 <div>
                   <span className="text-slate-400 text-[10px] uppercase font-semibold block">
