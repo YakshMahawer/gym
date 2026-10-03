@@ -13,11 +13,13 @@ import {
   MessageCircle,
   Plus,
   ArrowRight,
+  Download,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { updateEnquiryStatus, deleteEnquiry } from "@/lib/actions/enquiries";
 import { NewEnquiryModal } from "@/components/modals/NewEnquiryModal";
 import { EnquiryStatus } from "@prisma/client";
+import { exportToExcel } from "@/lib/export-excel";
 
 interface EnquiryListClientProps {
   enquiries: any[];
@@ -66,6 +68,28 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
     }
   };
 
+  const handleExportEnquiries = () => {
+    exportToExcel({
+      data: filteredEnquiries,
+      fileName: "Gym_Enquiries_Leads",
+      sheetName: "Enquiries",
+      columns: [
+        { header: "Name", accessor: (e) => e.name },
+        { header: "Mobile", accessor: (e) => e.phone },
+        { header: "Email", accessor: (e) => e.email || "" },
+        { header: "Gender", accessor: (e) => e.gender || "Male" },
+        { header: "Status", accessor: (e) => e.status },
+        { header: "Preferred Plan", accessor: (e) => e.preferredPlan || "General" },
+        { header: "Source", accessor: (e) => e.source || "Walk-in" },
+        { header: "Budget", accessor: (e) => e.budget || "" },
+        { header: "Follow-Up Date", accessor: (e) => (e.followUpDate ? formatDate(e.followUpDate) : "") },
+        { header: "Notes", accessor: (e) => e.notes || "" },
+        { header: "Assigned Staff", accessor: (e) => e.assignedTo || "" },
+        { header: "Created At", accessor: (e) => (e.createdAt ? formatDate(e.createdAt) : "") },
+      ],
+    });
+  };
+
   return (
     <div className="space-y-5">
       {/* Top Header */}
@@ -102,21 +126,32 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
           />
         </div>
 
-        {/* Status Filters */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
-          {["ALL", "NEW", "FOLLOW_UP", "CONVERTED", "LOST"].map((st) => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
-                statusFilter === st
-                  ? "bg-slate-900 text-white shadow-xs"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
-            >
-              {st === "ALL" ? `All (${enquiries.length})` : st.replace("_", " ")}
-            </button>
-          ))}
+        {/* Status Filters & Export */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
+          <div className="flex items-center gap-1.5">
+            {["ALL", "NEW", "FOLLOW_UP", "CONVERTED", "LOST"].map((st) => (
+              <button
+                key={st}
+                onClick={() => setStatusFilter(st)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+                  statusFilter === st
+                    ? "bg-slate-900 text-white shadow-xs"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                {st === "ALL" ? `All (${enquiries.length})` : st.replace("_", " ")}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={handleExportEnquiries}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold shadow-2xs transition active:bg-slate-200 whitespace-nowrap shrink-0"
+            title="Download filtered enquiries as Excel (.xlsx) with auto-filters"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="hidden sm:inline">Export Excel</span>
+          </button>
         </div>
       </div>
 

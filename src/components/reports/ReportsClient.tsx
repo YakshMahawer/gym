@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { formatINR, formatDate, formatDateTime } from "@/lib/utils";
 import { ReceiptModal } from "@/components/payments/ReceiptModal";
+import { exportToExcel } from "@/lib/export-excel";
 
 interface PlanItem {
   id: string;
@@ -158,65 +159,44 @@ export function ReportsClient({ data }: ReportsClientProps) {
   const sumSgst = filteredTaxLedger.reduce((sum, item) => sum + item.sgst, 0);
   const sumTotalGst = sumCgst + sumSgst;
 
-  // Download CSV Export handler
-  const handleDownloadCsv = () => {
-    const headers = [
-      "Invoice Number",
-      "Receipt Number",
-      "Payment Date",
-      "Member Name",
-      "Member ID",
-      "Phone",
-      "Membership Plan",
-      "Payment Mode",
-      "Taxable Base Value (INR)",
-      "CGST 9% (INR)",
-      "SGST 9% (INR)",
-      "Total GST 18% (INR)",
-      "Total Gross Paid (INR)",
-    ];
+  // Download Excel Export handlers (with Excel AutoFilter)
+  const handleExportTaxExcel = () => {
+    exportToExcel({
+      data: filteredTaxLedger,
+      fileName: "Gym_GST_Tax_Ledger",
+      sheetName: "Tax Ledger",
+      columns: [
+        { header: "Invoice Number", accessor: (t) => t.invoiceNo },
+        { header: "Receipt Number", accessor: (t) => t.receiptNo },
+        { header: "Payment Date", accessor: (t) => formatDate(t.paymentDate) },
+        { header: "Member ID", accessor: (t) => t.member.memberId },
+        { header: "Member Name", accessor: (t) => t.member.fullName },
+        { header: "Phone", accessor: (t) => t.member.phone },
+        { header: "Membership Plan", accessor: (t) => t.planName },
+        { header: "Payment Mode", accessor: (t) => t.paymentMethod },
+        { header: "Taxable Base Value (₹)", accessor: (t) => t.taxableValue },
+        { header: "CGST 9% (₹)", accessor: (t) => t.cgst },
+        { header: "SGST 9% (₹)", accessor: (t) => t.sgst },
+        { header: "Total GST 18% (₹)", accessor: (t) => t.totalGst },
+        { header: "Total Gross Paid (₹)", accessor: (t) => t.amount },
+      ],
+    });
+  };
 
-    const rows = filteredTaxLedger.map((t) => [
-      `"${t.invoiceNo}"`,
-      `"${t.receiptNo}"`,
-      `"${formatDate(t.paymentDate)}"`,
-      `"${t.member.fullName.replace(/"/g, '""')}"`,
-      `"${t.member.memberId}"`,
-      `"${t.member.phone}"`,
-      `"${t.planName.replace(/"/g, '""')}"`,
-      `"${t.paymentMethod}"`,
-      t.taxableValue.toFixed(2),
-      t.cgst.toFixed(2),
-      t.sgst.toFixed(2),
-      t.totalGst.toFixed(2),
-      t.amount.toFixed(2),
-    ]);
-
-    // Append Summary Row
-    rows.push([
-      `"TOTAL SUMMARY"`,
-      `""`,
-      `""`,
-      `""`,
-      `""`,
-      `""`,
-      `""`,
-      `""`,
-      sumTaxableValue.toFixed(2),
-      sumCgst.toFixed(2),
-      sumSgst.toFixed(2),
-      sumTotalGst.toFixed(2),
-      sumGrossAmount.toFixed(2),
-    ]);
-
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Concept_I_Gym_Tax_Revenue_Report_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleExportPackagesExcel = () => {
+    exportToExcel({
+      data: filteredPlans,
+      fileName: "Gym_Package_Distribution",
+      sheetName: "Packages",
+      columns: [
+        { header: "Package / Plan Name", accessor: (p) => p.name },
+        { header: "Category", accessor: (p) => p.category || "General" },
+        { header: "Price (₹)", accessor: (p) => p.price },
+        { header: "Duration (Days)", accessor: (p) => p.durationInDays },
+        { header: "Subscriptions Sold", accessor: (p) => p.count },
+        { header: "Total Revenue (₹)", accessor: (p) => p.revenue },
+      ],
+    });
   };
 
   return (
@@ -321,11 +301,12 @@ export function ReportsClient({ data }: ReportsClientProps) {
             <div className="p-3.5 bg-white rounded-xl border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)] flex flex-col justify-between">
               <span className="text-[10px] font-bold text-slate-400 uppercase">Export Ledger</span>
               <button
-                onClick={handleDownloadCsv}
-                className="w-full py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition"
+                onClick={handleExportTaxExcel}
+                className="w-full py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition active:bg-slate-800"
+                title="Download filtered tax ledger as Excel (.xlsx) with auto-filters"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>Download CSV</span>
+                <Download className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Export Excel</span>
               </button>
             </div>
           </div>
@@ -618,15 +599,25 @@ export function ReportsClient({ data }: ReportsClientProps) {
                 </p>
               </div>
 
-              <div className="relative w-full md:w-64">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  placeholder="Search plan name or price..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900"
-                />
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <div className="relative flex-1 md:w-64">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    placeholder="Search plan name or price..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900"
+                  />
+                </div>
+                <button
+                  onClick={handleExportPackagesExcel}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold shadow-2xs transition active:bg-slate-200 shrink-0"
+                  title="Download filtered package distributions as Excel (.xlsx) with auto-filters"
+                >
+                  <Download className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="hidden sm:inline">Export Excel</span>
+                </button>
               </div>
             </div>
 

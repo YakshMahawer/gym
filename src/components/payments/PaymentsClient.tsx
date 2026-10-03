@@ -17,12 +17,14 @@ import {
   Pencil,
   RefreshCw,
   Sparkles,
+  Download,
 } from "lucide-react";
 import { formatINR, formatDate, formatDateTime } from "@/lib/utils";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
 import { EditReceiptModal } from "@/components/modals/EditReceiptModal";
 import { ReceiptModal } from "@/components/payments/ReceiptModal";
 import { resequenceAllReceipts } from "@/lib/actions/payments";
+import { exportToExcel } from "@/lib/export-excel";
 
 interface PaymentsClientProps {
   payments: any[];
@@ -74,6 +76,51 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
   filteredPayments.sort((a, b) =>
     b.receiptNo.localeCompare(a.receiptNo, undefined, { numeric: true, sensitivity: "base" })
   );
+
+  const handleExportPayments = () => {
+    exportToExcel({
+      data: filteredPayments,
+      fileName: "Gym_Payment_Transactions",
+      sheetName: "Payments",
+      columns: [
+        { header: "Receipt No", accessor: (p) => p.receiptNo },
+        { header: "Member ID", accessor: (p) => p.member?.memberId || "" },
+        { header: "Member Name", accessor: (p) => p.member?.fullName || "" },
+        { header: "Mobile", accessor: (p) => p.member?.phone || "" },
+        { header: "Payment Date", accessor: (p) => formatDateTime(p.paymentDate) },
+        { header: "Amount (₹)", accessor: (p) => p.amount },
+        { header: "Payment Mode", accessor: (p) => p.paymentMethod },
+        {
+          header: "Payment Type",
+          accessor: (p) =>
+            p.paymentType === "PERSONAL_TRAINING" || p.ptSubscription
+              ? "Personal Training (PT)"
+              : p.paymentType?.replace(/_/g, " ") || "Membership Fee",
+        },
+        { header: "Plan", accessor: (p) => p.subscription?.planName || p.ptSubscription?.planName || "" },
+        { header: "Notes", accessor: (p) => p.notes || "" },
+      ],
+    });
+  };
+
+  const handleExportDues = () => {
+    exportToExcel({
+      data: dueSubscriptions,
+      fileName: "Gym_Outstanding_Dues",
+      sheetName: "Pending Dues",
+      columns: [
+        { header: "Member ID", accessor: (s) => s.member?.memberId || "" },
+        { header: "Member Name", accessor: (s) => s.member?.fullName || "" },
+        { header: "Mobile", accessor: (s) => s.member?.phone || "" },
+        { header: "Plan Name", accessor: (s) => s.planName || "" },
+        { header: "Total Amount (₹)", accessor: (s) => s.totalAmount },
+        { header: "Paid Amount (₹)", accessor: (s) => s.paidAmount },
+        { header: "Pending Due (₹)", accessor: (s) => s.dueAmount },
+        { header: "Start Date", accessor: (s) => (s.startDate ? formatDate(s.startDate) : "") },
+        { header: "End Date", accessor: (s) => (s.endDate ? formatDate(s.endDate) : "") },
+      ],
+    });
+  };
 
   const handleResequenceAll = async () => {
     if (
@@ -231,6 +278,15 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                   <option value="PERSONAL_TRAINING">Personal Training (PT)</option>
                   <option value="DUE_CLEARANCE">Due Clearance</option>
                 </select>
+
+                <button
+                  onClick={handleExportPayments}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold shadow-2xs transition active:bg-slate-200"
+                  title="Download filtered payment records as Excel (.xlsx) with auto-filters"
+                >
+                  <Download className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="hidden sm:inline">Export Excel</span>
+                </button>
               </div>
             </div>
 
@@ -402,6 +458,19 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
               </div>
             ) : (
               <>
+                <div className="flex items-center justify-between pb-1">
+                  <span className="text-xs font-semibold text-slate-600">
+                    Showing <strong className="text-slate-900">{dueSubscriptions.length}</strong> items with pending dues
+                  </span>
+                  <button
+                    onClick={handleExportDues}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold shadow-2xs transition active:bg-slate-200"
+                    title="Download outstanding dues as Excel (.xlsx) with auto-filters"
+                  >
+                    <Download className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="hidden sm:inline">Export Excel</span>
+                  </button>
+                </div>
                 {/* Mobile Dues Cards (block md:hidden) */}
                 <div className="grid grid-cols-1 gap-2.5 md:hidden">
                   {dueSubscriptions.map((sub) => (

@@ -17,9 +17,11 @@ import {
   Sparkles,
   Phone,
   Dumbbell,
+  Download,
 } from "lucide-react";
 import { formatINR, formatDate, calculateDaysRemaining } from "@/lib/utils";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
+import { exportToExcel } from "@/lib/export-excel";
 
 interface MemberListClientProps {
   members: any[];
@@ -110,6 +112,70 @@ export function MemberListClient({ members }: MemberListClientProps) {
     setPaymentModalOpen(true);
   };
 
+  const handleExportMembers = () => {
+    exportToExcel({
+      data: sortedMembers,
+      fileName: "Gym_Members_Directory",
+      sheetName: "Members",
+      columns: [
+        { header: "Member ID", accessor: (m) => m.memberId },
+        { header: "Full Name", accessor: (m) => m.fullName },
+        { header: "Mobile", accessor: (m) => m.phone },
+        { header: "Email", accessor: (m) => m.email || "" },
+        { header: "Gender", accessor: (m) => m.gender || "Male" },
+        { header: "Membership Status", accessor: (m) => m.membershipStatus },
+        { header: "Active Plan", accessor: (m) => m.subscriptions?.[0]?.planName || "None" },
+        {
+          header: "Plan Start Date",
+          accessor: (m) => (m.subscriptions?.[0]?.startDate ? formatDate(m.subscriptions[0].startDate) : ""),
+        },
+        {
+          header: "Plan Expiry Date",
+          accessor: (m) => (m.subscriptions?.[0]?.endDate ? formatDate(m.subscriptions[0].endDate) : ""),
+        },
+        {
+          header: "Days Left",
+          accessor: (m) => {
+            const sub = m.subscriptions?.[0];
+            return sub ? calculateDaysRemaining(sub.endDate) : 0;
+          },
+        },
+        {
+          header: "Active PT",
+          accessor: (m) => {
+            const pt = m.ptSubscriptions?.[0];
+            const isPTActive = pt && pt.status === "ACTIVE" && new Date(pt.endDate) >= now;
+            return isPTActive ? "Yes" : "No";
+          },
+        },
+        { header: "PT Plan", accessor: (m) => m.ptSubscriptions?.[0]?.planName || "" },
+        { header: "PT Trainer", accessor: (m) => m.ptSubscriptions?.[0]?.trainerName || "" },
+        {
+          header: "PT Expiry",
+          accessor: (m) => (m.ptSubscriptions?.[0]?.endDate ? formatDate(m.ptSubscriptions[0].endDate) : ""),
+        },
+        {
+          header: "Pending Due (₹)",
+          accessor: (m) => {
+            const subDue = m.subscriptions?.[0]?.dueAmount || 0;
+            const ptDue = m.ptSubscriptions?.[0]?.dueAmount || 0;
+            return subDue + ptDue;
+          },
+        },
+        {
+          header: "Payment Status",
+          accessor: (m) => {
+            const subDue = m.subscriptions?.[0]?.dueAmount || 0;
+            const ptDue = m.ptSubscriptions?.[0]?.dueAmount || 0;
+            return subDue + ptDue > 0 ? "Due" : "Paid";
+          },
+        },
+        { header: "Enrolled Date", accessor: (m) => formatDate(m.enrollDate) },
+        { header: "Representative", accessor: (m) => m.representative || "" },
+      ],
+    });
+  };
+
   return (
     <div className="space-y-4 sm:space-y-5">
       {/* Top Header */}
@@ -149,9 +215,19 @@ export function MemberListClient({ members }: MemberListClientProps) {
             />
           </div>
 
-          {/* Quick Count Badge */}
-          <div className="text-xs font-medium text-slate-500 self-end sm:self-auto">
-            Showing <strong className="font-semibold text-slate-800">{sortedMembers.length}</strong> of {members.length} athletes
+          {/* Quick Count Badge & Export Button */}
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <span className="text-xs font-medium text-slate-500">
+              Showing <strong className="font-semibold text-slate-800">{sortedMembers.length}</strong> of {members.length} athletes
+            </span>
+            <button
+              onClick={handleExportMembers}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold shadow-2xs transition active:bg-slate-200"
+              title="Download filtered members as Excel (.xlsx) with auto-filters"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden sm:inline">Export Excel</span>
+            </button>
           </div>
         </div>
 
