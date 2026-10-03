@@ -107,7 +107,7 @@ export function MemberListClient({ members }: MemberListClientProps) {
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
-              placeholder="Search by name, phone, or GYM-ID..."
+              placeholder="Search by name, phone, or Member ID..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-8 pr-3 py-1.5 text-xs sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"

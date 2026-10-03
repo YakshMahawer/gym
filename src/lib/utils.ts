@@ -68,7 +68,7 @@ export function isUpcomingWithinDays(date: Date | string | null | undefined, day
 
 export function generateMemberId(): string {
   const randomNum = Math.floor(1000 + Math.random() * 9000);
-  return `GYM-${randomNum}`;
+  return `${randomNum}`;
 }
 
 export function extractNumericId(memberId: string | null | undefined): number | null {
@@ -78,16 +78,13 @@ export function extractNumericId(memberId: string | null | undefined): number | 
 }
 
 export function normalizeMemberId(id: string | null | undefined): string {
-  if (!id) return "GYM-1001";
-  const trimmed = id.trim().toUpperCase();
-  if (trimmed.startsWith("GYM-")) {
-    return trimmed;
-  }
+  if (!id) return "1001";
+  const trimmed = id.trim();
   const numeric = trimmed.replace(/\D/g, "");
   if (numeric) {
-    return `GYM-${numeric}`;
+    return numeric;
   }
-  return `GYM-${trimmed}`;
+  return trimmed;
 }
 
 export function generateReceiptNo(): string {

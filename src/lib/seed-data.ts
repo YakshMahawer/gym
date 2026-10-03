@@ -26,7 +26,7 @@ export async function seedInitialGymData() {
     // Member 1: Rahul Sharma (Active, Fully Paid)
     const m1 = await prisma.member.create({
       data: {
-        memberId: "GYM-1001",
+        memberId: "1001",
         firstName: "Rahul",
         lastName: "Sharma",
         fullName: "Rahul Sharma",
@@ -77,7 +77,7 @@ export async function seedInitialGymData() {
     // Member 2: Priya Patel (Has Due Payment)
     const m2 = await prisma.member.create({
       data: {
-        memberId: "GYM-1002",
+        memberId: "1002",
         firstName: "Priya",
         lastName: "Patel",
         fullName: "Priya Patel",
@@ -124,7 +124,7 @@ export async function seedInitialGymData() {
     // Member 3: Amit Verma (Membership Expiring Soon)
     const m3 = await prisma.member.create({
       data: {
-        memberId: "GYM-1003",
+        memberId: "1003",
         firstName: "Amit",
         lastName: "Verma",
         fullName: "Amit Verma",

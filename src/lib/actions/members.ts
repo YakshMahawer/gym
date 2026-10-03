@@ -50,7 +50,7 @@ export interface CreateMemberInput {
   paymentNotes?: string;
 }
 
-// Get the next natural sequential Member ID with GYM- prefix (e.g. GYM-1001, GYM-1002...)
+// Get the next natural sequential 4-digit Member ID (e.g. 1001, 1002...)
 export async function getNextMemberId(): Promise<string> {
   try {
     const allMembers = await prisma.member.findMany({
@@ -65,10 +65,10 @@ export async function getNextMemberId(): Promise<string> {
       }
     }
 
-    return `GYM-${maxNum + 1}`;
+    return `${maxNum + 1}`;
   } catch (error) {
     console.error("Failed to calculate next member ID:", error);
-    return "GYM-1001";
+    return "1001";
   }
 }
 
@@ -115,11 +115,10 @@ export async function getMembers(filters?: {
       },
     });
 
-    // Auto-normalize any existing non-prefixed member IDs in DB on read
+    // Auto-normalize any existing prefixed member IDs in DB on read
     for (const m of members) {
-      if (!m.memberId.startsWith("GYM-")) {
+      if (m.memberId.includes("GYM-") || m.memberId.includes("gym-")) {
         const correctId = normalizeMemberId(m.memberId);
-        // Non-blocking update
         prisma.member.update({
           where: { id: m.id },
           data: { memberId: correctId },
@@ -155,7 +154,7 @@ export async function getMembersLookup() {
 
     // Normalize IDs and sort highest to lowest
     for (const m of members) {
-      if (!m.memberId.startsWith("GYM-")) {
+      if (m.memberId.includes("GYM-") || m.memberId.includes("gym-")) {
         m.memberId = normalizeMemberId(m.memberId);
       }
     }
