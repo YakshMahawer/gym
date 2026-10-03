@@ -2,7 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { generateReceiptNo, extractNumericId, normalizeMemberId } from "@/lib/utils";
+import { extractNumericId, normalizeMemberId } from "@/lib/utils";
+import { getNextSequentialReceiptNo } from "@/lib/actions/payments";
 import { PaymentMethod, MembershipStatus } from "@prisma/client";
 
 export interface CreateMemberInput {
@@ -48,6 +49,7 @@ export interface CreateMemberInput {
   paidAmount?: number;
   paymentMethod?: PaymentMethod;
   paymentNotes?: string;
+  receiptNo?: string;
 }
 
 // Get the next natural sequential 4-digit Member ID (e.g. 1001, 1002...)
@@ -323,9 +325,10 @@ export async function createMember(input: CreateMemberInput) {
       });
 
       if (paidAmount > 0) {
+        const receiptNo = input.receiptNo?.trim() || (await getNextSequentialReceiptNo(new Date()));
         await prisma.payment.create({
           data: {
-            receiptNo: generateReceiptNo(),
+            receiptNo,
             memberId: member.id,
             subscriptionId: subscription.id,
             amount: paidAmount,
@@ -457,6 +460,7 @@ export async function renewSubscription(data: {
   totalAmount: number;
   paidAmount: number;
   paymentMethod: PaymentMethod;
+  receiptNo?: string;
   notes?: string;
 }) {
   try {
@@ -484,9 +488,10 @@ export async function renewSubscription(data: {
     });
 
     if (paid > 0) {
+      const receiptNo = (data as any).receiptNo?.trim() || (await getNextSequentialReceiptNo(new Date()));
       await prisma.payment.create({
         data: {
-          receiptNo: generateReceiptNo(),
+          receiptNo,
           memberId: data.memberId,
           subscriptionId: subscription.id,
           amount: paid,

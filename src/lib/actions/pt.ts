@@ -2,8 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { generateReceiptNo } from "@/lib/utils";
 import { PaymentMethod, PTStatus } from "@prisma/client";
+import { getNextSequentialReceiptNo } from "@/lib/actions/payments";
 
 export interface AddMemberPTInput {
   memberId: string;
@@ -15,6 +15,7 @@ export interface AddMemberPTInput {
   totalAmount: number;
   paidAmount: number;
   paymentMethod: PaymentMethod;
+  receiptNo?: string;
   notes?: string;
 }
 
@@ -48,9 +49,10 @@ export async function addOrRenewMemberPT(input: AddMemberPTInput) {
 
     let payment = null;
     if (paid > 0) {
+      const receiptNo = input.receiptNo?.trim() || (await getNextSequentialReceiptNo(new Date()));
       payment = await prisma.payment.create({
         data: {
-          receiptNo: generateReceiptNo(),
+          receiptNo,
           memberId: input.memberId,
           ptId: pt.id,
           amount: paid,

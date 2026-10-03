@@ -14,10 +14,15 @@ import {
   CheckCircle2,
   AlertTriangle,
   X,
+  Pencil,
+  RefreshCw,
+  Sparkles,
 } from "lucide-react";
 import { formatINR, formatDate, formatDateTime } from "@/lib/utils";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
+import { EditReceiptModal } from "@/components/modals/EditReceiptModal";
 import { ReceiptModal } from "@/components/payments/ReceiptModal";
+import { resequenceAllReceipts } from "@/lib/actions/payments";
 
 interface PaymentsClientProps {
   payments: any[];
@@ -31,6 +36,8 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
   const [search, setSearch] = useState("");
   const [methodFilter, setMethodFilter] = useState("ALL");
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<any | null>(null);
+  const [resequencing, setResequencing] = useState(false);
 
   // Receipt Modal
   const [selectedReceipt, setSelectedReceipt] = useState<any | null>(null);
@@ -63,6 +70,24 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
     return matchesSearch && matchesMethod && matchesType;
   });
 
+  const handleResequenceAll = async () => {
+    if (
+      confirm(
+        "Are you sure you want to re-sequence ALL receipts in chronological order? This will assign consecutive REC-YYMMDD-XXX numbers to all payment records."
+      )
+    ) {
+      setResequencing(true);
+      const res = await resequenceAllReceipts();
+      setResequencing(false);
+      if (res.success) {
+        alert(`Successfully resequenced ${res.count} receipts in chronological order!`);
+        router.refresh();
+      } else {
+        alert(res.error || "Failed to resequence receipts");
+      }
+    }
+  };
+
   return (
     <div className="space-y-5">
       {/* Top Header */}
@@ -72,17 +97,29 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
             Payments & Financial Ledger
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Collect member fees, clear pending balances, track Personal Training (PT) payments, and access receipts.
+            Sequential receipt numbering, member fees, PT payments, and printable tax invoices.
           </p>
         </div>
 
-        <button
-          onClick={() => setPaymentModalOpen(true)}
-          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg text-xs shadow-sm transition active:bg-slate-800"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Add Payment</span>
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleResequenceAll}
+            disabled={resequencing || payments.length === 0}
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold rounded-lg text-xs transition active:bg-slate-100 disabled:opacity-50"
+            title="Clean and re-order all receipts in sequential date order"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-indigo-600 ${resequencing ? "animate-spin" : ""}`} />
+            <span>{resequencing ? "Resequencing..." : "Auto-Resequence All"}</span>
+          </button>
+
+          <button
+            onClick={() => setPaymentModalOpen(true)}
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg text-xs shadow-sm transition active:bg-slate-800"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Payment</span>
+          </button>
+        </div>
       </div>
 
       {/* Summary KPI Cards */}
@@ -151,49 +188,50 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
 
         {/* TAB 1: Payment History */}
         {activeTab === "history" && (
-          <div className="p-3.5 sm:p-5 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
-              <div className="relative flex-1 max-w-md">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+          <div className="p-3.5 sm:p-5 space-y-4">
+            {/* Filter Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search receipt #, member name, or phone..."
+                  placeholder="Search receipt no, member, phone..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900"
+                  className="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white"
                 />
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
                 <select
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                  className="px-3 py-2 text-xs font-semibold border border-slate-300 rounded-lg bg-white"
-                >
-                  <option value="ALL">All Payment Types</option>
-                  <option value="MEMBERSHIP_FEE">Membership Fees</option>
-                  <option value="PERSONAL_TRAINING">Personal Training (PT)</option>
-                  <option value="DUE_CLEARANCE">Due Clearances</option>
-                </select>
-
-                <select
                   value={methodFilter}
                   onChange={(e) => setMethodFilter(e.target.value)}
-                  className="px-3 py-2 text-xs font-semibold border border-slate-300 rounded-lg bg-white"
+                  className="px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
                 >
                   <option value="ALL">All Payment Modes</option>
                   <option value="UPI">UPI</option>
                   <option value="CASH">Cash</option>
-                  <option value="CARD">Card</option>
+                  <option value="CARD">Card / POS</option>
                   <option value="BANK_TRANSFER">Bank Transfer</option>
                   <option value="CHEQUE">Cheque</option>
+                </select>
+
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+                >
+                  <option value="ALL">All Payment Types</option>
+                  <option value="MEMBERSHIP_FEE">Membership Fee</option>
+                  <option value="PERSONAL_TRAINING">Personal Training (PT)</option>
+                  <option value="DUE_CLEARANCE">Due Clearance</option>
                 </select>
               </div>
             </div>
 
             {filteredPayments.length === 0 ? (
-              <div className="p-10 text-center bg-slate-50/50 rounded-lg">
-                <p className="text-xs text-slate-400">No Transactions Found</p>
+              <div className="p-10 text-center bg-slate-50/50 rounded-lg border border-dashed border-slate-200">
+                <p className="text-xs text-slate-500">No payment records found.</p>
               </div>
             ) : (
               <>
@@ -222,7 +260,16 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                       </div>
 
                       <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
-                        <span className="font-mono font-semibold text-slate-700">{pm.receiptNo}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-bold text-slate-800">{pm.receiptNo}</span>
+                          <button
+                            onClick={() => setEditingPayment(pm)}
+                            className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700"
+                            title="Edit Receipt Number"
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                        </div>
                         <span>{formatDateTime(pm.paymentDate)}</span>
                       </div>
 
@@ -244,13 +291,22 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                           </span>
                         </div>
 
-                        <button
-                          onClick={() => setSelectedReceipt(pm)}
-                          className="px-3 py-1 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg text-xs font-semibold inline-flex items-center gap-1 active:bg-slate-100"
-                        >
-                          <Printer className="w-3.5 h-3.5" />
-                          <span>Receipt</span>
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setEditingPayment(pm)}
+                            className="px-2.5 py-1 bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 rounded-lg text-xs font-semibold inline-flex items-center gap-1"
+                          >
+                            <Pencil className="w-3 h-3" />
+                            <span>Edit No</span>
+                          </button>
+                          <button
+                            onClick={() => setSelectedReceipt(pm)}
+                            className="px-2.5 py-1 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg text-xs font-semibold inline-flex items-center gap-1 active:bg-slate-100"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                            <span>Receipt</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -261,20 +317,31 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-50/50">
-                        <th className="py-2.5 px-4">Receipt</th>
+                        <th className="py-2.5 px-4">Receipt Number</th>
                         <th className="py-2.5 px-4">Member</th>
-                        <th className="py-2.5 px-4">Date</th>
+                        <th className="py-2.5 px-4">Payment Date</th>
                         <th className="py-2.5 px-4">Mode</th>
                         <th className="py-2.5 px-4">Type</th>
                         <th className="py-2.5 px-4">Amount</th>
-                        <th className="py-2.5 px-4 text-right">Receipt</th>
+                        <th className="py-2.5 px-4 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-xs">
                       {filteredPayments.map((pm) => (
-                        <tr key={pm.id} className="hover:bg-slate-50/60 transition">
-                          <td className="py-3 px-4 font-mono font-semibold text-slate-900">
-                            {pm.receiptNo}
+                        <tr key={pm.id} className="hover:bg-slate-50/60 transition group">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                                {pm.receiptNo}
+                              </span>
+                              <button
+                                onClick={() => setEditingPayment(pm)}
+                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-200 text-slate-400 hover:text-slate-800 rounded transition"
+                                title="Edit Receipt Number & Resequence"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                            </div>
                           </td>
                           <td className="py-3 px-4">
                             <Link
@@ -310,13 +377,23 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                             {formatINR(pm.amount)}
                           </td>
                           <td className="py-3 px-4 text-right">
-                            <button
-                              onClick={() => setSelectedReceipt(pm)}
-                              className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded text-xs font-medium inline-flex items-center gap-1 transition"
-                            >
-                              <Printer className="w-3 h-3" />
-                              <span>Receipt</span>
-                            </button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => setEditingPayment(pm)}
+                                className="px-2 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 rounded text-xs font-medium inline-flex items-center gap-1 transition"
+                                title="Edit Receipt Number"
+                              >
+                                <Pencil className="w-3 h-3" />
+                                <span>Edit No</span>
+                              </button>
+                              <button
+                                onClick={() => setSelectedReceipt(pm)}
+                                className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold inline-flex items-center gap-1 transition"
+                              >
+                                <Printer className="w-3 h-3 text-amber-400" />
+                                <span>Receipt</span>
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -444,11 +521,28 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
         }}
       />
 
+      {/* Modal: Edit Receipt Number & Resequencing */}
+      {editingPayment && (
+        <EditReceiptModal
+          isOpen={Boolean(editingPayment)}
+          payment={editingPayment}
+          onClose={() => setEditingPayment(null)}
+          onSuccess={() => {
+            router.refresh();
+          }}
+        />
+      )}
+
       {/* Modal: View / Print Receipt */}
       {selectedReceipt && (
         <ReceiptModal
           receipt={selectedReceipt}
           onClose={() => setSelectedReceipt(null)}
+          onEditReceipt={() => {
+            const current = selectedReceipt;
+            setSelectedReceipt(null);
+            setEditingPayment(current);
+          }}
         />
       )}
     </div>

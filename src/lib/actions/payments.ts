@@ -2,7 +2,6 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { generateReceiptNo } from "@/lib/utils";
 import { PaymentMethod } from "@prisma/client";
 
 export interface AddPaymentInput {
@@ -13,7 +12,50 @@ export interface AddPaymentInput {
   paymentDate?: string;
   paymentMethod: PaymentMethod;
   paymentType?: string;
+  receiptNo?: string;
   notes?: string;
+}
+
+export async function getNextSequentialReceiptNo(paymentDate?: Date | string): Promise<string> {
+  try {
+    const d = paymentDate
+      ? typeof paymentDate === "string"
+        ? new Date(paymentDate.includes("T") ? paymentDate : `${paymentDate}T00:00:00.000Z`)
+        : paymentDate
+      : new Date();
+
+    const validDate = isNaN(d.getTime()) ? new Date() : d;
+    const dateStr = validDate.toISOString().slice(2, 10).replace(/-/g, ""); // e.g. "261003"
+    const prefix = `REC-${dateStr}-`;
+
+    const existingPayments = await prisma.payment.findMany({
+      where: {
+        receiptNo: {
+          startsWith: prefix,
+        },
+      },
+      select: {
+        receiptNo: true,
+      },
+    });
+
+    let maxNum = 0;
+    for (const p of existingPayments) {
+      const suffix = p.receiptNo.slice(prefix.length);
+      const num = parseInt(suffix, 10);
+      if (!isNaN(num) && num > maxNum) {
+        maxNum = num;
+      }
+    }
+
+    const nextNum = maxNum + 1;
+    const formattedSuffix = nextNum.toString().padStart(3, "0");
+    return `${prefix}${formattedSuffix}`;
+  } catch (error) {
+    console.error("Failed to generate sequential receipt number:", error);
+    const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, "");
+    return `REC-${dateStr}-001`;
+  }
 }
 
 export async function getPayments(filters?: {
@@ -100,8 +142,11 @@ export async function getPayments(filters?: {
           },
         },
       },
-      orderBy: { paymentDate: "desc" },
-      take: filters?.limit || 100,
+      orderBy: [
+        { paymentDate: "desc" },
+        { createdAt: "desc" },
+      ],
+      take: filters?.limit || 200,
     });
 
     return payments;
@@ -118,8 +163,8 @@ export async function addPayment(input: AddPaymentInput) {
       return { success: false, error: "Payment amount must be greater than 0" };
     }
 
-    const receiptNo = generateReceiptNo();
     const paymentDate = input.paymentDate ? new Date(input.paymentDate) : new Date();
+    const receiptNo = input.receiptNo?.trim() || (await getNextSequentialReceiptNo(paymentDate));
 
     let targetSubId = input.subscriptionId;
     let targetPtId = input.ptId;
@@ -205,14 +250,234 @@ export async function addPayment(input: AddPaymentInput) {
       }
     }
 
-    revalidatePath("/payments");
-    revalidatePath(`/members/${input.memberId}`);
-    revalidatePath("/members");
-    revalidatePath("/");
+    try {
+      revalidatePath("/payments");
+      revalidatePath(`/members/${input.memberId}`);
+      revalidatePath("/members");
+      revalidatePath("/reports");
+      revalidatePath("/");
+    } catch {
+      // Ignore
+    }
+
     return { success: true, payment };
   } catch (error: any) {
     console.error("Add payment error:", error);
     return { success: false, error: error.message || "Failed to add payment" };
+  }
+}
+
+export async function updateReceiptNumber(input: {
+  paymentId: string;
+  newReceiptNo: string;
+  resequenceSubsequent?: boolean;
+}) {
+  try {
+    const targetPayment = await prisma.payment.findUnique({
+      where: { id: input.paymentId },
+      include: { member: true },
+    });
+
+    if (!targetPayment) {
+      return { success: false, error: "Payment record not found" };
+    }
+
+    const desiredReceiptNo = input.newReceiptNo.trim();
+    if (!desiredReceiptNo) {
+      return { success: false, error: "Receipt number cannot be empty" };
+    }
+
+    if (targetPayment.receiptNo === desiredReceiptNo) {
+      return { success: true, count: 0, payment: targetPayment };
+    }
+
+    const resequence = input.resequenceSubsequent ?? true;
+
+    if (!resequence) {
+      const existing = await prisma.payment.findUnique({
+        where: { receiptNo: desiredReceiptNo },
+      });
+      if (existing && existing.id !== targetPayment.id) {
+        return {
+          success: false,
+          error: `Receipt number "${desiredReceiptNo}" is already in use by another payment.`,
+        };
+      }
+
+      const updated = await prisma.payment.update({
+        where: { id: targetPayment.id },
+        data: { receiptNo: desiredReceiptNo },
+      });
+
+      try {
+        revalidatePath("/payments");
+        revalidatePath(`/members/${targetPayment.memberId}`);
+        revalidatePath("/members");
+        revalidatePath("/reports");
+        revalidatePath("/");
+      } catch {}
+
+      return { success: true, count: 1, payment: updated };
+    }
+
+    // Resequence subsequent payments chronologically
+    // Match prefix and trailing number: e.g. "REC-261003-005" -> prefix "REC-261003-", number 5, padLength 3
+    const match = desiredReceiptNo.match(/^(.*?)(\d+)$/);
+    if (!match) {
+      const existing = await prisma.payment.findUnique({
+        where: { receiptNo: desiredReceiptNo },
+      });
+      if (existing && existing.id !== targetPayment.id) {
+        return {
+          success: false,
+          error: `Receipt number "${desiredReceiptNo}" is already in use.`,
+        };
+      }
+      const updated = await prisma.payment.update({
+        where: { id: targetPayment.id },
+        data: { receiptNo: desiredReceiptNo },
+      });
+      try {
+        revalidatePath("/payments");
+        revalidatePath(`/members/${targetPayment.memberId}`);
+        revalidatePath("/members");
+        revalidatePath("/reports");
+        revalidatePath("/");
+      } catch {}
+      return { success: true, count: 1, payment: updated };
+    }
+
+    const prefix = match[1];
+    const startingNumStr = match[2];
+    const padLength = Math.max(3, startingNumStr.length);
+    let currentNum = parseInt(startingNumStr, 10);
+
+    // Get all payments that occurred on or after the target payment
+    const allSubsequent = await prisma.payment.findMany({
+      where: {
+        OR: [
+          { paymentDate: { gt: targetPayment.paymentDate } },
+          {
+            paymentDate: targetPayment.paymentDate,
+            createdAt: { gte: targetPayment.createdAt },
+          },
+        ],
+      },
+      orderBy: [
+        { paymentDate: "asc" },
+        { createdAt: "asc" },
+      ],
+    });
+
+    const toUpdate: { id: string; oldReceiptNo: string; newReceiptNo: string }[] = [];
+
+    // Target payment first
+    toUpdate.push({
+      id: targetPayment.id,
+      oldReceiptNo: targetPayment.receiptNo,
+      newReceiptNo: `${prefix}${currentNum.toString().padStart(padLength, "0")}`,
+    });
+
+    // Subsequent payments
+    for (const p of allSubsequent) {
+      if (p.id === targetPayment.id) continue;
+      currentNum++;
+      toUpdate.push({
+        id: p.id,
+        oldReceiptNo: p.receiptNo,
+        newReceiptNo: `${prefix}${currentNum.toString().padStart(padLength, "0")}`,
+      });
+    }
+
+    // Perform atomic batch transaction with temporary IDs to prevent unique constraint collisions
+    const timestamp = Date.now();
+    const phase1Updates = toUpdate.map((item, i) =>
+      prisma.payment.update({
+        where: { id: item.id },
+        data: { receiptNo: `__TEMP_RENUM_${timestamp}_${i}__` },
+      })
+    );
+
+    const phase2Updates = toUpdate.map((item) =>
+      prisma.payment.update({
+        where: { id: item.id },
+        data: { receiptNo: item.newReceiptNo },
+      })
+    );
+
+    await prisma.$transaction([...phase1Updates, ...phase2Updates]);
+
+    try {
+      revalidatePath("/payments");
+      revalidatePath(`/members/${targetPayment.memberId}`);
+      revalidatePath("/members");
+      revalidatePath("/reports");
+      revalidatePath("/");
+    } catch {}
+
+    return {
+      success: true,
+      count: toUpdate.length,
+      updatedList: toUpdate,
+    };
+  } catch (error: any) {
+    console.error("Update receipt number error:", error);
+    return { success: false, error: error.message || "Failed to update receipt numbers" };
+  }
+}
+
+export async function resequenceAllReceipts() {
+  try {
+    const payments = await prisma.payment.findMany({
+      orderBy: [
+        { paymentDate: "asc" },
+        { createdAt: "asc" },
+      ],
+    });
+
+    const dateCounters: Record<string, number> = {};
+    const toUpdate: { id: string; oldReceiptNo: string; newReceiptNo: string }[] = [];
+
+    for (const p of payments) {
+      const d = p.paymentDate;
+      const dateStr = d.toISOString().slice(2, 10).replace(/-/g, ""); // YYMMDD
+      dateCounters[dateStr] = (dateCounters[dateStr] || 0) + 1;
+      const seq = dateCounters[dateStr].toString().padStart(3, "0");
+      toUpdate.push({
+        id: p.id,
+        oldReceiptNo: p.receiptNo,
+        newReceiptNo: `REC-${dateStr}-${seq}`,
+      });
+    }
+
+    const timestamp = Date.now();
+    const phase1All = toUpdate.map((item, i) =>
+      prisma.payment.update({
+        where: { id: item.id },
+        data: { receiptNo: `__TEMP_ALL_${timestamp}_${i}__` },
+      })
+    );
+
+    const phase2All = toUpdate.map((item) =>
+      prisma.payment.update({
+        where: { id: item.id },
+        data: { receiptNo: item.newReceiptNo },
+      })
+    );
+
+    await prisma.$transaction([...phase1All, ...phase2All]);
+
+    try {
+      revalidatePath("/payments");
+      revalidatePath("/members");
+      revalidatePath("/reports");
+      revalidatePath("/");
+    } catch {}
+
+    return { success: true, count: toUpdate.length, updatedList: toUpdate };
+  } catch (error: any) {
+    console.error("Resequence all receipts error:", error);
+    return { success: false, error: error.message || "Failed to resequence receipts" };
   }
 }
 
@@ -253,7 +518,6 @@ export async function getDueSubscriptions() {
       }),
     ]);
 
-    // Format all dues cleanly
     const formattedSubs = dueSubs.map((s) => ({
       id: s.id,
       type: "MEMBERSHIP" as const,

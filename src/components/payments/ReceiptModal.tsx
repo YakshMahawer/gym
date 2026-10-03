@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { X, Printer, CheckCircle2 } from "lucide-react";
+import { X, Printer, CheckCircle2, Edit } from "lucide-react";
 import { formatINR, formatDate } from "@/lib/utils";
 
 interface ReceiptModalProps {
@@ -46,9 +46,10 @@ interface ReceiptModalProps {
     endDate?: string | Date;
   } | null;
   onClose: () => void;
+  onEditReceipt?: () => void;
 }
 
-export function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
+export function ReceiptModal({ receipt, onClose, onEditReceipt }: ReceiptModalProps) {
   if (!receipt) return null;
 
   const memberName = receipt.member?.fullName || "Member";
@@ -141,9 +142,21 @@ export function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
                 {isPT ? "Personal Training (PT) Tax Invoice" : "Membership Tax Invoice"}
               </span>
-              <span className="font-mono font-bold text-slate-900 text-sm">
-                {invoiceNo}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-bold text-slate-900 text-sm">
+                  {invoiceNo}
+                </span>
+                {onEditReceipt && (
+                  <button
+                    type="button"
+                    onClick={onEditReceipt}
+                    className="p-1 text-slate-400 hover:text-slate-800 hover:bg-slate-200 rounded print:hidden transition"
+                    title="Edit Receipt Number"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
             <div className="text-right">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
