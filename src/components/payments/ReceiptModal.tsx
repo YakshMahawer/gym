@@ -20,6 +20,16 @@ interface ReceiptModalProps {
       totalAmount?: number;
       dueAmount?: number;
     } | null;
+    ptSubscription?: {
+      planName?: string;
+      trainerName?: string | null;
+      totalSessions?: number | null;
+      completedSessions?: number | null;
+      startDate?: string | Date;
+      endDate?: string | Date;
+      totalAmount?: number;
+      dueAmount?: number;
+    } | null;
     member?: {
       fullName: string;
       memberId: string;
@@ -45,15 +55,34 @@ export function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
   const memberId = receipt.member?.memberId || "N/A";
   const memberPhone = receipt.member?.phone || "";
 
+  const isPT =
+    receipt.paymentType === "PERSONAL_TRAINING" ||
+    receipt.ptSubscription ||
+    Boolean(receipt.planName?.startsWith("PT") || receipt.planName?.includes("Personal Training"));
+
+  const ptTrainer = receipt.ptSubscription?.trainerName;
+  const ptSessions = receipt.ptSubscription?.totalSessions;
+
   // Exact plan name / description for this single payment
   const planName =
     receipt.planName ||
-    receipt.subscription?.planName ||
-    receipt.member?.subscriptions?.[0]?.planName ||
-    (receipt.paymentType ? receipt.paymentType.replace(/_/g, " ") : "Gym Membership");
+    (receipt.ptSubscription
+      ? `Personal Training - ${receipt.ptSubscription.planName}${ptTrainer ? ` (Trainer: ${ptTrainer})` : ""}`
+      : receipt.subscription?.planName ||
+        receipt.member?.subscriptions?.[0]?.planName ||
+        (receipt.paymentType ? receipt.paymentType.replace(/_/g, " ") : "Gym Membership"));
 
-  const startDate = receipt.startDate || receipt.subscription?.startDate || receipt.member?.subscriptions?.[0]?.startDate;
-  const endDate = receipt.endDate || receipt.subscription?.endDate || receipt.member?.subscriptions?.[0]?.endDate;
+  const startDate =
+    receipt.startDate ||
+    receipt.ptSubscription?.startDate ||
+    receipt.subscription?.startDate ||
+    receipt.member?.subscriptions?.[0]?.startDate;
+
+  const endDate =
+    receipt.endDate ||
+    receipt.ptSubscription?.endDate ||
+    receipt.subscription?.endDate ||
+    receipt.member?.subscriptions?.[0]?.endDate;
 
   // Single transaction tax calculations (18% GST Breakdown: 9% CGST + 9% SGST)
   const totalAmount = Number(receipt.amount) || 0;
@@ -110,7 +139,7 @@ export function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
           <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs">
             <div>
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                Membership Invoice
+                {isPT ? "Personal Training (PT) Tax Invoice" : "Membership Tax Invoice"}
               </span>
               <span className="font-mono font-bold text-slate-900 text-sm">
                 {invoiceNo}
@@ -145,18 +174,36 @@ export function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
 
             <div className="space-y-1 text-right">
               <div>
-                <span className="text-slate-400 text-[10px] uppercase font-semibold block">Membership Plan:</span>
+                <span className="text-slate-400 text-[10px] uppercase font-semibold block">
+                  {isPT ? "PT Package Plan:" : "Membership Plan:"}
+                </span>
                 <span className="font-bold text-slate-900">{planName}</span>
               </div>
+              {ptTrainer && (
+                <div>
+                  <span className="text-slate-400 text-[10px] uppercase font-semibold block">Trainer:</span>
+                  <span className="font-semibold text-slate-800">{ptTrainer}</span>
+                </div>
+              )}
+              {ptSessions && (
+                <div>
+                  <span className="text-slate-400 text-[10px] uppercase font-semibold block">Sessions:</span>
+                  <span className="font-semibold text-slate-800">{ptSessions} Sessions</span>
+                </div>
+              )}
               {startDate && (
                 <div>
-                  <span className="text-slate-400 text-[10px] uppercase font-semibold block">Membership Start:</span>
+                  <span className="text-slate-400 text-[10px] uppercase font-semibold block">
+                    {isPT ? "PT Start Date:" : "Membership Start:"}
+                  </span>
                   <span className="font-medium text-slate-700">{formatDate(startDate)}</span>
                 </div>
               )}
               {endDate && (
                 <div>
-                  <span className="text-slate-400 text-[10px] uppercase font-semibold block">Membership End:</span>
+                  <span className="text-slate-400 text-[10px] uppercase font-semibold block">
+                    {isPT ? "PT Expiry Date:" : "Membership End:"}
+                  </span>
                   <span className="font-bold text-emerald-700">{formatDate(endDate)}</span>
                 </div>
               )}

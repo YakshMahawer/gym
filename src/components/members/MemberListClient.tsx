@@ -16,6 +16,7 @@ import {
   X,
   Sparkles,
   Phone,
+  Dumbbell,
 } from "lucide-react";
 import { formatINR, formatDate, calculateDaysRemaining } from "@/lib/utils";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
@@ -28,6 +29,7 @@ export function MemberListClient({ members }: MemberListClientProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [ptFilter, setPtFilter] = useState<"ALL" | "ACTIVE_PT" | "EXPIRED_PT" | "NO_PT">("ALL");
   const [onlyDues, setOnlyDues] = useState(false);
 
   // Payment modal state
@@ -38,6 +40,20 @@ export function MemberListClient({ members }: MemberListClientProps) {
     dueAmount: number;
   } | null>(null);
 
+  // Quick stats calculation
+  const now = new Date();
+  const activePTCount = members.filter((m) => {
+    const pt = m.ptSubscriptions?.[0];
+    return pt && pt.status === "ACTIVE" && new Date(pt.endDate) >= now;
+  }).length;
+
+  const expiredPTCount = members.filter((m) => {
+    const pt = m.ptSubscriptions?.[0];
+    return pt && (pt.status === "EXPIRED" || new Date(pt.endDate) < now);
+  }).length;
+
+  const noPTCount = members.filter((m) => !m.ptSubscriptions || m.ptSubscriptions.length === 0).length;
+
   const filteredMembers = members.filter((m) => {
     const q = search.toLowerCase();
     const matchesSearch =
@@ -47,7 +63,10 @@ export function MemberListClient({ members }: MemberListClientProps) {
       (m.email && m.email.toLowerCase().includes(q));
 
     const latestSub = m.subscriptions?.[0];
-    const dueAmount = latestSub?.dueAmount || 0;
+    const latestPT = m.ptSubscriptions?.[0];
+    const subDue = latestSub?.dueAmount || 0;
+    const ptDue = latestPT?.dueAmount || 0;
+    const totalDue = subDue + ptDue;
 
     const matchesStatus =
       statusFilter === "ALL"
@@ -58,9 +77,25 @@ export function MemberListClient({ members }: MemberListClientProps) {
         ? m.membershipStatus === "EXPIRED"
         : true;
 
-    const matchesDue = onlyDues ? dueAmount > 0 : true;
+    // PT Filter Match
+    const isPTActive = latestPT && latestPT.status === "ACTIVE" && new Date(latestPT.endDate) >= now;
+    const isPTExpired = latestPT && (latestPT.status === "EXPIRED" || new Date(latestPT.endDate) < now);
+    const hasNoPT = !latestPT;
 
-    return matchesSearch && matchesStatus && matchesDue;
+    const matchesPT =
+      ptFilter === "ALL"
+        ? true
+        : ptFilter === "ACTIVE_PT"
+        ? isPTActive
+        : ptFilter === "EXPIRED_PT"
+        ? isPTExpired
+        : ptFilter === "NO_PT"
+        ? hasNoPT
+        : true;
+
+    const matchesDue = onlyDues ? totalDue > 0 : true;
+
+    return matchesSearch && matchesStatus && matchesPT && matchesDue;
   });
 
   // Always keep sorting based on ID highest to lowest (descending numeric order: e.g. GYM-4233, GYM-1006, GYM-1005...)
@@ -84,7 +119,7 @@ export function MemberListClient({ members }: MemberListClientProps) {
             Members Directory
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Manage athlete records, check active subscription validity, and collect pending fees.
+            Manage athlete records, monitor active subscriptions, track Personal Training (PT) packages, and collect fees.
           </p>
         </div>
 
@@ -121,60 +156,126 @@ export function MemberListClient({ members }: MemberListClientProps) {
         </div>
 
         {/* Filter Pills with Horizontal Scroll on Mobile */}
-        <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100 overflow-x-auto text-xs">
-          <button
-            onClick={() => {
-              setStatusFilter("ALL");
-              setOnlyDues(false);
-            }}
-            className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition ${
-              statusFilter === "ALL" && !onlyDues
-                ? "bg-slate-900 text-white shadow-xs"
-                : "bg-slate-100 text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            All Members ({members.length})
-          </button>
+        <div className="space-y-2 pt-2 border-t border-slate-100 text-xs">
+          
+          {/* Tier 1: Membership Status Filters */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0 mr-1">
+              Membership:
+            </span>
 
-          <button
-            onClick={() => {
-              setStatusFilter("ACTIVE");
-              setOnlyDues(false);
-            }}
-            className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition ${
-              statusFilter === "ACTIVE" && !onlyDues
-                ? "bg-emerald-700 text-white shadow-xs"
-                : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-            }`}
-          >
-            Active
-          </button>
+            <button
+              onClick={() => {
+                setStatusFilter("ALL");
+                setOnlyDues(false);
+              }}
+              className={`px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap transition text-xs ${
+                statusFilter === "ALL" && !onlyDues
+                  ? "bg-slate-900 text-white shadow-xs"
+                  : "bg-slate-100 text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              All ({members.length})
+            </button>
 
-          <button
-            onClick={() => {
-              setStatusFilter("EXPIRED");
-              setOnlyDues(false);
-            }}
-            className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition ${
-              statusFilter === "EXPIRED" && !onlyDues
-                ? "bg-rose-700 text-white shadow-xs"
-                : "bg-rose-50 text-rose-700 hover:bg-rose-100"
-            }`}
-          >
-            Expired
-          </button>
+            <button
+              onClick={() => {
+                setStatusFilter("ACTIVE");
+                setOnlyDues(false);
+              }}
+              className={`px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap transition text-xs ${
+                statusFilter === "ACTIVE" && !onlyDues
+                  ? "bg-emerald-700 text-white shadow-xs"
+                  : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+              }`}
+            >
+              Active
+            </button>
 
-          <button
-            onClick={() => setOnlyDues(!onlyDues)}
-            className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition flex items-center gap-1 ${
-              onlyDues
-                ? "bg-amber-600 text-white shadow-xs"
-                : "bg-amber-50 text-amber-800 hover:bg-amber-100"
-            }`}
-          >
-            <AlertTriangle className="w-3.5 h-3.5" />
-            <span>Pending Dues Only</span>
-          </button>
+            <button
+              onClick={() => {
+                setStatusFilter("EXPIRED");
+                setOnlyDues(false);
+              }}
+              className={`px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap transition text-xs ${
+                statusFilter === "EXPIRED" && !onlyDues
+                  ? "bg-rose-700 text-white shadow-xs"
+                  : "bg-rose-50 text-rose-700 hover:bg-rose-100"
+              }`}
+            >
+              Expired
+            </button>
+
+            <button
+              onClick={() => setOnlyDues(!onlyDues)}
+              className={`px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap transition flex items-center gap-1 text-xs ${
+                onlyDues
+                  ? "bg-amber-600 text-white shadow-xs"
+                  : "bg-amber-50 text-amber-800 hover:bg-amber-100"
+              }`}
+            >
+              <AlertTriangle className="w-3 h-3" />
+              <span>Pending Dues</span>
+            </button>
+          </div>
+
+          {/* Tier 2: Personal Training (PT) Filters */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 border-t border-slate-50">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 shrink-0 mr-1 flex items-center gap-1">
+              <Dumbbell className="w-3 h-3" />
+              <span>PT Filter:</span>
+            </span>
+
+            <button
+              onClick={() => setPtFilter("ALL")}
+              className={`px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap transition text-xs ${
+                ptFilter === "ALL"
+                  ? "bg-indigo-600 text-white shadow-xs"
+                  : "bg-slate-100 text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              All Athletes
+            </button>
+
+            <button
+              onClick={() => setPtFilter("ACTIVE_PT")}
+              className={`px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap transition text-xs flex items-center gap-1 ${
+                ptFilter === "ACTIVE_PT"
+                  ? "bg-indigo-700 text-white shadow-xs"
+                  : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200"
+              }`}
+            >
+              <span>🎯 Has Active PT</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20">
+                {activePTCount}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setPtFilter("EXPIRED_PT")}
+              className={`px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap transition text-xs flex items-center gap-1 ${
+                ptFilter === "EXPIRED_PT"
+                  ? "bg-amber-700 text-white shadow-xs"
+                  : "bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200"
+              }`}
+            >
+              <span>⌛ PT Expired</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20">
+                {expiredPTCount}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setPtFilter("NO_PT")}
+              className={`px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap transition text-xs ${
+                ptFilter === "NO_PT"
+                  ? "bg-slate-700 text-white shadow-xs"
+                  : "bg-slate-100 text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              No PT ({noPTCount})
+            </button>
+          </div>
         </div>
       </div>
 
@@ -192,7 +293,14 @@ export function MemberListClient({ members }: MemberListClientProps) {
             <div className="p-3 grid grid-cols-1 gap-2.5 md:hidden">
               {sortedMembers.map((member) => {
                 const activeSub = member.subscriptions?.[0];
-                const dueAmount = activeSub?.dueAmount || 0;
+                const latestPT = member.ptSubscriptions?.[0];
+                const isPTActive = latestPT && latestPT.status === "ACTIVE" && new Date(latestPT.endDate) >= now;
+                const isPTExpired = latestPT && (latestPT.status === "EXPIRED" || new Date(latestPT.endDate) < now);
+
+                const subDue = activeSub?.dueAmount || 0;
+                const ptDue = latestPT?.dueAmount || 0;
+                const totalDue = subDue + ptDue;
+
                 const daysLeft = activeSub ? calculateDaysRemaining(activeSub.endDate) : 0;
                 const isExpired = daysLeft < 0 || member.membershipStatus === "EXPIRED";
 
@@ -219,9 +327,9 @@ export function MemberListClient({ members }: MemberListClientProps) {
                         </div>
                       </div>
 
-                      {dueAmount > 0 ? (
+                      {totalDue > 0 ? (
                         <span className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
-                          Due: {formatINR(dueAmount)}
+                          Due: {formatINR(totalDue)}
                         </span>
                       ) : (
                         <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
@@ -230,32 +338,54 @@ export function MemberListClient({ members }: MemberListClientProps) {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1.5 border-t border-slate-100">
-                      <div>
-                        <span className="font-semibold text-slate-700">{activeSub?.planName || "No Plan"}</span>
-                        {member.programme && (
-                          <span className="text-slate-400"> • {member.programme}</span>
-                        )}
-                      </div>
-                      <div>
-                        {activeSub ? (
-                          isExpired ? (
-                            <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">
-                              Expired
-                            </span>
-                          ) : daysLeft <= 7 ? (
-                            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
-                              {daysLeft}d left
-                            </span>
+                    {/* Subscriptions & PT Badges */}
+                    <div className="space-y-1.5 pt-1.5 border-t border-slate-100 text-[11px]">
+                      <div className="flex items-center justify-between text-slate-600">
+                        <div>
+                          <span className="font-semibold text-slate-800">{activeSub?.planName || "No Plan"}</span>
+                          {member.programme && (
+                            <span className="text-slate-400"> • {member.programme}</span>
+                          )}
+                        </div>
+                        <div>
+                          {activeSub ? (
+                            isExpired ? (
+                              <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">
+                                Expired
+                              </span>
+                            ) : daysLeft <= 7 ? (
+                              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
+                                {daysLeft}d left
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                {daysLeft}d left
+                              </span>
+                            )
                           ) : (
-                            <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
-                              {daysLeft}d left
-                            </span>
-                          )
-                        ) : (
-                          <span className="text-slate-400">No subscription</span>
-                        )}
+                            <span className="text-slate-400">No subscription</span>
+                          )}
+                        </div>
                       </div>
+
+                      {/* PT Badge in Mobile */}
+                      {latestPT && (
+                        <div className="flex items-center justify-between bg-indigo-50/60 p-1.5 rounded-lg border border-indigo-100/70">
+                          <span className="text-indigo-900 font-medium flex items-center gap-1 text-[10px]">
+                            <Dumbbell className="w-3 h-3 text-indigo-600" />
+                            <span>PT: <strong>{latestPT.trainerName || "Trainer"}</strong></span>
+                          </span>
+                          <span
+                            className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
+                              isPTActive
+                                ? "bg-indigo-600 text-white"
+                                : "bg-amber-200 text-amber-900"
+                            }`}
+                          >
+                            {isPTActive ? `${calculateDaysRemaining(latestPT.endDate)}d left` : "PT Expired"}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2 pt-1">
@@ -279,9 +409,9 @@ export function MemberListClient({ members }: MemberListClientProps) {
                         <span>WhatsApp</span>
                       </a>
 
-                      {dueAmount > 0 && (
+                      {totalDue > 0 && (
                         <button
-                          onClick={() => handleOpenPayment(member.id, member.fullName, dueAmount)}
+                          onClick={() => handleOpenPayment(member.id, member.fullName, totalDue)}
                           className="py-1.5 px-3 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs active:bg-rose-800"
                         >
                           Collect
@@ -307,7 +437,8 @@ export function MemberListClient({ members }: MemberListClientProps) {
                   <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-50/50">
                     <th className="py-2.5 px-4">Member ID</th>
                     <th className="py-2.5 px-4">Athlete Details</th>
-                    <th className="py-2.5 px-4">Active Plan</th>
+                    <th className="py-2.5 px-4">Membership Plan</th>
+                    <th className="py-2.5 px-4">PT Add-on</th>
                     <th className="py-2.5 px-4">Validity</th>
                     <th className="py-2.5 px-4">Payment Status</th>
                     <th className="py-2.5 px-4">Representative</th>
@@ -317,7 +448,14 @@ export function MemberListClient({ members }: MemberListClientProps) {
                 <tbody className="divide-y divide-slate-100 text-xs">
                   {sortedMembers.map((member) => {
                     const activeSub = member.subscriptions?.[0];
-                    const dueAmount = activeSub?.dueAmount || 0;
+                    const latestPT = member.ptSubscriptions?.[0];
+                    const isPTActive = latestPT && latestPT.status === "ACTIVE" && new Date(latestPT.endDate) >= now;
+                    const isPTExpired = latestPT && (latestPT.status === "EXPIRED" || new Date(latestPT.endDate) < now);
+
+                    const subDue = activeSub?.dueAmount || 0;
+                    const ptDue = latestPT?.dueAmount || 0;
+                    const totalDue = subDue + ptDue;
+
                     const daysLeft = activeSub ? calculateDaysRemaining(activeSub.endDate) : 0;
                     const isExpired = daysLeft < 0 || member.membershipStatus === "EXPIRED";
 
@@ -356,6 +494,31 @@ export function MemberListClient({ members }: MemberListClientProps) {
                           )}
                         </td>
 
+                        {/* PT Add-on Column */}
+                        <td className="py-3 px-4">
+                          {latestPT ? (
+                            <div>
+                              <span
+                                className={`text-[10px] font-semibold px-2 py-0.5 rounded-md inline-flex items-center gap-1 ${
+                                  isPTActive
+                                    ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                                    : "bg-amber-50 text-amber-700 border border-amber-200"
+                                }`}
+                              >
+                                <Dumbbell className="w-3 h-3" />
+                                <span>{isPTActive ? `PT: ${latestPT.trainerName || "Coach"}` : "PT Expired"}</span>
+                              </span>
+                              {isPTActive && (
+                                <span className="text-[10px] text-slate-400 block mt-0.5">
+                                  {calculateDaysRemaining(latestPT.endDate)}d left • {latestPT.completedSessions || 0}/{latestPT.totalSessions || 12} sess
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-slate-300 text-[11px] font-medium">-</span>
+                          )}
+                        </td>
+
                         {/* Validity */}
                         <td className="py-3 px-4">
                           {activeSub ? (
@@ -384,10 +547,10 @@ export function MemberListClient({ members }: MemberListClientProps) {
 
                         {/* Payment Status */}
                         <td className="py-3 px-4">
-                          {dueAmount > 0 ? (
+                          {totalDue > 0 ? (
                             <div>
                               <span className="font-bold text-rose-600">
-                                Due: {formatINR(dueAmount)}
+                                Due: {formatINR(totalDue)}
                               </span>
                             </div>
                           ) : (
@@ -400,15 +563,15 @@ export function MemberListClient({ members }: MemberListClientProps) {
 
                         {/* Representative */}
                         <td className="py-3 px-4 text-slate-500">
-                          {member.representative || "None"}
+                          {latestPT?.trainerName || member.representative || "None"}
                         </td>
 
                         {/* Actions */}
                         <td className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
-                            {dueAmount > 0 && (
+                            {totalDue > 0 && (
                               <button
-                                onClick={() => handleOpenPayment(member.id, member.fullName, dueAmount)}
+                                onClick={() => handleOpenPayment(member.id, member.fullName, totalDue)}
                                 className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold transition"
                               >
                                 Collect

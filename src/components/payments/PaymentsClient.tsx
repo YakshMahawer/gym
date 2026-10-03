@@ -38,6 +38,8 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
   const totalCollected = payments.reduce((acc, p) => acc + p.amount, 0);
   const totalPendingDue = dueSubscriptions.reduce((acc, s) => acc + s.dueAmount, 0);
 
+  const [typeFilter, setTypeFilter] = useState("ALL");
+
   const filteredPayments = payments.filter((p) => {
     const q = search.toLowerCase();
     const matchesSearch =
@@ -47,8 +49,18 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
       p.member.memberId.toLowerCase().includes(q);
 
     const matchesMethod = methodFilter === "ALL" ? true : p.paymentMethod === methodFilter;
+    const matchesType =
+      typeFilter === "ALL"
+        ? true
+        : typeFilter === "PERSONAL_TRAINING"
+        ? p.paymentType === "PERSONAL_TRAINING" || Boolean(p.ptSubscription)
+        : typeFilter === "MEMBERSHIP_FEE"
+        ? p.paymentType === "MEMBERSHIP_FEE"
+        : typeFilter === "DUE_CLEARANCE"
+        ? p.paymentType === "DUE_CLEARANCE"
+        : true;
 
-    return matchesSearch && matchesMethod;
+    return matchesSearch && matchesMethod && matchesType;
   });
 
   return (
@@ -60,7 +72,7 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
             Payments & Financial Ledger
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Collect member fees, clear pending balances, and access receipts.
+            Collect member fees, clear pending balances, track Personal Training (PT) payments, and access receipts.
           </p>
         </div>
 
@@ -97,7 +109,7 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
             </span>
             <div className="text-2xl sm:text-3xl font-bold text-rose-600 mt-1">{formatINR(totalPendingDue)}</div>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              Pending across {dueSubscriptions.length} subscriptions
+              Pending across {dueSubscriptions.length} items
             </p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
@@ -152,18 +164,31 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                 />
               </div>
 
-              <select
-                value={methodFilter}
-                onChange={(e) => setMethodFilter(e.target.value)}
-                className="px-3 py-2 text-xs font-semibold border border-slate-300 rounded-lg bg-white"
-              >
-                <option value="ALL">All Payment Modes</option>
-                <option value="UPI">UPI</option>
-                <option value="CASH">Cash</option>
-                <option value="CARD">Card</option>
-                <option value="BANK_TRANSFER">Bank Transfer</option>
-                <option value="CHEQUE">Cheque</option>
-              </select>
+              <div className="flex items-center gap-2 flex-wrap">
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="px-3 py-2 text-xs font-semibold border border-slate-300 rounded-lg bg-white"
+                >
+                  <option value="ALL">All Payment Types</option>
+                  <option value="MEMBERSHIP_FEE">Membership Fees</option>
+                  <option value="PERSONAL_TRAINING">Personal Training (PT)</option>
+                  <option value="DUE_CLEARANCE">Due Clearances</option>
+                </select>
+
+                <select
+                  value={methodFilter}
+                  onChange={(e) => setMethodFilter(e.target.value)}
+                  className="px-3 py-2 text-xs font-semibold border border-slate-300 rounded-lg bg-white"
+                >
+                  <option value="ALL">All Payment Modes</option>
+                  <option value="UPI">UPI</option>
+                  <option value="CASH">Cash</option>
+                  <option value="CARD">Card</option>
+                  <option value="BANK_TRANSFER">Bank Transfer</option>
+                  <option value="CHEQUE">Cheque</option>
+                </select>
+              </div>
             </div>
 
             {filteredPayments.length === 0 ? (
@@ -202,9 +227,22 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                       </div>
 
                       <div className="flex items-center justify-between pt-1">
-                        <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
-                          {pm.paymentMethod} • {pm.paymentType?.replace("_", " ")}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                            {pm.paymentMethod}
+                          </span>
+                          <span
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
+                              pm.paymentType === "PERSONAL_TRAINING" || pm.ptSubscription
+                                ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                                : "bg-slate-100 text-slate-700"
+                            }`}
+                          >
+                            {pm.paymentType === "PERSONAL_TRAINING" || pm.ptSubscription
+                              ? "🎯 PT Add-on"
+                              : pm.paymentType?.replace(/_/g, " ")}
+                          </span>
+                        </div>
 
                         <button
                           onClick={() => setSelectedReceipt(pm)}
@@ -227,6 +265,7 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                         <th className="py-2.5 px-4">Member</th>
                         <th className="py-2.5 px-4">Date</th>
                         <th className="py-2.5 px-4">Mode</th>
+                        <th className="py-2.5 px-4">Type</th>
                         <th className="py-2.5 px-4">Amount</th>
                         <th className="py-2.5 px-4 text-right">Receipt</th>
                       </tr>
@@ -251,10 +290,20 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                           <td className="py-3 px-4 text-slate-500">
                             {formatDateTime(pm.paymentDate)}
                           </td>
+                          <td className="py-3 px-4 font-medium text-slate-700">
+                            {pm.paymentMethod}
+                          </td>
                           <td className="py-3 px-4">
-                            <span className="font-medium text-slate-700 block">{pm.paymentMethod}</span>
-                            <span className="text-[10px] text-slate-400">
-                              {pm.paymentType?.replace("_", " ")}
+                            <span
+                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-md inline-block ${
+                                pm.paymentType === "PERSONAL_TRAINING" || pm.ptSubscription
+                                  ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                                  : "bg-slate-100 text-slate-700"
+                              }`}
+                            >
+                              {pm.paymentType === "PERSONAL_TRAINING" || pm.ptSubscription
+                                ? "🎯 PT Add-on"
+                                : pm.paymentType?.replace(/_/g, " ")}
                             </span>
                           </td>
                           <td className="py-3 px-4 font-bold text-emerald-700">

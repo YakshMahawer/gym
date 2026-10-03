@@ -37,6 +37,14 @@ enum EnquiryStatus {
   LOST
 }
 
+enum PTStatus {
+  ACTIVE
+  EXPIRED
+  FROZEN
+  COMPLETED
+  CANCELLED
+}
+
 model Member {
   id               String           @id @default(cuid())
   memberId         String           @unique
@@ -79,6 +87,7 @@ model Member {
   membershipStatus   MembershipStatus @default(ACTIVE)
   
   subscriptions      MemberSubscription[]
+  ptSubscriptions    MemberPT[]
   payments           Payment[]
 
   createdAt          DateTime         @default(now())
@@ -126,6 +135,32 @@ model MemberSubscription {
   @@index([endDate])
 }
 
+model MemberPT {
+  id                String    @id @default(cuid())
+  memberId          String
+  member            Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  planName          String
+  trainerName       String?
+  totalSessions     Int?      @default(12)
+  completedSessions Int?      @default(0)
+  startDate         DateTime
+  endDate           DateTime
+  totalAmount       Float
+  paidAmount        Float     @default(0)
+  dueAmount         Float     @default(0)
+  status            PTStatus  @default(ACTIVE)
+  notes             String?
+
+  payments          Payment[]
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([memberId])
+  @@index([status])
+  @@index([endDate])
+}
+
 model Payment {
   id             String              @id @default(cuid())
   receiptNo      String              @unique
@@ -133,6 +168,8 @@ model Payment {
   member         Member              @relation(fields: [memberId], references: [id], onDelete: Cascade)
   subscriptionId String?
   subscription   MemberSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  ptId           String?
+  ptSubscription MemberPT?           @relation(fields: [ptId], references: [id], onDelete: SetNull)
   amount         Float
   paymentDate    DateTime            @default(now())
   paymentMethod  PaymentMethod       @default(UPI)

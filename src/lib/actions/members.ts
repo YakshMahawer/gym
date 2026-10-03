@@ -75,6 +75,7 @@ export async function getNextMemberId(): Promise<string> {
 export async function getMembers(filters?: {
   search?: string;
   status?: string;
+  ptStatus?: string;
   hasDue?: boolean;
 }) {
   try {
@@ -93,18 +94,46 @@ export async function getMembers(filters?: {
       whereClause.membershipStatus = filters.status as MembershipStatus;
     }
 
+    if (filters?.ptStatus && filters.ptStatus !== "ALL") {
+      const now = new Date();
+      if (filters.ptStatus === "ACTIVE_PT") {
+        whereClause.ptSubscriptions = {
+          some: {
+            status: "ACTIVE",
+            endDate: { gte: now },
+          },
+        };
+      } else if (filters.ptStatus === "EXPIRED_PT") {
+        whereClause.ptSubscriptions = {
+          some: {
+            OR: [
+              { status: "EXPIRED" },
+              { endDate: { lt: now } },
+            ],
+          },
+        };
+      } else if (filters.ptStatus === "NO_PT") {
+        whereClause.ptSubscriptions = {
+          none: {},
+        };
+      }
+    }
+
     if (filters?.hasDue) {
-      whereClause.subscriptions = {
-        some: {
-          dueAmount: { gt: 0 },
-        },
-      };
+      whereClause.OR = [
+        { subscriptions: { some: { dueAmount: { gt: 0 } } } },
+        { ptSubscriptions: { some: { dueAmount: { gt: 0 } } } },
+      ];
     }
 
     const members = await prisma.member.findMany({
       where: whereClause,
       include: {
         subscriptions: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+        ptSubscriptions: {
           orderBy: { createdAt: "desc" },
           take: 1,
         },
@@ -185,8 +214,20 @@ export async function getMemberById(id: string) {
             },
           },
         },
+        ptSubscriptions: {
+          orderBy: { createdAt: "desc" },
+          include: {
+            payments: {
+              orderBy: { paymentDate: "desc" },
+            },
+          },
+        },
         payments: {
           orderBy: { paymentDate: "desc" },
+          include: {
+            subscription: true,
+            ptSubscription: true,
+          },
         },
       },
     });
