@@ -70,6 +70,11 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
     return matchesSearch && matchesMethod && matchesType;
   });
 
+  // Strict sequential order by receipt number (highest / newest receipt ID first)
+  filteredPayments.sort((a, b) =>
+    b.receiptNo.localeCompare(a.receiptNo, undefined, { numeric: true, sensitivity: "base" })
+  );
+
   const handleResequenceAll = async () => {
     if (
       confirm(
@@ -291,22 +296,13 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => setEditingPayment(pm)}
-                            className="px-2.5 py-1 bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 rounded-lg text-xs font-semibold inline-flex items-center gap-1"
-                          >
-                            <Pencil className="w-3 h-3" />
-                            <span>Edit No</span>
-                          </button>
-                          <button
-                            onClick={() => setSelectedReceipt(pm)}
-                            className="px-2.5 py-1 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg text-xs font-semibold inline-flex items-center gap-1 active:bg-slate-100"
-                          >
-                            <Printer className="w-3.5 h-3.5" />
-                            <span>Receipt</span>
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => setSelectedReceipt(pm)}
+                          className="px-2.5 py-1 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg text-xs font-semibold inline-flex items-center gap-1 active:bg-slate-100"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Receipt</span>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -377,23 +373,13 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                             {formatINR(pm.amount)}
                           </td>
                           <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={() => setEditingPayment(pm)}
-                                className="px-2 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 rounded text-xs font-medium inline-flex items-center gap-1 transition"
-                                title="Edit Receipt Number"
-                              >
-                                <Pencil className="w-3 h-3" />
-                                <span>Edit No</span>
-                              </button>
-                              <button
-                                onClick={() => setSelectedReceipt(pm)}
-                                className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold inline-flex items-center gap-1 transition"
-                              >
-                                <Printer className="w-3 h-3 text-amber-400" />
-                                <span>Receipt</span>
-                              </button>
-                            </div>
+                            <button
+                              onClick={() => setSelectedReceipt(pm)}
+                              className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold inline-flex items-center gap-1 transition"
+                            >
+                              <Printer className="w-3 h-3 text-amber-400" />
+                              <span>Receipt</span>
+                            </button>
                           </td>
                         </tr>
                       ))}

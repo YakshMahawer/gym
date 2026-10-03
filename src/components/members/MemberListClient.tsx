@@ -315,12 +315,23 @@ export function MemberListClient({ members }: MemberListClientProps) {
                           #{member.memberId}
                         </span>
                         <div>
-                          <Link
-                            href={`/members/${member.id}`}
-                            className="font-bold text-sm text-slate-900 hover:text-blue-600 block leading-tight"
-                          >
-                            {member.fullName}
-                          </Link>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Link
+                              href={`/members/${member.id}`}
+                              className="font-bold text-sm text-slate-900 hover:text-blue-600 leading-tight"
+                            >
+                              {member.fullName}
+                            </Link>
+                            {isPTActive && (
+                              <span
+                                className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 border border-indigo-200/80 px-1.5 py-0.2 rounded text-[10px] font-bold"
+                                title={`Active PT (${latestPT?.trainerName || "General"})`}
+                              >
+                                <Dumbbell className="w-2.5 h-2.5 text-indigo-600" />
+                                <span>PT</span>
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[11px] text-slate-400 font-mono">
                             {member.phone}
                           </span>
@@ -435,13 +446,12 @@ export function MemberListClient({ members }: MemberListClientProps) {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-50/50">
-                    <th className="py-2.5 px-4">Member ID</th>
-                    <th className="py-2.5 px-4">Athlete Details</th>
-                    <th className="py-2.5 px-4">Membership Plan</th>
-                    <th className="py-2.5 px-4">PT Add-on</th>
+                    <th className="py-2.5 px-4">ID</th>
+                    <th className="py-2.5 px-4">Name</th>
+                    <th className="py-2.5 px-4">Mobile</th>
+                    <th className="py-2.5 px-4">Plan</th>
                     <th className="py-2.5 px-4">Validity</th>
                     <th className="py-2.5 px-4">Payment Status</th>
-                    <th className="py-2.5 px-4">Representative</th>
                     <th className="py-2.5 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -462,60 +472,50 @@ export function MemberListClient({ members }: MemberListClientProps) {
                     return (
                       <tr key={member.id} className="hover:bg-slate-50/60 transition">
                         
-                        {/* Member Sequential ID */}
+                        {/* ID */}
                         <td className="py-3 px-4">
                           <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded text-xs">
-                            {member.memberId}
+                            #{member.memberId}
                           </span>
                         </td>
 
-                        {/* Member Info */}
+                        {/* Name + Active PT Symbol */}
                         <td className="py-3 px-4">
-                          <Link
-                            href={`/members/${member.id}`}
-                            className="font-semibold text-slate-900 hover:text-blue-600 block"
-                          >
-                            {member.fullName}
-                          </Link>
-                          <span className="text-[11px] text-slate-400 font-mono">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Link
+                              href={`/members/${member.id}`}
+                              className="font-semibold text-slate-900 hover:text-blue-600"
+                            >
+                              {member.fullName}
+                            </Link>
+                            {isPTActive && (
+                              <span
+                                className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 border border-indigo-200/80 px-1.5 py-0.5 rounded text-[10px] font-bold shadow-2xs"
+                                title={`Active Personal Training (Trainer: ${latestPT?.trainerName || "General"})`}
+                              >
+                                <Dumbbell className="w-3 h-3 text-indigo-600" />
+                                <span>PT Active</span>
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Mobile */}
+                        <td className="py-3 px-4">
+                          <span className="font-mono text-slate-600 font-medium">
                             {member.phone}
                           </span>
                         </td>
 
-                        {/* Active Plan */}
+                        {/* Plan */}
                         <td className="py-3 px-4">
-                          <span className="font-medium text-slate-700 block">
+                          <span className="font-medium text-slate-800 block">
                             {activeSub?.planName || "No Plan"}
                           </span>
                           {member.programme && (
                             <span className="text-[11px] text-slate-400">
                               {member.programme}
                             </span>
-                          )}
-                        </td>
-
-                        {/* PT Add-on Column */}
-                        <td className="py-3 px-4">
-                          {latestPT ? (
-                            <div>
-                              <span
-                                className={`text-[10px] font-semibold px-2 py-0.5 rounded-md inline-flex items-center gap-1 ${
-                                  isPTActive
-                                    ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                                    : "bg-amber-50 text-amber-700 border border-amber-200"
-                                }`}
-                              >
-                                <Dumbbell className="w-3 h-3" />
-                                <span>{isPTActive ? `PT: ${latestPT.trainerName || "Coach"}` : "PT Expired"}</span>
-                              </span>
-                              {isPTActive && (
-                                <span className="text-[10px] text-slate-400 block mt-0.5">
-                                  {calculateDaysRemaining(latestPT.endDate)}d left • {latestPT.completedSessions || 0}/{latestPT.totalSessions || 12} sess
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-slate-300 text-[11px] font-medium">-</span>
                           )}
                         </td>
 
@@ -548,22 +548,15 @@ export function MemberListClient({ members }: MemberListClientProps) {
                         {/* Payment Status */}
                         <td className="py-3 px-4">
                           {totalDue > 0 ? (
-                            <div>
-                              <span className="font-bold text-rose-600">
-                                Due: {formatINR(totalDue)}
-                              </span>
-                            </div>
+                            <span className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md inline-block">
+                              Due: {formatINR(totalDue)}
+                            </span>
                           ) : (
-                            <span className="text-[11px] font-medium text-emerald-700 inline-flex items-center gap-1">
-                              <CheckCircle className="w-3 h-3" />
+                            <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3 text-emerald-600" />
                               <span>Paid</span>
                             </span>
                           )}
-                        </td>
-
-                        {/* Representative */}
-                        <td className="py-3 px-4 text-slate-500">
-                          {latestPT?.trainerName || member.representative || "None"}
                         </td>
 
                         {/* Actions */}

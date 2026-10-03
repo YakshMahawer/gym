@@ -143,11 +143,15 @@ export async function getPayments(filters?: {
         },
       },
       orderBy: [
-        { paymentDate: "desc" },
-        { createdAt: "desc" },
+        { receiptNo: "desc" },
       ],
       take: filters?.limit || 200,
     });
+
+    // Natural sort by receipt number descending (highest sequence first)
+    payments.sort((a, b) =>
+      b.receiptNo.localeCompare(a.receiptNo, undefined, { numeric: true, sensitivity: "base" })
+    );
 
     return payments;
   } catch (error) {
