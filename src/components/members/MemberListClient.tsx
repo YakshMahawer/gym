@@ -55,6 +55,9 @@ export function MemberListClient({ members }: MemberListClientProps) {
   }).length;
 
   const noPTCount = members.filter((m) => !m.ptSubscriptions || m.ptSubscriptions.length === 0).length;
+  const inactiveCount = members.filter(
+    (m) => m.membershipStatus === "INACTIVE" || !m.subscriptions || m.subscriptions.length === 0
+  ).length;
 
   const filteredMembers = members.filter((m) => {
     const q = search.toLowerCase();
@@ -75,6 +78,8 @@ export function MemberListClient({ members }: MemberListClientProps) {
         ? true
         : statusFilter === "ACTIVE"
         ? m.membershipStatus === "ACTIVE"
+        : statusFilter === "INACTIVE"
+        ? m.membershipStatus === "INACTIVE" || !m.subscriptions || m.subscriptions.length === 0
         : statusFilter === "EXPIRED"
         ? m.membershipStatus === "EXPIRED"
         : true;
@@ -266,6 +271,20 @@ export function MemberListClient({ members }: MemberListClientProps) {
               }`}
             >
               Active
+            </button>
+
+            <button
+              onClick={() => {
+                setStatusFilter("INACTIVE");
+                setOnlyDues(false);
+              }}
+              className={`px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap transition text-xs ${
+                statusFilter === "INACTIVE" && !onlyDues
+                  ? "bg-slate-800 text-white shadow-xs"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              }`}
+            >
+              Inactive / No Plan ({inactiveCount})
             </button>
 
             <button
@@ -617,7 +636,7 @@ export function MemberListClient({ members }: MemberListClientProps) {
                               )}
                             </div>
                           ) : (
-                            <span className="text-slate-400">-</span>
+                            <span className="text-slate-400 italic text-[11px]">No Plan Assigned</span>
                           )}
                         </td>
 
@@ -626,6 +645,10 @@ export function MemberListClient({ members }: MemberListClientProps) {
                           {totalDue > 0 ? (
                             <span className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md inline-block">
                               Due: {formatINR(totalDue)}
+                            </span>
+                          ) : !activeSub ? (
+                            <span className="text-[11px] font-medium text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md inline-block">
+                              Unassigned
                             </span>
                           ) : (
                             <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
@@ -638,14 +661,21 @@ export function MemberListClient({ members }: MemberListClientProps) {
                         {/* Actions */}
                         <td className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
-                            {totalDue > 0 && (
+                            {!activeSub ? (
+                              <Link
+                                href={`/members/${member.id}`}
+                                className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold transition inline-flex items-center gap-1"
+                              >
+                                <span>Assign Plan</span>
+                              </Link>
+                            ) : totalDue > 0 ? (
                               <button
                                 onClick={() => handleOpenPayment(member.id, member.fullName, totalDue)}
                                 className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold transition"
                               >
                                 Collect
                               </button>
-                            )}
+                            ) : null}
 
                             <a
                               href={`https://wa.me/91${member.phone}`}

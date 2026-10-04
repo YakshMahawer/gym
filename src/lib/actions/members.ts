@@ -298,12 +298,15 @@ export async function createMember(input: CreateMemberInput) {
         qPregnant: Boolean(input.qPregnant),
         qOver65: Boolean(input.qOver65),
         qOtherHealthIssues: input.qOtherHealthIssues || null,
-        membershipStatus: "ACTIVE",
+        membershipStatus: Boolean(input.planName && input.planName.trim() && input.totalAmount && Number(input.totalAmount) > 0)
+          ? "ACTIVE"
+          : "INACTIVE",
       },
     });
 
-    // Create initial subscription and payment if plan selected
-    if (input.planName && input.totalAmount) {
+    // Create initial subscription and payment ONLY IF plan is selected and filled
+    const hasValidPlan = Boolean(input.planName && input.planName.trim() && input.totalAmount && Number(input.totalAmount) > 0);
+    if (hasValidPlan) {
       const totalAmount = Number(input.totalAmount);
       const paidAmount = Number(input.paidAmount || 0);
       const dueAmount = Math.max(0, totalAmount - paidAmount);
@@ -314,7 +317,7 @@ export async function createMember(input: CreateMemberInput) {
         data: {
           memberId: member.id,
           planId: input.planId || null,
-          planName: input.planName,
+          planName: input.planName!,
           startDate,
           endDate,
           totalAmount,

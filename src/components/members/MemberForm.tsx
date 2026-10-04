@@ -130,12 +130,12 @@ export function MemberForm({
     qOtherHealthIssues: initialData?.qOtherHealthIssues || "",
 
     // Membership Plan
-    planId: matchedPlan?.id || (isEdit ? "" : (plans[0]?.id || "")),
-    planName: matchedPlan?.name || (isEdit ? "" : (plans[0]?.name || "1 Month")),
-    startDate: defaultCalculatedStartDate,
-    endDate: defaultCalculatedEndDate,
-    totalAmount: matchedPlan?.price || (isEdit ? 0 : (plans[0]?.price || 4000)),
-    paidAmount: isEdit ? (activeSub?.paidAmount || 0) : 0, // Default to 0 (DUE) for new member so payment is not assumed done unless explicitly entered!
+    planId: matchedPlan?.id || "",
+    planName: matchedPlan?.name || "",
+    startDate: matchedPlan ? defaultCalculatedStartDate : "",
+    endDate: matchedPlan ? defaultCalculatedEndDate : "",
+    totalAmount: matchedPlan?.price || 0,
+    paidAmount: isEdit ? (activeSub?.paidAmount || 0) : 0,
     paymentMethod: "UPI",
     paymentNotes: isExistingOngoing ? "Membership renewal extension" : "Enrollment payment",
   });
