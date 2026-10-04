@@ -169,9 +169,13 @@ export function AddPaymentModal({
                 type="number"
                 min="1"
                 required
-                placeholder="e.g. 2500"
-                value={formData.amount || ""}
-                onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
+                placeholder="0"
+                value={formData.amount === 0 ? "" : formData.amount}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/^0+(?=\d)/, "");
+                  setFormData({ ...formData, amount: raw === "" ? 0 : Number(raw) });
+                }}
                 className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 font-bold text-slate-900"
               />
             </div>

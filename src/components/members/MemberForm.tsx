@@ -892,10 +892,13 @@ export function MemberForm({
                     <label className="block text-[11px] font-semibold text-slate-600 mb-1">Plan Fee (₹)</label>
                     <input
                       type="number"
-                      value={formData.totalAmount || 0}
-                      onChange={(e) =>
-                        setFormData({ ...formData, totalAmount: Number(e.target.value) })
-                      }
+                      placeholder="0"
+                      value={formData.totalAmount === 0 ? "" : (formData.totalAmount ?? "")}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/^0+(?=\d)/, "");
+                        setFormData({ ...formData, totalAmount: raw === "" ? 0 : Number(raw) });
+                      }}
                       className="w-full px-3 py-1.5 text-xs sm:text-sm border border-slate-300 rounded-lg font-semibold text-slate-800"
                     />
                   </div>
@@ -904,10 +907,13 @@ export function MemberForm({
                     <label className="block text-[11px] font-semibold text-slate-600 mb-1">Amount Paid (₹)</label>
                     <input
                       type="number"
-                      value={formData.paidAmount ?? 0}
-                      onChange={(e) =>
-                        setFormData({ ...formData, paidAmount: Number(e.target.value) })
-                      }
+                      placeholder="0"
+                      value={formData.paidAmount === 0 ? "" : (formData.paidAmount ?? "")}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/^0+(?=\d)/, "");
+                        setFormData({ ...formData, paidAmount: raw === "" ? 0 : Number(raw) });
+                      }}
                       className="w-full px-3 py-1.5 text-xs sm:text-sm border border-slate-300 rounded-lg font-semibold text-emerald-700"
                     />
                   </div>

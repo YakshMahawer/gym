@@ -358,9 +358,12 @@ export function AddPTModal({
                 <input
                   type="number"
                   min="0"
-                  value={totalAmount}
+                  placeholder="0"
+                  value={totalAmount === 0 ? "" : totalAmount}
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => {
-                    const val = Number(e.target.value);
+                    const raw = e.target.value.replace(/^0+(?=\d)/, "");
+                    const val = raw === "" ? 0 : Number(raw);
                     setTotalAmount(val);
                     if (paidAmount > val) setPaidAmount(val);
                   }}
@@ -376,9 +379,14 @@ export function AddPTModal({
                 <input
                   type="number"
                   min="0"
-                  max={totalAmount}
-                  value={paidAmount}
-                  onChange={(e) => setPaidAmount(Number(e.target.value))}
+                  max={totalAmount || undefined}
+                  placeholder="0"
+                  value={paidAmount === 0 ? "" : paidAmount}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/^0+(?=\d)/, "");
+                    setPaidAmount(raw === "" ? 0 : Number(raw));
+                  }}
                   className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 text-xs sm:text-sm font-bold text-emerald-700"
                   required
                 />

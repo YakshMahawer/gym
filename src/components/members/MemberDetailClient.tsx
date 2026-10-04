@@ -790,8 +790,13 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Package Fee (₹)</label>
                   <input
                     type="number"
-                    value={renewalTotal}
-                    onChange={(e) => setRenewalTotal(Number(e.target.value))}
+                    placeholder="0"
+                    value={renewalTotal === 0 ? "" : renewalTotal}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/^0+(?=\d)/, "");
+                      setRenewalTotal(raw === "" ? 0 : Number(raw));
+                    }}
                     className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg font-semibold"
                   />
                 </div>
@@ -800,8 +805,13 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Paid Today (₹)</label>
                   <input
                     type="number"
-                    value={renewalPaid}
-                    onChange={(e) => setRenewalPaid(Number(e.target.value))}
+                    placeholder="0"
+                    value={renewalPaid === 0 ? "" : renewalPaid}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/^0+(?=\d)/, "");
+                      setRenewalPaid(raw === "" ? 0 : Number(raw));
+                    }}
                     className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg font-semibold text-emerald-700"
                   />
                 </div>
