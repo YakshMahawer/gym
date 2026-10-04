@@ -340,10 +340,9 @@ export async function deletePayment(paymentId: string) {
   }
 }
 
-export async function updateReceiptNumber(input: {
+export async function updatePaymentDate(input: {
   paymentId: string;
-  newReceiptNo: string;
-  resequenceSubsequent?: boolean;
+  newPaymentDate: string | Date;
 }) {
   try {
     const targetPayment = await prisma.payment.findUnique({
@@ -355,78 +354,21 @@ export async function updateReceiptNumber(input: {
       return { success: false, error: "Payment record not found" };
     }
 
-    const desiredReceiptNo = input.newReceiptNo.trim();
-    if (!desiredReceiptNo) {
-      return { success: false, error: "Receipt number cannot be empty" };
+    const newDate = typeof input.newPaymentDate === "string"
+      ? new Date(input.newPaymentDate.includes("T") ? input.newPaymentDate : `${input.newPaymentDate}T00:00:00.000Z`)
+      : new Date(input.newPaymentDate);
+
+    if (isNaN(newDate.getTime())) {
+      return { success: false, error: "Invalid payment date" };
     }
 
-    if (targetPayment.receiptNo === desiredReceiptNo) {
-      return { success: true, count: 0, payment: targetPayment };
-    }
+    // 1. Update target payment's paymentDate
+    await prisma.payment.update({
+      where: { id: targetPayment.id },
+      data: { paymentDate: newDate },
+    });
 
-    const resequence = input.resequenceSubsequent ?? true;
-
-    // Parse prefix and number: e.g. "REC-261003-002" -> prefix="REC-261003-", number=2, padLength=3
-    const match = desiredReceiptNo.match(/^(.*?)(\d+)$/);
-    if (!match || !resequence) {
-      // Direct update or swap if exists
-      const existing = await prisma.payment.findUnique({
-        where: { receiptNo: desiredReceiptNo },
-      });
-      if (existing && existing.id !== targetPayment.id) {
-        const timestamp = Date.now();
-        await prisma.$transaction([
-          prisma.payment.update({
-            where: { id: targetPayment.id },
-            data: { receiptNo: `__TEMP_SWAP_${timestamp}_1__` },
-          }),
-          prisma.payment.update({
-            where: { id: existing.id },
-            data: { receiptNo: `__TEMP_SWAP_${timestamp}_2__` },
-          }),
-          prisma.payment.update({
-            where: { id: targetPayment.id },
-            data: { receiptNo: desiredReceiptNo },
-          }),
-          prisma.payment.update({
-            where: { id: existing.id },
-            data: { receiptNo: targetPayment.receiptNo },
-          }),
-        ]);
-
-        try {
-          revalidatePath("/payments");
-          revalidatePath(`/members/${targetPayment.memberId}`);
-          revalidatePath("/members");
-          revalidatePath("/reports");
-          revalidatePath("/");
-        } catch {}
-
-        return { success: true, count: 2 };
-      }
-
-      const updated = await prisma.payment.update({
-        where: { id: targetPayment.id },
-        data: { receiptNo: desiredReceiptNo },
-      });
-
-      try {
-        revalidatePath("/payments");
-        revalidatePath(`/members/${targetPayment.memberId}`);
-        revalidatePath("/members");
-        revalidatePath("/reports");
-        revalidatePath("/");
-      } catch {}
-
-      return { success: true, count: 1, payment: updated };
-    }
-
-    const prefix = match[1];
-    const startingNumStr = match[2];
-    const padLength = Math.max(3, startingNumStr.length);
-    const startNum = parseInt(startingNumStr, 10);
-
-    // Fetch ALL payments from DB ordered chronologically
+    // 2. Automatically resequence all receipts chronologically by paymentDate so receipt IDs match their dates
     const allPayments = await prisma.payment.findMany({
       orderBy: [
         { paymentDate: "asc" },
@@ -434,74 +376,49 @@ export async function updateReceiptNumber(input: {
       ],
     });
 
-    // 1. Assign targetPayment the exact desired receipt number
-    const newAssignments = new Map<string, string>();
-    newAssignments.set(targetPayment.id, `${prefix}${startNum.toString().padStart(padLength, "0")}`);
-
-    // 2. Identify all other payments that need to shift
-    const otherPayments = allPayments.filter((p) => p.id !== targetPayment.id);
-    const affectedPayments: typeof otherPayments = [];
-
-    for (const p of otherPayments) {
-      const pMatch = p.receiptNo.match(/^(.*?)(\d+)$/);
-      if (pMatch && pMatch[1] === prefix) {
-        const pNum = parseInt(pMatch[2], 10);
-        if (pNum >= startNum) {
-          affectedPayments.push(p);
-        }
-      } else if (
-        p.paymentDate > targetPayment.paymentDate ||
-        (p.paymentDate.getTime() === targetPayment.paymentDate.getTime() && p.createdAt >= targetPayment.createdAt)
-      ) {
-        affectedPayments.push(p);
-      }
-    }
-
-    // Sort affected payments chronologically
-    affectedPayments.sort((a, b) => {
-      const dateDiff = a.paymentDate.getTime() - b.paymentDate.getTime();
-      if (dateDiff !== 0) return dateDiff;
-      return a.createdAt.getTime() - b.createdAt.getTime();
-    });
-
-    let nextSeq = startNum + 1;
-    for (const p of affectedPayments) {
-      if (!newAssignments.has(p.id)) {
-        newAssignments.set(p.id, `${prefix}${nextSeq.toString().padStart(padLength, "0")}`);
-        nextSeq++;
-      }
-    }
-
-    // Prepare list of payments to update
+    const dateCounters: Record<string, number> = {};
     const toUpdate: { id: string; oldReceiptNo: string; newReceiptNo: string }[] = [];
-    for (const [id, newNo] of newAssignments.entries()) {
-      const original = allPayments.find((p) => p.id === id);
-      if (original) {
+
+    for (const p of allPayments) {
+      const d = p.paymentDate;
+      const dateStr = d.toISOString().slice(2, 10).replace(/-/g, ""); // YYMMDD
+      dateCounters[dateStr] = (dateCounters[dateStr] || 0) + 1;
+      const seq = dateCounters[dateStr].toString().padStart(3, "0");
+      const generatedNo = `REC-${dateStr}-${seq}`;
+
+      if (p.receiptNo !== generatedNo) {
         toUpdate.push({
-          id,
-          oldReceiptNo: original.receiptNo,
-          newReceiptNo: newNo,
+          id: p.id,
+          oldReceiptNo: p.receiptNo,
+          newReceiptNo: generatedNo,
         });
       }
     }
 
-    // Perform two-phase batch transaction with temporary identifiers
-    const timestamp = Date.now();
-    const phase1Updates = toUpdate.map((item, i) =>
-      prisma.payment.update({
-        where: { id: item.id },
-        data: { receiptNo: `__TEMP_RENUM_${timestamp}_${i}__` },
-      })
-    );
+    if (toUpdate.length > 0) {
+      const timestamp = Date.now();
+      const phase1All = toUpdate.map((item, i) =>
+        prisma.payment.update({
+          where: { id: item.id },
+          data: { receiptNo: `__TEMP_DATE_${timestamp}_${i}__` },
+        })
+      );
 
-    const phase2Updates = toUpdate.map((item) =>
-      prisma.payment.update({
-        where: { id: item.id },
-        data: { receiptNo: item.newReceiptNo },
-      })
-    );
+      const phase2All = toUpdate.map((item) =>
+        prisma.payment.update({
+          where: { id: item.id },
+          data: { receiptNo: item.newReceiptNo },
+        })
+      );
 
-    await prisma.$transaction([...phase1Updates, ...phase2Updates]);
+      await prisma.$transaction([...phase1All, ...phase2All]);
+    }
+
+    // Fetch the updated payment to return its new receipt number
+    const updatedPayment = await prisma.payment.findUnique({
+      where: { id: targetPayment.id },
+      include: { member: true },
+    });
 
     try {
       revalidatePath("/payments");
@@ -513,12 +430,12 @@ export async function updateReceiptNumber(input: {
 
     return {
       success: true,
-      count: toUpdate.length,
-      updatedList: toUpdate,
+      payment: updatedPayment,
+      resequencedCount: toUpdate.length,
     };
   } catch (error: any) {
-    console.error("Update receipt number error:", error);
-    return { success: false, error: error.message || "Failed to update receipt numbers" };
+    console.error("Update payment date error:", error);
+    return { success: false, error: error.message || "Failed to update payment date" };
   }
 }
 

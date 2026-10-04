@@ -14,6 +14,7 @@ import {
   CreditCard,
   Plus,
   Edit,
+  Pencil,
   Trash2,
   AlertTriangle,
   CheckCircle,
@@ -29,6 +30,7 @@ import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
 import { AddPTModal } from "@/components/modals/AddPTModal";
 import { ReceiptModal } from "@/components/payments/ReceiptModal";
 import { DeleteReceiptModal } from "@/components/modals/DeleteReceiptModal";
+import { EditPaymentDateModal } from "@/components/modals/EditPaymentDateModal";
 import { renewSubscription, deleteMember } from "@/lib/actions/members";
 import { updatePTSessions } from "@/lib/actions/pt";
 import { PaymentMethod } from "@prisma/client";
@@ -46,6 +48,7 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
   const [renewalModalOpen, setRenewalModalOpen] = useState(false);
   const [ptModalOpen, setPtModalOpen] = useState(false);
   const [selectedReceiptForPrint, setSelectedReceiptForPrint] = useState<any | null>(null);
+  const [editingPayment, setEditingPayment] = useState<any | null>(null);
   const [deletingPayment, setDeletingPayment] = useState<any | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -592,30 +595,48 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                       {member.payments.map((pm: any) => (
                         <div
                           key={pm.id}
-                          className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/70 space-y-2"
+                          className="p-3 bg-slate-50/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/70 dark:border-slate-700/70 space-y-2"
                         >
                           <div className="flex items-start justify-between">
                             <div>
-                              <span className="font-mono font-bold text-xs text-slate-900 block">
+                              <span className="font-mono font-bold text-xs text-slate-900 dark:text-white block">
                                 {pm.receiptNo}
                               </span>
-                              <span className="text-[10px] text-slate-400">
-                                {formatDateTime(pm.paymentDate)}
-                              </span>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-[10px] text-slate-400 dark:text-slate-400">
+                                  {formatDateTime(pm.paymentDate)}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setEditingPayment({
+                                      ...pm,
+                                      member: {
+                                        fullName: member.fullName,
+                                        memberId: member.memberId,
+                                      },
+                                    })
+                                  }
+                                  className="p-0.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition"
+                                  title="Change Payment Date"
+                                >
+                                  <Pencil className="w-2.5 h-2.5" />
+                                </button>
+                              </div>
                             </div>
-                            <span className="text-sm font-bold text-emerald-700">
+                            <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
                               {formatINR(pm.amount)}
                             </span>
                           </div>
 
-                          <div className="flex items-center justify-between text-[11px] text-slate-600 pt-1 border-t border-slate-200/50">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-300 pt-1 border-t border-slate-200/50 dark:border-slate-700/50">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span>Mode: <strong className="font-semibold">{pm.paymentMethod}</strong></span>
+                              <span>Mode: <strong className="font-semibold text-slate-800 dark:text-slate-200">{pm.paymentMethod}</strong></span>
                               <span
                                 className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
                                   pm.paymentType === "PERSONAL_TRAINING"
-                                    ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                                    : "bg-slate-100 text-slate-700"
+                                    ? "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800"
+                                    : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
                                 }`}
                               >
                                 {pm.paymentType === "PERSONAL_TRAINING" ? "🎯 PT Add-on" : pm.paymentType?.replace(/_/g, " ")}
@@ -633,7 +654,7 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                                     },
                                   })
                                 }
-                                className="px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded text-xs font-semibold inline-flex items-center gap-1 active:bg-slate-100"
+                                className="px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded text-xs font-semibold inline-flex items-center gap-1 active:bg-slate-100 dark:active:bg-slate-700"
                               >
                                 <Printer className="w-3 h-3 text-amber-500" />
                                 <span>Receipt</span>
@@ -676,7 +697,27 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                           {member.payments.map((pm: any) => (
                             <tr key={pm.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/50">
                               <td className="py-2.5 px-3 font-mono font-semibold text-slate-900 dark:text-slate-100">{pm.receiptNo}</td>
-                              <td className="py-2.5 px-3 text-slate-500 dark:text-slate-400">{formatDateTime(pm.paymentDate)}</td>
+                              <td className="py-2.5 px-3 text-slate-500 dark:text-slate-400">
+                                <div className="flex items-center gap-1.5">
+                                  <span>{formatDateTime(pm.paymentDate)}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setEditingPayment({
+                                        ...pm,
+                                        member: {
+                                          fullName: member.fullName,
+                                          memberId: member.memberId,
+                                        },
+                                      })
+                                    }
+                                    className="p-0.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition"
+                                    title="Change Payment Date"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </td>
                               <td className="py-2.5 px-3 font-medium text-slate-700 dark:text-slate-300">{pm.paymentMethod}</td>
                               <td className="py-2.5 px-3">
                                 <span
@@ -964,6 +1005,24 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
         <ReceiptModal
           receipt={selectedReceiptForPrint}
           onClose={() => setSelectedReceiptForPrint(null)}
+          onEditPaymentDate={() => {
+            const cur = selectedReceiptForPrint;
+            setSelectedReceiptForPrint(null);
+            setEditingPayment(cur);
+          }}
+        />
+      )}
+
+      {/* Edit Payment Date Modal */}
+      {editingPayment && (
+        <EditPaymentDateModal
+          isOpen={Boolean(editingPayment)}
+          payment={editingPayment}
+          onClose={() => setEditingPayment(null)}
+          onSuccess={() => {
+            setEditingPayment(null);
+            router.refresh();
+          }}
         />
       )}
 

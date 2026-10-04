@@ -22,10 +22,9 @@ import {
 } from "lucide-react";
 import { formatINR, formatDate, formatDateTime } from "@/lib/utils";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
-import { EditReceiptModal } from "@/components/modals/EditReceiptModal";
+import { EditPaymentDateModal } from "@/components/modals/EditPaymentDateModal";
 import { ReceiptModal } from "@/components/payments/ReceiptModal";
 import { DeleteReceiptModal } from "@/components/modals/DeleteReceiptModal";
-import { resequenceAllReceipts } from "@/lib/actions/payments";
 import { exportToExcel } from "@/lib/export-excel";
 
 interface PaymentsClientProps {
@@ -42,7 +41,6 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<any | null>(null);
   const [deletingPayment, setDeletingPayment] = useState<any | null>(null);
-  const [resequencing, setResequencing] = useState(false);
 
   // Receipt Modal
   const [selectedReceipt, setSelectedReceipt] = useState<any | null>(null);
@@ -125,24 +123,6 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
     });
   };
 
-  const handleResequenceAll = async () => {
-    if (
-      confirm(
-        "Are you sure you want to re-sequence ALL receipts in chronological order? This will assign consecutive REC-YYMMDD-XXX numbers to all payment records."
-      )
-    ) {
-      setResequencing(true);
-      const res = await resequenceAllReceipts();
-      setResequencing(false);
-      if (res.success) {
-        alert(`Successfully resequenced ${res.count} receipts in chronological order!`);
-        router.refresh();
-      } else {
-        alert(res.error || "Failed to resequence receipts");
-      }
-    }
-  };
-
   return (
     <div className="space-y-5">
       {/* Top Header */}
@@ -157,16 +137,6 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={handleResequenceAll}
-            disabled={resequencing || payments.length === 0}
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold rounded-lg text-xs transition active:bg-slate-100 disabled:opacity-50"
-            title="Clean and re-order all receipts in sequential date order"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-indigo-600 ${resequencing ? "animate-spin" : ""}`} />
-            <span>{resequencing ? "Resequencing..." : "Auto-Resequence All"}</span>
-          </button>
-
           <button
             onClick={() => setPaymentModalOpen(true)}
             className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg text-xs shadow-sm transition active:bg-slate-800"
@@ -323,18 +293,18 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
+                        <span className="font-mono font-bold text-slate-800 dark:text-slate-100">{pm.receiptNo}</span>
                         <div className="flex items-center gap-1.5">
-                          <span className="font-mono font-bold text-slate-800">{pm.receiptNo}</span>
+                          <span>{formatDateTime(pm.paymentDate)}</span>
                           <button
                             onClick={() => setEditingPayment(pm)}
-                            className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700"
-                            title="Edit Receipt Number"
+                            className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                            title="Edit Payment Date"
                           >
                             <Pencil className="w-3 h-3" />
                           </button>
                         </div>
-                        <span>{formatDateTime(pm.paymentDate)}</span>
                       </div>
 
                       <div className="flex items-center justify-between pt-1">
@@ -394,18 +364,9 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                       {filteredPayments.map((pm) => (
                         <tr key={pm.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition group">
                           <td className="py-3 px-4">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-mono font-bold text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
-                                {pm.receiptNo}
-                              </span>
-                              <button
-                                onClick={() => setEditingPayment(pm)}
-                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded transition"
-                                title="Edit Receipt Number & Resequence"
-                              >
-                                <Pencil className="w-3 h-3" />
-                              </button>
-                            </div>
+                            <span className="font-mono font-bold text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                              {pm.receiptNo}
+                            </span>
                           </td>
                           <td className="py-3 px-4">
                             <Link
@@ -419,7 +380,16 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                             </span>
                           </td>
                           <td className="py-3 px-4 text-slate-500 dark:text-slate-400">
-                            {formatDateTime(pm.paymentDate)}
+                            <div className="flex items-center gap-1.5 group/date">
+                              <span>{formatDateTime(pm.paymentDate)}</span>
+                              <button
+                                onClick={() => setEditingPayment(pm)}
+                                className="opacity-0 group-hover/date:opacity-100 p-1 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded transition"
+                                title="Edit Payment Date"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                            </div>
                           </td>
                           <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">
                             {pm.paymentMethod}
@@ -597,9 +567,9 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
         }}
       />
 
-      {/* Modal: Edit Receipt Number & Resequencing */}
+      {/* Modal: Edit Payment Date & Resequencing */}
       {editingPayment && (
-        <EditReceiptModal
+        <EditPaymentDateModal
           isOpen={Boolean(editingPayment)}
           payment={editingPayment}
           onClose={() => setEditingPayment(null)}
@@ -614,7 +584,7 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
         <ReceiptModal
           receipt={selectedReceipt}
           onClose={() => setSelectedReceipt(null)}
-          onEditReceipt={() => {
+          onEditPaymentDate={() => {
             const current = selectedReceipt;
             setSelectedReceipt(null);
             setEditingPayment(current);
