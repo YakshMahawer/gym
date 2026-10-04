@@ -255,11 +255,11 @@ export async function addPayment(input: AddPaymentInput) {
     }
 
     try {
-      revalidatePath("/payments");
-      revalidatePath(`/members/${input.memberId}`);
-      revalidatePath("/members");
-      revalidatePath("/reports");
-      revalidatePath("/");
+      revalidatePath("/admin/payments");
+      revalidatePath(`/admin/members/${input.memberId}`);
+      revalidatePath("/admin/members");
+      revalidatePath("/admin/reports");
+      revalidatePath("/admin");
     } catch {
       // Ignore
     }
@@ -320,11 +320,11 @@ export async function deletePayment(paymentId: string) {
     });
 
     try {
-      revalidatePath("/payments");
-      revalidatePath(`/members/${memberId}`);
-      revalidatePath("/members");
-      revalidatePath("/reports");
-      revalidatePath("/");
+      revalidatePath("/admin/payments");
+      revalidatePath(`/admin/members/${memberId}`);
+      revalidatePath("/admin/members");
+      revalidatePath("/admin/reports");
+      revalidatePath("/admin");
     } catch {
       // Ignore
     }
@@ -421,11 +421,11 @@ export async function updatePaymentDate(input: {
     });
 
     try {
-      revalidatePath("/payments");
-      revalidatePath(`/members/${targetPayment.memberId}`);
-      revalidatePath("/members");
-      revalidatePath("/reports");
-      revalidatePath("/");
+      revalidatePath("/admin/payments");
+      revalidatePath(`/admin/members/${targetPayment.memberId}`);
+      revalidatePath("/admin/members");
+      revalidatePath("/admin/reports");
+      revalidatePath("/admin");
     } catch {}
 
     return {
@@ -481,10 +481,10 @@ export async function resequenceAllReceipts() {
     await prisma.$transaction([...phase1All, ...phase2All]);
 
     try {
-      revalidatePath("/payments");
-      revalidatePath("/members");
-      revalidatePath("/reports");
-      revalidatePath("/");
+      revalidatePath("/admin/payments");
+      revalidatePath("/admin/members");
+      revalidatePath("/admin/reports");
+      revalidatePath("/admin");
     } catch {}
 
     return { success: true, count: toUpdate.length, updatedList: toUpdate };

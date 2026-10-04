@@ -228,7 +228,7 @@ export function MemberForm({
     if (res.success) {
       setSavedSuccessMsg(isEdit ? "Member updated successfully!" : "Member successfully registered!");
       setTimeout(() => {
-        router.push("/members");
+        router.push("/admin/members");
         router.refresh();
       }, 700);
     } else {
@@ -244,7 +244,7 @@ export function MemberForm({
       <div className="flex items-center justify-between bg-white px-4 py-3 rounded-xl border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
         <div className="flex items-center gap-3">
           <Link
-            href="/members"
+            href="/admin/members"
             className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-900 transition"
           >
             <ArrowLeft className="w-4 h-4" />

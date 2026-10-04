@@ -1,12 +1,11 @@
 import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import "./globals.css";
-import { AppShell } from "@/components/layout/AppShell";
 import { NavigationProgress } from "@/components/layout/NavigationProgress";
 
 export const metadata: Metadata = {
-  title: "Concept I Gym | Management CRM",
-  description: "Modern, minimal and simple Gym CRM for memberships, sales, dues and member tracking",
+  title: "Concept 1 Gym & Fitness | Manjalpur, Vadodara",
+  description: "Concept 1 Proactive Fitness in Manjalpur, Vadodara. Explore our training floor, cardio facilities, and memberships.",
 };
 
 export default function RootLayout({
@@ -32,11 +31,11 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>
+      <body className="antialiased">
         <Suspense fallback={null}>
           <NavigationProgress />
         </Suspense>
-        <AppShell>{children}</AppShell>
+        {children}
       </body>
     </html>
   );

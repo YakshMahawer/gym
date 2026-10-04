@@ -279,7 +279,7 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <Link
-                            href={`/members/${pm.member.id}`}
+                            href={`/admin/members/${pm.member.id}`}
                             className="font-bold text-sm text-slate-900 hover:text-blue-600 block"
                           >
                             {pm.member.fullName}
@@ -370,7 +370,7 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                           </td>
                           <td className="py-3 px-4">
                             <Link
-                              href={`/members/${pm.member.id}`}
+                              href={`/admin/members/${pm.member.id}`}
                               className="font-semibold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 block"
                             >
                               {pm.member.fullName}
@@ -472,7 +472,7 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                       <div className="flex items-start justify-between">
                         <div>
                           <Link
-                            href={`/members/${sub.member.id}`}
+                            href={`/admin/members/${sub.member.id}`}
                             className="font-bold text-sm text-slate-900 hover:text-blue-600 block"
                           >
                             {sub.member.fullName}
@@ -493,7 +493,7 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
 
                       <div className="pt-1 flex items-center justify-end">
                         <Link
-                          href={`/members/${sub.member.id}`}
+                          href={`/admin/members/${sub.member.id}`}
                           className="w-full py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold text-center shadow-xs active:bg-slate-800"
                         >
                           Collect Due
@@ -521,7 +521,7 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                         <tr key={sub.id} className="hover:bg-slate-50/60 transition">
                           <td className="py-3 px-4">
                             <Link
-                              href={`/members/${sub.member.id}`}
+                              href={`/admin/members/${sub.member.id}`}
                               className="font-semibold text-slate-900 hover:text-blue-600 block"
                             >
                               {sub.member.fullName}
@@ -540,7 +540,7 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                           </td>
                           <td className="py-3 px-4 text-right">
                             <Link
-                              href={`/members/${sub.member.id}`}
+                              href={`/admin/members/${sub.member.id}`}
                               className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold transition"
                             >
                               Collect

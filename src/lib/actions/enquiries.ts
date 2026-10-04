@@ -67,8 +67,8 @@ export async function createEnquiry(input: CreateEnquiryInput) {
       },
     });
 
-    revalidatePath("/enquiries");
-    revalidatePath("/");
+    revalidatePath("/admin/enquiries");
+    revalidatePath("/admin");
     return { success: true, enquiry };
   } catch (error: any) {
     console.error("Create enquiry error:", error);
@@ -86,8 +86,8 @@ export async function updateEnquiryStatus(id: string, status: EnquiryStatus, not
       },
     });
 
-    revalidatePath("/enquiries");
-    revalidatePath("/");
+    revalidatePath("/admin/enquiries");
+    revalidatePath("/admin");
     return { success: true, enquiry };
   } catch (error: any) {
     console.error("Update enquiry status error:", error);
@@ -100,8 +100,8 @@ export async function deleteEnquiry(id: string) {
     await prisma.enquiry.delete({
       where: { id },
     });
-    revalidatePath("/enquiries");
-    revalidatePath("/");
+    revalidatePath("/admin/enquiries");
+    revalidatePath("/admin");
     return { success: true };
   } catch (error: any) {
     console.error("Delete enquiry error:", error);

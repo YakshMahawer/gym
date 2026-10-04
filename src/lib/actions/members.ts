@@ -344,10 +344,10 @@ export async function createMember(input: CreateMemberInput) {
       }
     }
 
-    revalidatePath("/members");
-    revalidatePath("/payments");
-    revalidatePath("/reports");
-    revalidatePath("/");
+    revalidatePath("/admin/members");
+    revalidatePath("/admin/payments");
+    revalidatePath("/admin/reports");
+    revalidatePath("/admin");
     return { success: true, member };
   } catch (error: any) {
     console.error("Create member error:", error);
@@ -426,11 +426,11 @@ export async function updateMember(id: string, input: Partial<CreateMemberInput>
       data: updateData,
     });
 
-    revalidatePath(`/members/${id}`);
-    revalidatePath("/members");
-    revalidatePath("/payments");
-    revalidatePath("/reports");
-    revalidatePath("/");
+    revalidatePath(`/admin/members/${id}`);
+    revalidatePath("/admin/members");
+    revalidatePath("/admin/payments");
+    revalidatePath("/admin/reports");
+    revalidatePath("/admin");
     return { success: true, member: updated };
   } catch (error: any) {
     console.error("Update member error:", error);
@@ -443,10 +443,10 @@ export async function deleteMember(id: string) {
     await prisma.member.delete({
       where: { id },
     });
-    revalidatePath("/members");
-    revalidatePath("/payments");
-    revalidatePath("/reports");
-    revalidatePath("/");
+    revalidatePath("/admin/members");
+    revalidatePath("/admin/payments");
+    revalidatePath("/admin/reports");
+    revalidatePath("/admin");
     return { success: true };
   } catch (error: any) {
     console.error("Delete member error:", error);
@@ -506,11 +506,11 @@ export async function renewSubscription(data: {
       });
     }
 
-    revalidatePath(`/members/${data.memberId}`);
-    revalidatePath("/members");
-    revalidatePath("/payments");
-    revalidatePath("/reports");
-    revalidatePath("/");
+    revalidatePath(`/admin/members/${data.memberId}`);
+    revalidatePath("/admin/members");
+    revalidatePath("/admin/payments");
+    revalidatePath("/admin/reports");
+    revalidatePath("/admin");
     return { success: true, subscription };
   } catch (error: any) {
     console.error("Renew subscription error:", error);

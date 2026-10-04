@@ -39,11 +39,11 @@ export function AppShell({ children }: AppShellProps) {
   const [notificationOpen, setNotificationOpen] = useState(false);
 
   const navItems = [
-    { label: "Dashboard", href: "/", icon: LayoutDashboard },
-    { label: "Members", href: "/members", icon: Users },
-    { label: "Enquiries", href: "/enquiries", icon: UserPlus },
-    { label: "Payments & Dues", href: "/payments", icon: CreditCard },
-    { label: "Reports", href: "/reports", icon: BarChart3 },
+    { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+    { label: "Members", href: "/admin/members", icon: Users },
+    { label: "Enquiries", href: "/admin/enquiries", icon: UserPlus },
+    { label: "Payments & Dues", href: "/admin/payments", icon: CreditCard },
+    { label: "Reports", href: "/admin/reports", icon: BarChart3 },
   ];
 
   return (
@@ -61,7 +61,7 @@ export function AppShell({ children }: AppShellProps) {
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
-            <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group">
+            <Link href="/admin" className="flex items-center gap-2 sm:gap-2.5 group">
               <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-xl bg-slate-900 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-white flex items-center justify-center font-bold shadow-sm transition-colors">
                 <Dumbbell className="w-4 h-4 text-white" />
               </div>
@@ -78,6 +78,16 @@ export function AppShell({ children }: AppShellProps) {
 
           {/* Quick Actions in Top Bar */}
           <div className="flex items-center gap-1.5 sm:gap-2.5">
+            {/* View Live Website link */}
+            <Link
+              href="/"
+              target="_blank"
+              className="hidden lg:inline-flex items-center gap-1 px-2.5 py-1 text-[11px] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+              title="Open Public Website"
+            >
+              <span>Live Site ↗</span>
+            </Link>
+
             {/* Desktop + New Enquiry Button */}
             <button
               onClick={() => setEnquiryModalOpen(true)}
@@ -89,7 +99,7 @@ export function AppShell({ children }: AppShellProps) {
 
             {/* Desktop + New Member Button */}
             <Link
-              href="/members/new"
+              href="/admin/members/new"
               className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white border border-transparent dark:border-slate-700 rounded-lg text-xs font-semibold shadow-sm transition"
             >
               <Plus className="w-3.5 h-3.5 text-white" />
@@ -182,8 +192,8 @@ export function AppShell({ children }: AppShellProps) {
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive =
-                item.href === "/"
-                  ? pathname === "/"
+                item.href === "/admin"
+                  ? pathname === "/admin"
                   : pathname.startsWith(item.href);
 
               return (
@@ -240,7 +250,7 @@ export function AppShell({ children }: AppShellProps) {
                 <div className="space-y-1">
                   {navItems.map((item) => {
                     const Icon = item.icon;
-                    const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+                    const isActive = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
                     return (
                       <Link
                         key={item.href}
@@ -268,7 +278,7 @@ export function AppShell({ children }: AppShellProps) {
                     Quick Actions
                   </p>
                   <Link
-                    href="/members/new"
+                    href="/admin/members/new"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-900 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-white shadow-xs"
                   >
@@ -297,6 +307,15 @@ export function AppShell({ children }: AppShellProps) {
                     <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <span>Record Payment</span>
                   </button>
+
+                  <Link
+                    href="/"
+                    target="_blank"
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
+                  >
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                    <span>View Public Website ↗</span>
+                  </Link>
                 </div>
               </div>
 
@@ -313,17 +332,17 @@ export function AppShell({ children }: AppShellProps) {
         <main className="flex-1 min-w-0">{children}</main>
       </div>
 
-      {/* Mobile Bottom Navigation Bar - Standard 1-thumb touch navigation */}
+      {/* Mobile Bottom Navigation Bar - Standard 1-touch navigation */}
       <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 shadow-[0_-2px_10px_rgba(0,0,0,0.04)] md:hidden">
         <div className="grid grid-cols-5 items-center h-16 px-1 safe-area-pb">
           {/* 1. Dashboard */}
           <Link
-            href="/"
+            href="/admin"
             className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
-              pathname === "/" ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
+              pathname === "/admin" ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
             }`}
           >
-            <div className={`p-1 rounded-md ${pathname === "/" ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
+            <div className={`p-1 rounded-md ${pathname === "/admin" ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
               <LayoutDashboard className="w-4.5 h-4.5" />
             </div>
             <span className="text-[10px] mt-0.5 leading-none">Home</span>
@@ -331,12 +350,12 @@ export function AppShell({ children }: AppShellProps) {
 
           {/* 2. Members */}
           <Link
-            href="/members"
+            href="/admin/members"
             className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
-              pathname.startsWith("/members") ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
+              pathname.startsWith("/admin/members") ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
             }`}
           >
-            <div className={`p-1 rounded-md ${pathname.startsWith("/members") ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
+            <div className={`p-1 rounded-md ${pathname.startsWith("/admin/members") ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
               <Users className="w-4.5 h-4.5" />
             </div>
             <span className="text-[10px] mt-0.5 leading-none">Members</span>
@@ -356,12 +375,12 @@ export function AppShell({ children }: AppShellProps) {
 
           {/* 4. Enquiries */}
           <Link
-            href="/enquiries"
+            href="/admin/enquiries"
             className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
-              pathname.startsWith("/enquiries") ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
+              pathname.startsWith("/admin/enquiries") ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
             }`}
           >
-            <div className={`p-1 rounded-md ${pathname.startsWith("/enquiries") ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
+            <div className={`p-1 rounded-md ${pathname.startsWith("/admin/enquiries") ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
               <UserPlus className="w-4.5 h-4.5" />
             </div>
             <span className="text-[10px] mt-0.5 leading-none">Enquiries</span>
@@ -369,12 +388,12 @@ export function AppShell({ children }: AppShellProps) {
 
           {/* 5. Payments & Dues */}
           <Link
-            href="/payments"
+            href="/admin/payments"
             className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
-              pathname.startsWith("/payments") ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
+              pathname.startsWith("/admin/payments") ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
             }`}
           >
-            <div className={`p-1 rounded-md ${pathname.startsWith("/payments") ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
+            <div className={`p-1 rounded-md ${pathname.startsWith("/admin/payments") ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
               <CreditCard className="w-4.5 h-4.5" />
             </div>
             <span className="text-[10px] mt-0.5 leading-none">Ledger</span>
@@ -409,7 +428,7 @@ export function AppShell({ children }: AppShellProps) {
 
             <div className="grid grid-cols-1 gap-2.5 pt-1">
               <Link
-                href="/members/new"
+                href="/admin/members/new"
                 onClick={() => setMobileActionSheetOpen(false)}
                 className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-900 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-white font-semibold text-xs shadow-sm active:scale-98 transition"
               >
@@ -455,7 +474,7 @@ export function AppShell({ children }: AppShellProps) {
               </button>
 
               <Link
-                href="/reports"
+                href="/admin/reports"
                 onClick={() => setMobileActionSheetOpen(false)}
                 className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs shadow-2xs active:bg-slate-50 dark:active:bg-slate-750 transition text-left"
               >

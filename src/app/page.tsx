@@ -1,9 +1,13 @@
-import { getDashboardData } from "@/lib/actions/dashboard";
-import { DashboardClient } from "@/components/dashboard/DashboardClient";
+import React from "react";
+import type { Metadata } from "next";
+import { WebsiteHome } from "@/components/website/WebsiteHome";
 
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: "Gym in Manjalpur, Vadodara | Concept 1 Gym & Fitness",
+  description:
+    "Looking for a gym in Manjalpur, Vadodara? Explore Concept 1's training floor, cardio facilities, heavy weights, and personal training.",
+};
 
-export default async function DashboardPage() {
-  const data = await getDashboardData();
-  return <DashboardClient data={data} />;
+export default function PublicHomePage() {
+  return <WebsiteHome />;
 }
