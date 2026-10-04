@@ -130,12 +130,12 @@ export function MemberForm({
     qOtherHealthIssues: initialData?.qOtherHealthIssues || "",
 
     // Membership Plan
-    planId: matchedPlan?.id || "",
-    planName: matchedPlan?.name || (plans[0]?.name || "1 Month"),
+    planId: matchedPlan?.id || (isEdit ? "" : (plans[0]?.id || "")),
+    planName: matchedPlan?.name || (isEdit ? "" : (plans[0]?.name || "1 Month")),
     startDate: defaultCalculatedStartDate,
     endDate: defaultCalculatedEndDate,
-    totalAmount: matchedPlan?.price || (plans[0]?.price || 4000),
-    paidAmount: matchedPlan?.price || (plans[0]?.price || 4000),
+    totalAmount: matchedPlan?.price || (isEdit ? 0 : (plans[0]?.price || 4000)),
+    paidAmount: isEdit ? (activeSub?.paidAmount || 0) : 0, // Default to 0 (DUE) for new member so payment is not assumed done unless explicitly entered!
     paymentMethod: "UPI",
     paymentNotes: isExistingOngoing ? "Membership renewal extension" : "Enrollment payment",
   });
@@ -166,6 +166,16 @@ export function MemberForm({
   });
 
   const handlePlanSelect = (planName: string) => {
+    if (!planName) {
+      setFormData({
+        ...formData,
+        planId: "",
+        planName: "",
+        totalAmount: 0,
+        paidAmount: 0,
+      });
+      return;
+    }
     const p = plans.find((item) => item.name === planName);
     if (!p) return;
     const start = formData.startDate ? new Date(formData.startDate) : new Date();
@@ -175,7 +185,7 @@ export function MemberForm({
       planId: p.id,
       planName: p.name,
       totalAmount: p.price,
-      paidAmount: p.price,
+      paidAmount: 0, // Defaults to 0 so full amount is due unless manager enters paid amount or clicks "Paid Full"
       endDate: end.toISOString().split("T")[0],
     });
   };
@@ -843,6 +853,7 @@ export function MemberForm({
                       onChange={(e) => handlePlanSelect(e.target.value)}
                       className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg bg-white font-medium"
                     >
+                      <option value="">-- No Plan Selected (Assign Later) --</option>
                       {plans.map((p) => (
                         <option key={p.id} value={p.name}>
                           {p.name} (Amt:- {p.price.toFixed(2)})
@@ -904,7 +915,27 @@ export function MemberForm({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Amount Paid (₹)</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-semibold text-slate-600">Amount Paid (₹)</label>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, paidAmount: formData.totalAmount || 0 })}
+                          className="text-[10px] text-emerald-700 hover:text-emerald-800 font-semibold bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-200 transition"
+                          title="Set full amount as paid"
+                        >
+                          Paid Full
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, paidAmount: 0 })}
+                          className="text-[10px] text-rose-700 hover:text-rose-800 font-semibold bg-rose-50 hover:bg-rose-100 px-1.5 py-0.2 rounded border border-rose-200 transition"
+                          title="Mark full fee as pending due"
+                        >
+                          Full Due (₹0)
+                        </button>
+                      </div>
+                    </div>
                     <input
                       type="number"
                       placeholder="0"

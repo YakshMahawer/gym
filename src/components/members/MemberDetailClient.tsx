@@ -802,7 +802,27 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Paid Today (₹)</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-slate-700">Paid Today (₹)</label>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setRenewalPaid(renewalTotal)}
+                        className="text-[10px] text-emerald-700 hover:text-emerald-800 font-semibold bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-200 transition"
+                        title="Set full package fee as paid"
+                      >
+                        Paid Full
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRenewalPaid(0)}
+                        className="text-[10px] text-rose-700 hover:text-rose-800 font-semibold bg-rose-50 hover:bg-rose-100 px-1.5 py-0.2 rounded border border-rose-200 transition"
+                        title="Mark full package fee as due"
+                      >
+                        Full Due (₹0)
+                      </button>
+                    </div>
+                  </div>
                   <input
                     type="number"
                     placeholder="0"
