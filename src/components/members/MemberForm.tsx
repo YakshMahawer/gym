@@ -73,18 +73,21 @@ export function MemberForm({
   const defaultFirstName = nameParts[0] || "";
   const defaultLastName = nameParts.slice(1).join(" ") || "";
   const defaultPhone = searchParams.get("phone") || "";
-  const defaultPlanName = searchParams.get("plan") || "3 Months";
+  const queryPlanName = searchParams.get("plan") || "";
+  const initialPlanName = initialData?.subscriptions?.[0]?.planName || queryPlanName;
 
-  const matchedPlan = plans.find(
-    (p) => p.name === (initialData?.subscriptions?.[0]?.planName || defaultPlanName)
-  ) || plans[0];
+  const matchedPlan = initialPlanName
+    ? plans.find((p) => p.name.toLowerCase() === initialPlanName.toLowerCase())
+    : undefined;
 
-  const defaultCalculatedEndDate = new Date(
-    new Date(defaultCalculatedStartDate).getTime() +
-      (matchedPlan?.durationInDays || 30) * 24 * 60 * 60 * 1000
-  )
-    .toISOString()
-    .split("T")[0];
+  const defaultCalculatedEndDate = matchedPlan
+    ? new Date(
+        new Date(defaultCalculatedStartDate).getTime() +
+          (matchedPlan.durationInDays || 30) * 24 * 60 * 60 * 1000
+      )
+        .toISOString()
+        .split("T")[0]
+    : "";
 
   const [formData, setFormData] = useState<CreateMemberInput>({
     memberId: initialData?.memberId || initialMemberId || "1001",
@@ -173,6 +176,8 @@ export function MemberForm({
         planName: "",
         totalAmount: 0,
         paidAmount: 0,
+        startDate: "",
+        endDate: "",
       });
       return;
     }
@@ -186,6 +191,7 @@ export function MemberForm({
       planName: p.name,
       totalAmount: p.price,
       paidAmount: 0, // Defaults to 0 so full amount is due unless manager enters paid amount or clicks "Paid Full"
+      startDate: start.toISOString().split("T")[0],
       endDate: end.toISOString().split("T")[0],
     });
   };
