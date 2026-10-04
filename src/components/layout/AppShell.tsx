@@ -62,12 +62,12 @@ export function AppShell({ children }: AppShellProps) {
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
             <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group">
-              <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-xl bg-slate-900 dark:bg-rose-600 text-white flex items-center justify-center font-bold shadow-sm transition-colors">
+              <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-xl bg-slate-900 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-white flex items-center justify-center font-bold shadow-sm transition-colors">
                 <Dumbbell className="w-4 h-4 text-white" />
               </div>
               <div className="flex flex-col">
                 <span className="text-sm sm:text-base font-bold tracking-tight text-slate-900 dark:text-white leading-none">
-                  Concept I <span className="text-rose-600 dark:text-rose-400">Gym</span>
+                  Concept I <span className="text-rose-600 dark:text-rose-500">Gym</span>
                 </span>
                 <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium tracking-wide">
                   Reception Desk
@@ -81,7 +81,7 @@ export function AppShell({ children }: AppShellProps) {
             {/* Desktop + New Enquiry Button */}
             <button
               onClick={() => setEnquiryModalOpen(true)}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold shadow-sm transition hover:border-slate-300"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold shadow-sm transition hover:border-slate-300"
             >
               <Plus className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
               <span>New Enquiry</span>
@@ -90,7 +90,7 @@ export function AppShell({ children }: AppShellProps) {
             {/* Desktop + New Member Button */}
             <Link
               href="/members/new"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 dark:bg-rose-600 hover:bg-slate-800 dark:hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shadow-sm transition"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white border border-transparent dark:border-slate-700 rounded-lg text-xs font-semibold shadow-sm transition"
             >
               <Plus className="w-3.5 h-3.5 text-white" />
               <span>Add Member</span>
@@ -153,7 +153,7 @@ export function AppShell({ children }: AppShellProps) {
             {/* Mobile Quick Action Button */}
             <button
               onClick={() => setMobileActionSheetOpen(true)}
-              className="sm:hidden p-2 rounded-lg bg-slate-900 dark:bg-rose-600 text-white active:bg-slate-800 shadow-xs flex items-center gap-1 text-xs font-bold"
+              className="sm:hidden p-2 rounded-lg bg-slate-900 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-white active:bg-slate-800 shadow-xs flex items-center gap-1 text-xs font-bold"
               aria-label="Quick Actions"
             >
               <Plus className="w-4 h-4" />
@@ -190,14 +190,19 @@ export function AppShell({ children }: AppShellProps) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                     isActive
-                      ? "bg-slate-900 dark:bg-rose-600 text-white shadow-xs"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
+                      ? "bg-slate-900 dark:bg-slate-800 dark:border dark:border-slate-700/80 text-white shadow-xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/60"
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-400 dark:text-slate-500"}`} />
-                  <span>{item.label}</span>
+                  <div className="flex items-center gap-2.5">
+                    <Icon className={`w-4 h-4 ${isActive ? "text-rose-400" : "text-slate-400 dark:text-slate-500"}`} />
+                    <span>{item.label}</span>
+                  </div>
+                  {isActive && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                  )}
                 </Link>
               );
             })}
@@ -211,11 +216,13 @@ export function AppShell({ children }: AppShellProps) {
               <div className="space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-rose-600 text-white flex items-center justify-center font-bold">
+                    <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-white flex items-center justify-center font-bold">
                       <Dumbbell className="w-4 h-4" />
                     </div>
                     <div>
-                      <span className="font-bold text-sm text-slate-900 dark:text-white block leading-tight">Concept I Gym</span>
+                      <span className="font-bold text-sm text-slate-900 dark:text-white block leading-tight">
+                        Concept I <span className="text-rose-600 dark:text-rose-500">Gym</span>
+                      </span>
                       <span className="text-[10px] text-slate-400 dark:text-slate-500">Reception & Management</span>
                     </div>
                   </div>
@@ -241,15 +248,15 @@ export function AppShell({ children }: AppShellProps) {
                         onClick={() => setMobileMenuOpen(false)}
                         className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
                           isActive 
-                            ? "bg-slate-900 dark:bg-rose-600 text-white shadow-xs" 
-                            : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                            ? "bg-slate-900 dark:bg-slate-800 dark:border dark:border-slate-700 text-white shadow-xs" 
+                            : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60"
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
+                          <Icon className={`w-4 h-4 ${isActive ? "text-rose-400" : "text-slate-500 dark:text-slate-400"}`} />
                           <span>{item.label}</span>
                         </div>
-                        <ChevronRight className={`w-3.5 h-3.5 ${isActive ? "text-white/70" : "text-slate-400"}`} />
+                        <ChevronRight className={`w-3.5 h-3.5 ${isActive ? "text-rose-400" : "text-slate-400"}`} />
                       </Link>
                     );
                   })}
@@ -263,7 +270,7 @@ export function AppShell({ children }: AppShellProps) {
                   <Link
                     href="/members/new"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-900 dark:bg-rose-600 text-white shadow-xs"
+                    className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-900 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-white shadow-xs"
                   >
                     <Plus className="w-4 h-4 text-white" />
                     <span>Add New Member</span>
@@ -339,7 +346,7 @@ export function AppShell({ children }: AppShellProps) {
           <div className="flex flex-col items-center justify-center -mt-4">
             <button
               onClick={() => setMobileActionSheetOpen(true)}
-              className="w-12 h-12 rounded-full bg-slate-900 dark:bg-rose-600 text-white shadow-lg shadow-slate-900/20 dark:shadow-rose-600/30 flex items-center justify-center active:scale-90 transition transform hover:bg-slate-800 dark:hover:bg-rose-700"
+              className="w-12 h-12 rounded-full bg-slate-900 dark:bg-slate-800 text-white shadow-lg shadow-slate-900/20 dark:shadow-slate-950/40 border border-transparent dark:border-slate-700 flex items-center justify-center active:scale-90 transition transform hover:bg-slate-800"
               aria-label="New Actions"
             >
               <Plus className="w-6 h-6 text-white" />
@@ -404,14 +411,14 @@ export function AppShell({ children }: AppShellProps) {
               <Link
                 href="/members/new"
                 onClick={() => setMobileActionSheetOpen(false)}
-                className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-900 dark:bg-rose-600 text-white font-semibold text-xs shadow-sm active:scale-98 transition"
+                className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-900 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-white font-semibold text-xs shadow-sm active:scale-98 transition"
               >
-                <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-white/10 dark:bg-white/5 flex items-center justify-center">
                   <Plus className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
                   <p className="font-bold text-sm text-white">Add New Member</p>
-                  <p className="text-[11px] text-white/70">Register member with health profile & plan</p>
+                  <p className="text-[11px] text-slate-300 dark:text-slate-400">Register member with health profile & plan</p>
                 </div>
               </Link>
 
