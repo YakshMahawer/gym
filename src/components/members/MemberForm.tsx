@@ -922,20 +922,20 @@ export function MemberForm({
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-[11px] font-semibold text-slate-600">Amount Paid (₹)</label>
-                      <div className="flex items-center gap-1">
+                      <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Amount Paid (₹)</label>
+                      <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => setFormData({ ...formData, paidAmount: formData.totalAmount || 0 })}
-                          className="text-[10px] text-emerald-700 hover:text-emerald-800 font-semibold bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-200 transition"
+                          className="text-[10px] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-2 py-0.5 rounded transition"
                           title="Set full amount as paid"
                         >
-                          Paid Full
+                          Paid in Full
                         </button>
                         <button
                           type="button"
                           onClick={() => setFormData({ ...formData, paidAmount: 0 })}
-                          className="text-[10px] text-rose-700 hover:text-rose-800 font-semibold bg-rose-50 hover:bg-rose-100 px-1.5 py-0.2 rounded border border-rose-200 transition"
+                          className="text-[10px] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-2 py-0.5 rounded transition"
                           title="Mark full fee as pending due"
                         >
                           Full Due (₹0)

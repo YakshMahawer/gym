@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   X,
   Pencil,
+  Trash2,
   RefreshCw,
   Sparkles,
   Download,
@@ -23,6 +24,7 @@ import { formatINR, formatDate, formatDateTime } from "@/lib/utils";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
 import { EditReceiptModal } from "@/components/modals/EditReceiptModal";
 import { ReceiptModal } from "@/components/payments/ReceiptModal";
+import { DeleteReceiptModal } from "@/components/modals/DeleteReceiptModal";
 import { resequenceAllReceipts } from "@/lib/actions/payments";
 import { exportToExcel } from "@/lib/export-excel";
 
@@ -39,6 +41,7 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
   const [methodFilter, setMethodFilter] = useState("ALL");
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<any | null>(null);
+  const [deletingPayment, setDeletingPayment] = useState<any | null>(null);
   const [resequencing, setResequencing] = useState(false);
 
   // Receipt Modal
@@ -352,13 +355,22 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                           </span>
                         </div>
 
-                        <button
-                          onClick={() => setSelectedReceipt(pm)}
-                          className="px-2.5 py-1 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg text-xs font-semibold inline-flex items-center gap-1 active:bg-slate-100"
-                        >
-                          <Printer className="w-3.5 h-3.5 text-amber-500" />
-                          <span>Receipt</span>
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => setSelectedReceipt(pm)}
+                            className="px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg text-xs font-semibold inline-flex items-center gap-1 active:bg-slate-100"
+                          >
+                            <Printer className="w-3.5 h-3.5 text-amber-500" />
+                            <span>Receipt</span>
+                          </button>
+                          <button
+                            onClick={() => setDeletingPayment(pm)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition"
+                            title="Delete Receipt"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -368,7 +380,7 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-50/50">
+                      <tr className="border-b border-slate-100 dark:border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-50/50 dark:bg-slate-800/40">
                         <th className="py-2.5 px-4">Receipt Number</th>
                         <th className="py-2.5 px-4">Member</th>
                         <th className="py-2.5 px-4">Payment Date</th>
@@ -378,17 +390,17 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                         <th className="py-2.5 px-4 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-xs">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                       {filteredPayments.map((pm) => (
-                        <tr key={pm.id} className="hover:bg-slate-50/60 transition group">
+                        <tr key={pm.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition group">
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-1.5">
-                              <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                              <span className="font-mono font-bold text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
                                 {pm.receiptNo}
                               </span>
                               <button
                                 onClick={() => setEditingPayment(pm)}
-                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-200 text-slate-400 hover:text-slate-800 rounded transition"
+                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded transition"
                                 title="Edit Receipt Number & Resequence"
                               >
                                 <Pencil className="w-3 h-3" />
@@ -398,7 +410,7 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                           <td className="py-3 px-4">
                             <Link
                               href={`/members/${pm.member.id}`}
-                              className="font-semibold text-slate-900 hover:text-blue-600 block"
+                              className="font-semibold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 block"
                             >
                               {pm.member.fullName}
                             </Link>
@@ -406,18 +418,18 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                               {pm.member.memberId} • {pm.member.phone}
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-slate-500">
+                          <td className="py-3 px-4 text-slate-500 dark:text-slate-400">
                             {formatDateTime(pm.paymentDate)}
                           </td>
-                          <td className="py-3 px-4 font-medium text-slate-700">
+                          <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">
                             {pm.paymentMethod}
                           </td>
                           <td className="py-3 px-4">
                             <span
                               className={`text-[10px] font-semibold px-2 py-0.5 rounded-md inline-block ${
                                 pm.paymentType === "PERSONAL_TRAINING" || pm.ptSubscription
-                                  ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                                  : "bg-slate-100 text-slate-700"
+                                  ? "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800"
+                                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
                               }`}
                             >
                               {pm.paymentType === "PERSONAL_TRAINING" || pm.ptSubscription
@@ -425,17 +437,26 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                                 : pm.paymentType?.replace(/_/g, " ")}
                             </span>
                           </td>
-                          <td className="py-3 px-4 font-bold text-emerald-700">
+                          <td className="py-3 px-4 font-bold text-emerald-700 dark:text-emerald-400">
                             {formatINR(pm.amount)}
                           </td>
                           <td className="py-3 px-4 text-right">
-                            <button
-                              onClick={() => setSelectedReceipt(pm)}
-                              className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold inline-flex items-center gap-1 transition"
-                            >
-                              <Printer className="w-3 h-3 text-amber-400" />
-                              <span>Receipt</span>
-                            </button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => setSelectedReceipt(pm)}
+                                className="px-2.5 py-1 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white rounded text-xs font-semibold inline-flex items-center gap-1 transition"
+                              >
+                                <Printer className="w-3 h-3 text-amber-400" />
+                                <span>Receipt</span>
+                              </button>
+                              <button
+                                onClick={() => setDeletingPayment(pm)}
+                                className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition"
+                                title="Delete Receipt"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -597,6 +618,19 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
             const current = selectedReceipt;
             setSelectedReceipt(null);
             setEditingPayment(current);
+          }}
+        />
+      )}
+
+      {/* Modal: Delete Receipt Confirmation */}
+      {deletingPayment && (
+        <DeleteReceiptModal
+          isOpen={Boolean(deletingPayment)}
+          payment={deletingPayment}
+          onClose={() => setDeletingPayment(null)}
+          onSuccess={() => {
+            setDeletingPayment(null);
+            router.refresh();
           }}
         />
       )}

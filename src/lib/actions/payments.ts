@@ -271,6 +271,75 @@ export async function addPayment(input: AddPaymentInput) {
   }
 }
 
+export async function deletePayment(paymentId: string) {
+  try {
+    const payment = await prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: {
+        subscription: true,
+        ptSubscription: true,
+      },
+    });
+
+    if (!payment) {
+      return { success: false, error: "Payment record not found" };
+    }
+
+    const memberId = payment.memberId;
+    const amount = payment.amount;
+
+    // 1. If linked to a main membership subscription, revert paid and due amounts
+    if (payment.subscriptionId && payment.subscription) {
+      const newPaid = Math.max(0, payment.subscription.paidAmount - amount);
+      const newDue = Math.max(0, payment.subscription.totalAmount - newPaid);
+      await prisma.memberSubscription.update({
+        where: { id: payment.subscriptionId },
+        data: {
+          paidAmount: newPaid,
+          dueAmount: newDue,
+        },
+      });
+    }
+
+    // 2. If linked to a PT subscription, revert paid and due amounts
+    if (payment.ptId && payment.ptSubscription) {
+      const newPaid = Math.max(0, payment.ptSubscription.paidAmount - amount);
+      const newDue = Math.max(0, payment.ptSubscription.totalAmount - newPaid);
+      await prisma.memberPT.update({
+        where: { id: payment.ptId },
+        data: {
+          paidAmount: newPaid,
+          dueAmount: newDue,
+        },
+      });
+    }
+
+    // 3. Delete the payment record
+    await prisma.payment.delete({
+      where: { id: paymentId },
+    });
+
+    try {
+      revalidatePath("/payments");
+      revalidatePath(`/members/${memberId}`);
+      revalidatePath("/members");
+      revalidatePath("/reports");
+      revalidatePath("/");
+    } catch {
+      // Ignore
+    }
+
+    return {
+      success: true,
+      receiptNo: payment.receiptNo,
+      amount: payment.amount,
+    };
+  } catch (error: any) {
+    console.error("Delete payment error:", error);
+    return { success: false, error: error.message || "Failed to delete payment record" };
+  }
+}
+
 export async function updateReceiptNumber(input: {
   paymentId: string;
   newReceiptNo: string;

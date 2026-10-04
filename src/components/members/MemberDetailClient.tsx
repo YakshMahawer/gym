@@ -28,6 +28,7 @@ import { formatINR, formatDate, formatDateTime, calculateDaysRemaining } from "@
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
 import { AddPTModal } from "@/components/modals/AddPTModal";
 import { ReceiptModal } from "@/components/payments/ReceiptModal";
+import { DeleteReceiptModal } from "@/components/modals/DeleteReceiptModal";
 import { renewSubscription, deleteMember } from "@/lib/actions/members";
 import { updatePTSessions } from "@/lib/actions/pt";
 import { PaymentMethod } from "@prisma/client";
@@ -45,6 +46,7 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
   const [renewalModalOpen, setRenewalModalOpen] = useState(false);
   const [ptModalOpen, setPtModalOpen] = useState(false);
   const [selectedReceiptForPrint, setSelectedReceiptForPrint] = useState<any | null>(null);
+  const [deletingPayment, setDeletingPayment] = useState<any | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const activeSub = member.subscriptions?.[0];
@@ -619,22 +621,39 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                                 {pm.paymentType === "PERSONAL_TRAINING" ? "🎯 PT Add-on" : pm.paymentType?.replace(/_/g, " ")}
                               </span>
                             </div>
-                            <button
-                              onClick={() =>
-                                setSelectedReceiptForPrint({
-                                  ...pm,
-                                  member: {
-                                    fullName: member.fullName,
-                                    memberId: member.memberId,
-                                    phone: member.phone,
-                                  },
-                                })
-                              }
-                              className="px-2 py-1 bg-white border border-slate-200 text-slate-700 rounded text-xs font-semibold inline-flex items-center gap-1 active:bg-slate-100"
-                            >
-                              <Printer className="w-3 h-3" />
-                              <span>Receipt</span>
-                            </button>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() =>
+                                  setSelectedReceiptForPrint({
+                                    ...pm,
+                                    member: {
+                                      fullName: member.fullName,
+                                      memberId: member.memberId,
+                                      phone: member.phone,
+                                    },
+                                  })
+                                }
+                                className="px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded text-xs font-semibold inline-flex items-center gap-1 active:bg-slate-100"
+                              >
+                                <Printer className="w-3 h-3 text-amber-500" />
+                                <span>Receipt</span>
+                              </button>
+                              <button
+                                onClick={() =>
+                                  setDeletingPayment({
+                                    ...pm,
+                                    member: {
+                                      fullName: member.fullName,
+                                      memberId: member.memberId,
+                                    },
+                                  })
+                                }
+                                className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition"
+                                title="Delete Receipt"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -644,50 +663,67 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                     <div className="hidden md:block overflow-x-auto">
                       <table className="w-full text-left border-collapse">
                         <thead>
-                          <tr className="border-b border-slate-100 text-[10px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-50/50">
+                          <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-50/50 dark:bg-slate-800/40">
                             <th className="py-2.5 px-3">Receipt</th>
                             <th className="py-2.5 px-3">Date</th>
                             <th className="py-2.5 px-3">Mode</th>
                             <th className="py-2.5 px-3">Payment Type</th>
                             <th className="py-2.5 px-3">Amount</th>
-                            <th className="py-2.5 px-3 text-right">Receipt</th>
+                            <th className="py-2.5 px-3 text-right">Actions</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 text-xs">
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                           {member.payments.map((pm: any) => (
-                            <tr key={pm.id} className="hover:bg-slate-50/60">
-                              <td className="py-2.5 px-3 font-mono font-semibold text-slate-900">{pm.receiptNo}</td>
-                              <td className="py-2.5 px-3 text-slate-500">{formatDateTime(pm.paymentDate)}</td>
-                              <td className="py-2.5 px-3 font-medium text-slate-700">{pm.paymentMethod}</td>
+                            <tr key={pm.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/50">
+                              <td className="py-2.5 px-3 font-mono font-semibold text-slate-900 dark:text-slate-100">{pm.receiptNo}</td>
+                              <td className="py-2.5 px-3 text-slate-500 dark:text-slate-400">{formatDateTime(pm.paymentDate)}</td>
+                              <td className="py-2.5 px-3 font-medium text-slate-700 dark:text-slate-300">{pm.paymentMethod}</td>
                               <td className="py-2.5 px-3">
                                 <span
                                   className={`text-[10px] font-semibold px-2 py-0.5 rounded-md inline-block ${
                                     pm.paymentType === "PERSONAL_TRAINING"
-                                      ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                                      : "bg-slate-100 text-slate-700"
+                                      ? "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800"
+                                      : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
                                   }`}
                                 >
                                   {pm.paymentType === "PERSONAL_TRAINING" ? "🎯 PT Add-on" : pm.paymentType?.replace(/_/g, " ")}
                                 </span>
                               </td>
-                              <td className="py-2.5 px-3 font-bold text-emerald-700">{formatINR(pm.amount)}</td>
+                              <td className="py-2.5 px-3 font-bold text-emerald-700 dark:text-emerald-400">{formatINR(pm.amount)}</td>
                               <td className="py-2.5 px-3 text-right">
-                                <button
-                                  onClick={() =>
-                                    setSelectedReceiptForPrint({
-                                      ...pm,
-                                      member: {
-                                        fullName: member.fullName,
-                                        memberId: member.memberId,
-                                        phone: member.phone,
-                                      },
-                                    })
-                                  }
-                                  className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded text-xs font-medium inline-flex items-center gap-1 transition"
-                                >
-                                  <Printer className="w-3 h-3" />
-                                  <span>Receipt</span>
-                                </button>
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={() =>
+                                      setSelectedReceiptForPrint({
+                                        ...pm,
+                                        member: {
+                                          fullName: member.fullName,
+                                          memberId: member.memberId,
+                                          phone: member.phone,
+                                        },
+                                      })
+                                    }
+                                    className="px-2.5 py-1 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded text-xs font-medium inline-flex items-center gap-1 transition"
+                                  >
+                                    <Printer className="w-3 h-3 text-amber-500" />
+                                    <span>Receipt</span>
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      setDeletingPayment({
+                                        ...pm,
+                                        member: {
+                                          fullName: member.fullName,
+                                          memberId: member.memberId,
+                                        },
+                                      })
+                                    }
+                                    className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition"
+                                    title="Delete Receipt"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -853,20 +889,20 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700">Paid Today (₹)</label>
-                    <div className="flex items-center gap-1">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Paid Today (₹)</label>
+                    <div className="flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => setRenewalPaid(renewalTotal)}
-                        className="text-[10px] text-emerald-700 hover:text-emerald-800 font-semibold bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-200 transition"
+                        className="text-[10px] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-2 py-0.5 rounded transition"
                         title="Set full package fee as paid"
                       >
-                        Paid Full
+                        Paid in Full
                       </button>
                       <button
                         type="button"
                         onClick={() => setRenewalPaid(0)}
-                        className="text-[10px] text-rose-700 hover:text-rose-800 font-semibold bg-rose-50 hover:bg-rose-100 px-1.5 py-0.2 rounded border border-rose-200 transition"
+                        className="text-[10px] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-2 py-0.5 rounded transition"
                         title="Mark full package fee as due"
                       >
                         Full Due (₹0)
@@ -882,17 +918,17 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                       const raw = e.target.value.replace(/^0+(?=\d)/, "");
                       setRenewalPaid(raw === "" ? 0 : Number(raw));
                     }}
-                    className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg font-semibold text-emerald-700"
+                    className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 dark:border-slate-700 rounded-lg font-semibold text-emerald-700 dark:text-emerald-400 bg-white dark:bg-slate-800"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Payment Method</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Payment Method</label>
                 <select
                   value={renewalMethod}
                   onChange={(e) => setRenewalMethod(e.target.value as PaymentMethod)}
-                  className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg bg-white"
+                  className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                 >
                   <option value="UPI">UPI (GPay / PhonePe / Paytm)</option>
                   <option value="CASH">Cash</option>
@@ -902,18 +938,18 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                 </select>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setRenewalModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={renewalLoading}
-                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition"
+                  className="px-5 py-2 bg-slate-900 dark:bg-rose-600 hover:bg-slate-800 dark:hover:bg-rose-700 text-white font-semibold text-xs rounded-lg transition"
                 >
                   {renewalLoading ? "Saving..." : !activeSub ? "Activate Membership" : "Confirm Extension"}
                 </button>
@@ -928,6 +964,19 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
         <ReceiptModal
           receipt={selectedReceiptForPrint}
           onClose={() => setSelectedReceiptForPrint(null)}
+        />
+      )}
+
+      {/* Delete Receipt Confirmation Modal */}
+      {deletingPayment && (
+        <DeleteReceiptModal
+          isOpen={Boolean(deletingPayment)}
+          payment={deletingPayment}
+          onClose={() => setDeletingPayment(null)}
+          onSuccess={() => {
+            setDeletingPayment(null);
+            router.refresh();
+          }}
         />
       )}
     </div>
