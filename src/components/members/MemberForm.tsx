@@ -846,7 +846,7 @@ export function MemberForm({
                     <CreditCard className="w-3.5 h-3.5 text-slate-700" />
                     <span>{isExistingOngoing ? "Renew / Extend Membership Package" : "Assign Membership Package"}</span>
                   </h3>
-                  <span className="text-[11px] text-slate-400">17 Available Plans</span>
+                  <span className="text-[11px] text-slate-400">{plans.length} Available Plans</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

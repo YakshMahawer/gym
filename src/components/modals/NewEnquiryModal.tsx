@@ -23,21 +23,21 @@ const ALL_GYM_PLANS: PlanItem[] = [
   { name: "3 Months", price: 9000, category: "Membership" },
   { name: "6 Months (Regular)", price: 15000, category: "Membership" },
   { name: "1 Year (Males)", price: 25000, category: "Membership" },
+  { name: "Happy Hours Offer", price: 18000, category: "Membership" },
   { name: "1 Year (Female)", price: 23000, category: "Membership" },
   { name: "1 Year (Student)", price: 23000, category: "Membership" },
-  { name: "Happy Hours Offer", price: 18000, category: "Membership" },
+  { name: "Group Training (3 Persons 12 Sessions)", price: 7500, category: "Membership" },
 
   // Personal Training (PT) Plans
   { name: "PT", price: 1000, category: "Personal Training" },
   { name: "1 Month PT (12 Sessions)", price: 6000, category: "Personal Training" },
-  { name: "1 Month PT (24 Sessions)", price: 10000, category: "Personal Training" },
   { name: "3 Months PT (36 Sessions)", price: 16500, category: "Personal Training" },
-  { name: "3 Months PT (72 Sessions)", price: 28500, category: "Personal Training" },
   { name: "6 Months PT (72 Sessions)", price: 30000, category: "Personal Training" },
-  { name: "6 Months PT (144 Sessions)", price: 54000, category: "Personal Training" },
   { name: "12 Months PT (144 Sessions)", price: 54000, category: "Personal Training" },
+  { name: "1 Month PT (24 Sessions)", price: 10000, category: "Personal Training" },
+  { name: "3 Months PT (72 Sessions)", price: 28500, category: "Personal Training" },
+  { name: "6 Months PT (144 Sessions)", price: 54000, category: "Personal Training" },
   { name: "12 Months PT (288 Sessions)", price: 102000, category: "Personal Training" },
-  { name: "Group Training (3 Persons 12 Sessions)", price: 7500, category: "Personal Training" },
 ];
 
 export function NewEnquiryModal({ isOpen, onClose, onSuccess, plans }: NewEnquiryModalProps) {
@@ -47,13 +47,14 @@ export function NewEnquiryModal({ isOpen, onClose, onSuccess, plans }: NewEnquir
   // Available plans list
   const availablePlans: PlanItem[] =
     plans && plans.length > 0
-      ? plans.map((p) => ({
-          name: p.name,
-          price: p.price,
-          category: p.name.toLowerCase().includes("pt") || p.name.toLowerCase().includes("training")
-            ? "Personal Training"
-            : "Membership",
-        }))
+      ? [
+          ...plans.map((p) => ({
+            name: p.name,
+            price: p.price,
+            category: "Membership" as const,
+          })),
+          ...ALL_GYM_PLANS.filter((p) => p.category === "Personal Training"),
+        ]
       : ALL_GYM_PLANS;
 
   const [formData, setFormData] = useState<CreateEnquiryInput>({
@@ -234,7 +235,7 @@ export function NewEnquiryModal({ isOpen, onClose, onSuccess, plans }: NewEnquir
             <div className="relative" ref={dropdownRef}>
               <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
                 <span>Interested Plan</span>
-                <span className="text-[10px] text-slate-400 font-normal">17 options</span>
+                <span className="text-[10px] text-slate-400 font-normal">{availablePlans.length} options</span>
               </label>
 
               {/* Trigger Button */}
@@ -290,7 +291,7 @@ export function NewEnquiryModal({ isOpen, onClose, onSuccess, plans }: NewEnquir
                           : "text-slate-600 hover:bg-slate-100"
                       }`}
                     >
-                      All (17)
+                      All ({availablePlans.length})
                     </button>
                     <button
                       type="button"
@@ -301,7 +302,7 @@ export function NewEnquiryModal({ isOpen, onClose, onSuccess, plans }: NewEnquir
                           : "text-slate-600 hover:bg-slate-100"
                       }`}
                     >
-                      Gym (7)
+                      Gym ({availablePlans.filter((p) => p.category === "Membership").length})
                     </button>
                     <button
                       type="button"
@@ -312,7 +313,7 @@ export function NewEnquiryModal({ isOpen, onClose, onSuccess, plans }: NewEnquir
                           : "text-slate-600 hover:bg-slate-100"
                       }`}
                     >
-                      PT (10)
+                      PT ({availablePlans.filter((p) => p.category === "Personal Training").length})
                     </button>
                   </div>
 
