@@ -2,17 +2,13 @@
 const nextConfig = {
   async rewrites() {
     return {
-      beforeFiles: [],
-      afterFiles: [
+      beforeFiles: [
         {
           source: "/",
           destination: "https://concept1gym.vercel.app/",
         },
-        {
-          source: "/:path*",
-          destination: "https://concept1gym.vercel.app/:path*",
-        },
       ],
+      afterFiles: [],
       fallback: [
         {
           source: "/:path*",

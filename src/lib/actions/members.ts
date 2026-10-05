@@ -205,8 +205,20 @@ export async function getMembersLookup() {
 
 export async function getMemberById(id: string) {
   try {
-    const member = await prisma.member.findUnique({
-      where: { id },
+    if (!id) return null;
+    const decodedId = decodeURIComponent(id).trim();
+    const normalized = normalizeMemberId(decodedId);
+
+    const member = await prisma.member.findFirst({
+      where: {
+        OR: [
+          { id: decodedId },
+          { memberId: decodedId },
+          { memberId: normalized },
+          { memberId: `GYM-${normalized}` },
+          { memberId: { equals: decodedId, mode: "insensitive" } },
+        ],
+      },
       include: {
         subscriptions: {
           orderBy: { createdAt: "desc" },
@@ -233,6 +245,15 @@ export async function getMemberById(id: string) {
         },
       },
     });
+
+    if (!member) {
+      return null;
+    }
+
+    if (member.memberId.includes("GYM-") || member.memberId.includes("gym-")) {
+      member.memberId = normalizeMemberId(member.memberId);
+    }
+
     return member;
   } catch (error) {
     console.error("Failed to fetch member by id:", error);

@@ -592,7 +592,7 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                   <>
                     {/* Mobile Transactions List (block md:hidden) */}
                     <div className="grid grid-cols-1 gap-2.5 md:hidden">
-                      {member.payments.map((pm: any) => (
+                      {(member.payments || []).map((pm: any) => (
                         <div
                           key={pm.id}
                           className="p-3 bg-slate-50/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/70 dark:border-slate-700/70 space-y-2"
@@ -694,7 +694,7 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                          {member.payments.map((pm: any) => (
+                          {(member.payments || []).map((pm: any) => (
                             <tr key={pm.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/50">
                               <td className="py-2.5 px-3 font-mono font-semibold text-slate-900 dark:text-slate-100">{pm.receiptNo}</td>
                               <td className="py-2.5 px-3 text-slate-500 dark:text-slate-400">
