@@ -43,51 +43,51 @@ export function AppShell({ children }: AppShellProps) {
       label: "Dashboard",
       href: "/portal",
       icon: LayoutDashboard,
-      color: "text-indigo-600 dark:text-indigo-400",
-      bgColor: "bg-indigo-50 dark:bg-indigo-950/60",
+      color: "text-indigo-400",
+      bgColor: "bg-indigo-500/15",
       activeBg: "bg-indigo-600 text-white",
-      activePill: "bg-white dark:bg-slate-800 border-slate-200/90 dark:border-slate-700 text-slate-950 dark:text-white shadow-xs",
-      indicatorColor: "bg-indigo-600",
+      activePill: "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-950/50 border border-indigo-400/30 font-bold",
+      indicatorColor: "bg-indigo-300",
     },
     {
       label: "Members",
       href: "/portal/members",
       icon: Users,
-      color: "text-blue-600 dark:text-blue-400",
-      bgColor: "bg-blue-50 dark:bg-blue-950/60",
+      color: "text-blue-400",
+      bgColor: "bg-blue-500/15",
       activeBg: "bg-blue-600 text-white",
-      activePill: "bg-white dark:bg-slate-800 border-slate-200/90 dark:border-slate-700 text-slate-950 dark:text-white shadow-xs",
-      indicatorColor: "bg-blue-600",
+      activePill: "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-950/50 border border-blue-400/30 font-bold",
+      indicatorColor: "bg-blue-300",
     },
     {
       label: "Enquiries",
       href: "/portal/enquiries",
       icon: UserPlus,
-      color: "text-amber-600 dark:text-amber-400",
-      bgColor: "bg-amber-50 dark:bg-amber-950/60",
-      activeBg: "bg-amber-600 text-white",
-      activePill: "bg-white dark:bg-slate-800 border-slate-200/90 dark:border-slate-700 text-slate-950 dark:text-white shadow-xs",
-      indicatorColor: "bg-amber-600",
+      color: "text-amber-400",
+      bgColor: "bg-amber-500/15",
+      activeBg: "bg-amber-500 text-white",
+      activePill: "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md shadow-amber-950/50 border border-amber-400/30 font-bold",
+      indicatorColor: "bg-amber-300",
     },
     {
       label: "Payments & Dues",
       href: "/portal/payments",
       icon: CreditCard,
-      color: "text-emerald-600 dark:text-emerald-400",
-      bgColor: "bg-emerald-50 dark:bg-emerald-950/60",
+      color: "text-emerald-400",
+      bgColor: "bg-emerald-500/15",
       activeBg: "bg-emerald-600 text-white",
-      activePill: "bg-white dark:bg-slate-800 border-slate-200/90 dark:border-slate-700 text-slate-950 dark:text-white shadow-xs",
-      indicatorColor: "bg-emerald-600",
+      activePill: "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-950/50 border border-emerald-400/30 font-bold",
+      indicatorColor: "bg-emerald-300",
     },
     {
       label: "Reports",
       href: "/portal/reports",
       icon: BarChart3,
-      color: "text-purple-600 dark:text-purple-400",
-      bgColor: "bg-purple-50 dark:bg-purple-950/60",
+      color: "text-purple-400",
+      bgColor: "bg-purple-500/15",
       activeBg: "bg-purple-600 text-white",
-      activePill: "bg-white dark:bg-slate-800 border-slate-200/90 dark:border-slate-700 text-slate-950 dark:text-white shadow-xs",
-      indicatorColor: "bg-purple-600",
+      activePill: "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md shadow-purple-950/50 border border-purple-400/30 font-bold",
+      indicatorColor: "bg-purple-300",
     },
   ];
 
@@ -228,67 +228,72 @@ export function AppShell({ children }: AppShellProps) {
         </div>
       </header>
 
-      {/* Full-width container using side space with items-start for sticky sidebar */}
+      {/* Full-width container with items-start for sticky sidebar */}
       <div className="flex-1 flex w-full px-3 sm:px-6 lg:px-8 py-3.5 sm:py-5 gap-6 items-start">
         
-        {/* Left Sidebar - Fixed / Sticky with distinctive soft background & colorful badges (Desktop) */}
-        <aside className="hidden md:flex flex-col w-60 shrink-0 sticky top-20 z-20">
-          <div className="bg-slate-100/90 dark:bg-slate-900/90 backdrop-blur-xs rounded-2xl border border-slate-200/90 dark:border-slate-800 p-3 space-y-1.5 shadow-sm transition-colors flex flex-col max-h-[calc(100vh-6rem)] overflow-y-auto">
-            <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Navigation
-            </div>
-            
-            <div className="space-y-1 flex-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive =
-                  item.href === "/portal"
-                    ? pathname === "/portal"
-                    : pathname.startsWith(item.href);
+        {/* Left Sidebar - Long, Fixed, Rich Midnight Indigo Theme (Desktop) */}
+        <aside className="hidden md:flex flex-col w-64 shrink-0 sticky top-20 z-20">
+          <div className="bg-gradient-to-b from-slate-950 via-[#0f172a] to-[#1e1b4b] text-slate-200 rounded-2xl border border-indigo-900/50 p-3.5 space-y-2 shadow-xl shadow-slate-950/20 transition-colors flex flex-col min-h-[calc(100vh-6.5rem)] justify-between">
+            <div className="space-y-3">
+              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-indigo-300/80 flex items-center justify-between">
+                <span>Menu</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+              </div>
+              
+              <div className="space-y-1.5">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive =
+                    item.href === "/portal"
+                      ? pathname === "/portal"
+                      : pathname.startsWith(item.href);
 
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 ${
-                      isActive
-                        ? `${item.activePill} border font-bold shadow-xs`
-                        : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800/80 hover:shadow-2xs"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors shadow-2xs ${
-                          isActive ? item.activeBg : `${item.bgColor} ${item.color}`
-                        }`}
-                      >
-                        <Icon className="w-4 h-4" />
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
+                        isActive
+                          ? item.activePill
+                          : "text-slate-300 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors shadow-2xs ${
+                            isActive ? "bg-white/20 text-white" : `${item.bgColor} ${item.color}`
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <span>{item.label}</span>
                       </div>
-                      <span>{item.label}</span>
-                    </div>
-                    {isActive && (
-                      <span className={`w-1.5 h-1.5 rounded-full ${item.indicatorColor}`} />
-                    )}
-                  </Link>
-                );
-              })}
+                      {isActive ? (
+                        <span className={`w-1.5 h-1.5 rounded-full ${item.indicatorColor}`} />
+                      ) : (
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-500 opacity-0 group-hover:opacity-100 transition" />
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Reception Desk Live Status Footer Card */}
-            <div className="mt-auto pt-3 border-t border-slate-200/70 dark:border-slate-800 space-y-2">
-              <div className="p-3 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/60 text-[11px] space-y-1.5 shadow-2xs">
+            <div className="pt-3 border-t border-indigo-900/50 space-y-2">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-white/10 to-indigo-500/10 border border-white/10 text-[11px] space-y-1.5 backdrop-blur-xs">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 font-semibold text-slate-800 dark:text-slate-200">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <div className="flex items-center gap-1.5 font-semibold text-white">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                     <span>Front Desk</span>
                   </div>
-                  <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100/70 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded">
+                  <span className="text-[10px] font-semibold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-400/30">
                     Active
                   </span>
                 </div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between">
+                <div className="text-[10px] text-indigo-200/70 flex justify-between pt-0.5">
                   <span>Facility</span>
-                  <span className="font-medium text-slate-700 dark:text-slate-300">Concept I</span>
+                  <span className="font-semibold text-white">Concept I Gym</span>
                 </div>
               </div>
             </div>
