@@ -20,23 +20,29 @@ export async function getDashboardData() {
 
   // Concurrently execute all dashboard queries in parallel for maximum speed
   const [
-    soldToday,
-    soldWeek,
-    soldMonth,
+    subSoldToday,
+    subSoldWeek,
+    subSoldMonth,
+    ptSoldToday,
+    ptSoldWeek,
+    ptSoldMonth,
     paymentsToday,
     paymentsWeek,
     paymentsMonth,
     enquiriesToday,
     enquiriesWeek,
     enquiriesMonth,
-    totalDueAgg,
-    dueSubscriptions,
+    subDueAgg,
+    ptDueAgg,
+    dueSubsList,
+    duePTsList,
     pendingFollowUps,
     recentMembers,
-    expiringSoon,
+    expiringSubs,
+    expiringPTs,
     allMembers,
   ] = await Promise.all([
-    // 1. Memberships Sold
+    // 1. Memberships & PT Sold
     prisma.memberSubscription.count({
       where: { createdAt: { gte: todayStart, lte: todayEnd } },
     }),
@@ -46,8 +52,17 @@ export async function getDashboardData() {
     prisma.memberSubscription.count({
       where: { createdAt: { gte: monthStart, lte: monthEnd } },
     }),
+    prisma.memberPT.count({
+      where: { createdAt: { gte: todayStart, lte: todayEnd } },
+    }),
+    prisma.memberPT.count({
+      where: { createdAt: { gte: weekStart, lte: weekEnd } },
+    }),
+    prisma.memberPT.count({
+      where: { createdAt: { gte: monthStart, lte: monthEnd } },
+    }),
 
-    // 2. Sales Aggregate
+    // 2. Sales Aggregate (Payments table includes Membership, PT, and Due Clearances)
     prisma.payment.aggregate({
       _sum: { amount: true },
       where: { paymentDate: { gte: todayStart, lte: todayEnd } },
@@ -72,14 +87,32 @@ export async function getDashboardData() {
       where: { createdAt: { gte: monthStart, lte: monthEnd } },
     }),
 
-    // 4. Total Outstanding Due
+    // 4. Total Outstanding Due (Membership + PT)
     prisma.memberSubscription.aggregate({
       _sum: { dueAmount: true },
       where: { dueAmount: { gt: 0 } },
     }),
+    prisma.memberPT.aggregate({
+      _sum: { dueAmount: true },
+      where: { dueAmount: { gt: 0 } },
+    }),
 
-    // Due Subscriptions List
+    // Due Subscriptions & Due PTs List
     prisma.memberSubscription.findMany({
+      where: { dueAmount: { gt: 0 } },
+      include: {
+        member: {
+          select: {
+            id: true,
+            memberId: true,
+            fullName: true,
+            phone: true,
+          },
+        },
+      },
+      orderBy: { dueAmount: "desc" },
+    }),
+    prisma.memberPT.findMany({
       where: { dueAmount: { gt: 0 } },
       include: {
         member: {
@@ -114,11 +147,33 @@ export async function getDashboardData() {
           take: 1,
           orderBy: { createdAt: "desc" },
         },
+        ptSubscriptions: {
+          where: { status: "ACTIVE" },
+          take: 1,
+          orderBy: { createdAt: "desc" },
+        },
       },
     }),
 
-    // 7. Expiring Soon (Next 7 days)
+    // 7. Expiring Soon (Next 7 days for both Membership and PT)
     prisma.memberSubscription.findMany({
+      where: {
+        status: "ACTIVE",
+        endDate: { gte: todayStart, lte: addDays(now, 7) },
+      },
+      include: {
+        member: {
+          select: {
+            id: true,
+            memberId: true,
+            fullName: true,
+            phone: true,
+          },
+        },
+      },
+      orderBy: { endDate: "asc" },
+    }),
+    prisma.memberPT.findMany({
       where: {
         status: "ACTIVE",
         endDate: { gte: todayStart, lte: addDays(now, 7) },
@@ -211,12 +266,56 @@ export async function getDashboardData() {
 
   upcomingEvents.sort((a, b) => a.daysUntil - b.daysUntil);
 
+  // Combine Due Subscriptions and Due PTs
+  const combinedDueItems = [
+    ...dueSubsList.map((s) => ({
+      id: s.id,
+      planName: s.planName,
+      totalAmount: s.totalAmount,
+      dueAmount: s.dueAmount,
+      startDate: s.startDate,
+      endDate: s.endDate,
+      member: s.member,
+      type: "MEMBERSHIP" as const,
+    })),
+    ...duePTsList.map((pt) => ({
+      id: pt.id,
+      planName: `PT: ${pt.planName} (${pt.trainerName || "Trainer"})`,
+      totalAmount: pt.totalAmount,
+      dueAmount: pt.dueAmount,
+      startDate: pt.startDate,
+      endDate: pt.endDate,
+      member: pt.member,
+      type: "PT" as const,
+    })),
+  ].sort((a, b) => b.dueAmount - a.dueAmount);
+
+  // Combine Expiring Soon (Membership + PT)
+  const combinedExpiringSoon = [
+    ...expiringSubs.map((s) => ({
+      id: s.id,
+      planName: s.planName,
+      endDate: s.endDate,
+      member: s.member,
+      type: "MEMBERSHIP" as const,
+    })),
+    ...expiringPTs.map((pt) => ({
+      id: pt.id,
+      planName: `PT: ${pt.planName} (${pt.trainerName || "Trainer"})`,
+      endDate: pt.endDate,
+      member: pt.member,
+      type: "PT" as const,
+    })),
+  ].sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
+
+  const totalOutstandingDue = (subDueAgg._sum.dueAmount || 0) + (ptDueAgg._sum.dueAmount || 0);
+
   return {
     metrics: {
       sold: {
-        today: soldToday,
-        week: soldWeek,
-        month: soldMonth,
+        today: subSoldToday + ptSoldToday,
+        week: subSoldWeek + ptSoldWeek,
+        month: subSoldMonth + ptSoldMonth,
       },
       sales: {
         today: paymentsToday._sum.amount || 0,
@@ -228,12 +327,12 @@ export async function getDashboardData() {
         week: enquiriesWeek,
         month: enquiriesMonth,
       },
-      totalDue: totalDueAgg._sum.dueAmount || 0,
+      totalDue: totalOutstandingDue,
     },
-    dueSubscriptions,
+    dueSubscriptions: combinedDueItems,
     pendingFollowUps,
     recentMembers,
-    expiringSoon,
+    expiringSoon: combinedExpiringSoon,
     upcomingEvents,
   };
 }

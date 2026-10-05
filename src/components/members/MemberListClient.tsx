@@ -42,8 +42,23 @@ export function MemberListClient({ members }: MemberListClientProps) {
     dueAmount: number;
   } | null>(null);
 
-  // Quick stats calculation
+  // Quick stats calculation based on real-time subscription end dates
   const now = new Date();
+
+  const activeCount = members.filter((m) => {
+    const sub = m.subscriptions?.[0];
+    return sub && sub.status === "ACTIVE" && new Date(sub.endDate) >= now;
+  }).length;
+
+  const expiredCount = members.filter((m) => {
+    const sub = m.subscriptions?.[0];
+    return sub && (sub.status === "EXPIRED" || new Date(sub.endDate) < now);
+  }).length;
+
+  const inactiveCount = members.filter(
+    (m) => m.membershipStatus === "INACTIVE" || !m.subscriptions || m.subscriptions.length === 0
+  ).length;
+
   const activePTCount = members.filter((m) => {
     const pt = m.ptSubscriptions?.[0];
     return pt && pt.status === "ACTIVE" && new Date(pt.endDate) >= now;
@@ -55,9 +70,6 @@ export function MemberListClient({ members }: MemberListClientProps) {
   }).length;
 
   const noPTCount = members.filter((m) => !m.ptSubscriptions || m.ptSubscriptions.length === 0).length;
-  const inactiveCount = members.filter(
-    (m) => m.membershipStatus === "INACTIVE" || !m.subscriptions || m.subscriptions.length === 0
-  ).length;
 
   const filteredMembers = members.filter((m) => {
     const q = search.toLowerCase();
@@ -73,15 +85,20 @@ export function MemberListClient({ members }: MemberListClientProps) {
     const ptDue = latestPT?.dueAmount || 0;
     const totalDue = subDue + ptDue;
 
+    // Real-time dynamic status evaluation
+    const isSubActive = latestSub && latestSub.status === "ACTIVE" && new Date(latestSub.endDate) >= now;
+    const isSubExpired = latestSub && (latestSub.status === "EXPIRED" || new Date(latestSub.endDate) < now);
+    const isSubInactive = !latestSub || m.membershipStatus === "INACTIVE";
+
     const matchesStatus =
       statusFilter === "ALL"
         ? true
         : statusFilter === "ACTIVE"
-        ? m.membershipStatus === "ACTIVE"
+        ? isSubActive
         : statusFilter === "INACTIVE"
-        ? m.membershipStatus === "INACTIVE" || !m.subscriptions || m.subscriptions.length === 0
+        ? isSubInactive
         : statusFilter === "EXPIRED"
-        ? m.membershipStatus === "EXPIRED"
+        ? isSubExpired
         : true;
 
     // PT Filter Match
@@ -270,7 +287,7 @@ export function MemberListClient({ members }: MemberListClientProps) {
                   : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
               }`}
             >
-              Active
+              Active ({activeCount})
             </button>
 
             <button
@@ -298,7 +315,7 @@ export function MemberListClient({ members }: MemberListClientProps) {
                   : "bg-rose-50 text-rose-700 hover:bg-rose-100"
               }`}
             >
-              Expired
+              Expired ({expiredCount})
             </button>
 
             <button

@@ -81,6 +81,7 @@ export async function getMembers(filters?: {
   hasDue?: boolean;
 }) {
   try {
+    const now = new Date();
     const whereClause: any = {};
 
     if (filters?.search) {
@@ -93,11 +94,39 @@ export async function getMembers(filters?: {
     }
 
     if (filters?.status && filters.status !== "ALL") {
-      whereClause.membershipStatus = filters.status as MembershipStatus;
+      if (filters.status === "ACTIVE") {
+        whereClause.subscriptions = {
+          some: {
+            status: "ACTIVE",
+            endDate: { gte: now },
+          },
+        };
+      } else if (filters.status === "EXPIRED") {
+        whereClause.OR = [
+          { membershipStatus: "EXPIRED" },
+          {
+            subscriptions: {
+              some: {
+                endDate: { lt: now },
+              },
+              none: {
+                status: "ACTIVE",
+                endDate: { gte: now },
+              },
+            },
+          },
+        ];
+      } else if (filters.status === "INACTIVE") {
+        whereClause.OR = [
+          { membershipStatus: "INACTIVE" },
+          { subscriptions: { none: {} } },
+        ];
+      } else {
+        whereClause.membershipStatus = filters.status as MembershipStatus;
+      }
     }
 
     if (filters?.ptStatus && filters.ptStatus !== "ALL") {
-      const now = new Date();
       if (filters.ptStatus === "ACTIVE_PT") {
         whereClause.ptSubscriptions = {
           some: {
@@ -363,6 +392,23 @@ export async function createMember(input: CreateMemberInput) {
           },
         });
       }
+    }
+
+    // Auto-update any matching prospective enquiry with the same phone to CONVERTED
+    try {
+      const cleanPhone = input.phone.trim();
+      await prisma.enquiry.updateMany({
+        where: {
+          phone: { equals: cleanPhone },
+          status: { not: "CONVERTED" },
+        },
+        data: {
+          status: "CONVERTED",
+        },
+      });
+      revalidatePath("/portal/enquiries");
+    } catch (enqErr) {
+      console.warn("Auto-convert enquiry warning:", enqErr);
     }
 
     revalidatePath("/portal/members");
