@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
-import { X, Printer, CheckCircle2, Edit } from "lucide-react";
+import React, { useState } from "react";
+import { X, Printer, CheckCircle2, Edit, MessageCircle, Download } from "lucide-react";
 import { formatINR, formatDate } from "@/lib/utils";
+import { shareOnWhatsApp, downloadReceiptPdf } from "@/lib/receipt-share";
 
 interface ReceiptModalProps {
   receipt: {
@@ -50,6 +51,9 @@ interface ReceiptModalProps {
 }
 
 export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptModalProps) {
+  const [isSharing, setIsSharing] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
   if (!receipt) return null;
 
   const memberName = receipt.member?.fullName || "Member";
@@ -99,6 +103,36 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleWhatsAppShare = async () => {
+    setIsSharing(true);
+    try {
+      await shareOnWhatsApp(
+        {
+          ...receipt,
+          planName,
+          startDate,
+          endDate,
+        },
+        "gym-receipt-modal"
+      );
+    } catch (err) {
+      console.error("WhatsApp share failed:", err);
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    setIsDownloading(true);
+    try {
+      await downloadReceiptPdf("gym-receipt-modal", receipt.receiptNo);
+    } catch (err) {
+      console.error("PDF download failed:", err);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   return (
@@ -294,22 +328,47 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
         </div>
 
         {/* Modal Actions (Hidden in Print) */}
-        <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2 print:hidden">
+        <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 print:hidden flex-wrap">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 rounded-lg transition"
+            className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 rounded-lg transition"
           >
             Close
           </button>
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow-sm transition"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span>Print Invoice</span>
-          </button>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              disabled={isSharing}
+              onClick={handleWhatsAppShare}
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow-sm transition active:scale-[0.98] disabled:opacity-50"
+              title="Open WhatsApp chat with pre-filled receipt details and download PDF"
+            >
+              <MessageCircle className="w-4 h-4 text-white" />
+              <span>{isSharing ? "Generating..." : "Share on WhatsApp"}</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={isDownloading}
+              onClick={handleDownloadPdf}
+              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-lg flex items-center gap-1.5 border border-slate-200 transition active:scale-[0.98] disabled:opacity-50"
+              title="Download official PDF receipt"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-600" />
+              <span>{isDownloading ? "Saving..." : "Download PDF"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow-sm transition active:scale-[0.98]"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
