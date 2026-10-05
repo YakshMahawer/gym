@@ -19,6 +19,9 @@ import {
   RefreshCw,
   Sparkles,
   Download,
+  Filter,
+  SlidersHorizontal,
+  RotateCcw,
 } from "lucide-react";
 import { formatINR, formatDate, formatDateTime } from "@/lib/utils";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
@@ -38,6 +41,10 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
   const [activeTab, setActiveTab] = useState<"history" | "dues">("history");
   const [search, setSearch] = useState("");
   const [methodFilter, setMethodFilter] = useState("ALL");
+  const [typeFilter, setTypeFilter] = useState("ALL");
+  const [timeframeFilter, setTimeframeFilter] = useState<"ALL" | "TODAY" | "THIS_WEEK" | "THIS_MONTH" | "LAST_MONTH">("ALL");
+  const [sortOrder, setSortOrder] = useState<"REC_DESC" | "REC_ASC" | "DATE_DESC" | "DATE_ASC" | "AMOUNT_DESC" | "AMOUNT_ASC">("REC_DESC");
+
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<any | null>(null);
   const [deletingPayment, setDeletingPayment] = useState<any | null>(null);
@@ -48,11 +55,18 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
   const totalCollected = payments.reduce((acc, p) => acc + p.amount, 0);
   const totalPendingDue = dueSubscriptions.reduce((acc, s) => acc + s.dueAmount, 0);
 
-  const [typeFilter, setTypeFilter] = useState("ALL");
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfWeek = new Date(startOfToday);
+  startOfWeek.setDate(startOfWeek.getDate() - 7);
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 
   const filteredPayments = payments.filter((p) => {
-    const q = search.toLowerCase();
+    const q = search.toLowerCase().trim();
     const matchesSearch =
+      !q ||
       p.receiptNo.toLowerCase().includes(q) ||
       p.member.fullName.toLowerCase().includes(q) ||
       p.member.phone.includes(q) ||
@@ -70,17 +84,64 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
         ? p.paymentType === "DUE_CLEARANCE"
         : true;
 
-    return matchesSearch && matchesMethod && matchesType;
+    let matchesTimeframe = true;
+    if (timeframeFilter !== "ALL") {
+      const pDate = new Date(p.paymentDate);
+      if (timeframeFilter === "TODAY") {
+        matchesTimeframe = pDate >= startOfToday;
+      } else if (timeframeFilter === "THIS_WEEK") {
+        matchesTimeframe = pDate >= startOfWeek;
+      } else if (timeframeFilter === "THIS_MONTH") {
+        matchesTimeframe = pDate >= startOfMonth;
+      } else if (timeframeFilter === "LAST_MONTH") {
+        matchesTimeframe = pDate >= startOfLastMonth && pDate <= endOfLastMonth;
+      }
+    }
+
+    return matchesSearch && matchesMethod && matchesType && matchesTimeframe;
   });
 
-  // Strict sequential order by receipt number (highest / newest receipt ID first)
-  filteredPayments.sort((a, b) =>
-    b.receiptNo.localeCompare(a.receiptNo, undefined, { numeric: true, sensitivity: "base" })
-  );
+  const sortedPayments = [...filteredPayments].sort((a, b) => {
+    if (sortOrder === "REC_DESC") {
+      return b.receiptNo.localeCompare(a.receiptNo, undefined, { numeric: true, sensitivity: "base" });
+    }
+    if (sortOrder === "REC_ASC") {
+      return a.receiptNo.localeCompare(b.receiptNo, undefined, { numeric: true, sensitivity: "base" });
+    }
+    if (sortOrder === "AMOUNT_DESC") {
+      return b.amount - a.amount;
+    }
+    if (sortOrder === "AMOUNT_ASC") {
+      return a.amount - b.amount;
+    }
+    if (sortOrder === "DATE_DESC") {
+      return new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime();
+    }
+    if (sortOrder === "DATE_ASC") {
+      return new Date(a.paymentDate).getTime() - new Date(b.paymentDate).getTime();
+    }
+    return 0;
+  });
+
+  const filteredTotalAmount = sortedPayments.reduce((acc, p) => acc + p.amount, 0);
+
+  const activeFiltersCount =
+    (methodFilter !== "ALL" ? 1 : 0) +
+    (typeFilter !== "ALL" ? 1 : 0) +
+    (timeframeFilter !== "ALL" ? 1 : 0) +
+    (search.trim() !== "" ? 1 : 0);
+
+  const resetAllFilters = () => {
+    setSearch("");
+    setMethodFilter("ALL");
+    setTypeFilter("ALL");
+    setTimeframeFilter("ALL");
+    setSortOrder("REC_DESC");
+  };
 
   const handleExportPayments = () => {
     exportToExcel({
-      data: filteredPayments,
+      data: sortedPayments,
       fileName: "Gym_Payment_Transactions",
       sheetName: "Payments",
       columns: [
@@ -214,56 +275,179 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
         {/* TAB 1: Payment History */}
         {activeTab === "history" && (
           <div className="p-3.5 sm:p-5 space-y-4">
-            {/* Filter Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search receipt no, member, phone..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white"
-                />
+            {/* Dedicated Dropdown Filter Section */}
+            <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/90 space-y-3.5">
+              {/* Search Bar & Stats */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search receipt no, member name, phone..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-10 pr-9 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  />
+                  {search && (
+                    <button
+                      onClick={() => setSearch("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 rounded-full"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+                  <span className="text-xs font-medium text-slate-500">
+                    Showing <strong className="font-bold text-slate-900">{sortedPayments.length}</strong> of {payments.length} (
+                    <span className="text-emerald-700 font-bold">{formatINR(filteredTotalAmount)}</span>)
+                  </span>
+
+                  {activeFiltersCount > 0 && (
+                    <button
+                      onClick={resetAllFilters}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Reset</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={handleExportPayments}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold shadow-2xs transition active:bg-slate-200"
+                    title="Download filtered payment records as Excel (.xlsx)"
+                  >
+                    <Download className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="hidden sm:inline">Export Excel</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap">
-                <select
-                  value={methodFilter}
-                  onChange={(e) => setMethodFilter(e.target.value)}
-                  className="px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-                >
-                  <option value="ALL">All Payment Modes</option>
-                  <option value="UPI">UPI</option>
-                  <option value="CASH">Cash</option>
-                  <option value="CARD">Card / POS</option>
-                  <option value="BANK_TRANSFER">Bank Transfer</option>
-                  <option value="CHEQUE">Cheque</option>
-                </select>
+              {/* Filter Dropdowns Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 border-t border-slate-200/60">
+                {/* 1. Payment Mode */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    Payment Mode
+                  </label>
+                  <select
+                    value={methodFilter}
+                    onChange={(e) => setMethodFilter(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 font-medium text-slate-800"
+                  >
+                    <option value="ALL">All Payment Modes</option>
+                    <option value="UPI">UPI</option>
+                    <option value="CASH">Cash</option>
+                    <option value="CARD">Card / POS</option>
+                    <option value="BANK_TRANSFER">Bank Transfer</option>
+                    <option value="CHEQUE">Cheque</option>
+                  </select>
+                </div>
 
-                <select
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                  className="px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-                >
-                  <option value="ALL">All Payment Types</option>
-                  <option value="MEMBERSHIP_FEE">Membership Fee</option>
-                  <option value="PERSONAL_TRAINING">Personal Training (PT)</option>
-                  <option value="DUE_CLEARANCE">Due Clearance</option>
-                </select>
+                {/* 2. Payment Type */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    Payment Category
+                  </label>
+                  <select
+                    value={typeFilter}
+                    onChange={(e) => setTypeFilter(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 font-medium text-slate-800"
+                  >
+                    <option value="ALL">All Payment Types</option>
+                    <option value="MEMBERSHIP_FEE">Membership Fee</option>
+                    <option value="PERSONAL_TRAINING">Personal Training (PT)</option>
+                    <option value="DUE_CLEARANCE">Due Clearance</option>
+                  </select>
+                </div>
 
-                <button
-                  onClick={handleExportPayments}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold shadow-2xs transition active:bg-slate-200"
-                  title="Download filtered payment records as Excel (.xlsx) with auto-filters"
-                >
-                  <Download className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="hidden sm:inline">Export Excel</span>
-                </button>
+                {/* 3. Timeframe */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    Timeframe
+                  </label>
+                  <select
+                    value={timeframeFilter}
+                    onChange={(e) => setTimeframeFilter(e.target.value as any)}
+                    className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 font-medium text-slate-800"
+                  >
+                    <option value="ALL">All Time</option>
+                    <option value="TODAY">Today</option>
+                    <option value="THIS_WEEK">This Week (Last 7 Days)</option>
+                    <option value="THIS_MONTH">This Month</option>
+                    <option value="LAST_MONTH">Last Month</option>
+                  </select>
+                </div>
+
+                {/* 4. Sort By */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    Sort By
+                  </label>
+                  <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value as any)}
+                    className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 font-medium text-slate-800"
+                  >
+                    <option value="REC_DESC">Receipt: Newest First</option>
+                    <option value="REC_ASC">Receipt: Oldest First</option>
+                    <option value="DATE_DESC">Date: Newest First</option>
+                    <option value="DATE_ASC">Date: Oldest First</option>
+                    <option value="AMOUNT_DESC">Amount: Highest First</option>
+                    <option value="AMOUNT_ASC">Amount: Lowest First</option>
+                  </select>
+                </div>
               </div>
+
+              {/* Active Filter Tags */}
+              {activeFiltersCount > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-slate-200/60 text-xs">
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-1">
+                    Active:
+                  </span>
+
+                  {methodFilter !== "ALL" && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white text-slate-800 rounded-md text-[11px] font-medium border border-slate-200">
+                      Mode: {methodFilter}
+                      <button onClick={() => setMethodFilter("ALL")} className="hover:text-rose-600">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+
+                  {typeFilter !== "ALL" && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white text-slate-800 rounded-md text-[11px] font-medium border border-slate-200">
+                      Type: {typeFilter.replace(/_/g, " ")}
+                      <button onClick={() => setTypeFilter("ALL")} className="hover:text-rose-600">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+
+                  {timeframeFilter !== "ALL" && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-800 rounded-md text-[11px] font-medium border border-indigo-200">
+                      Timeframe: {timeframeFilter.replace(/_/g, " ")}
+                      <button onClick={() => setTimeframeFilter("ALL")} className="hover:text-rose-600">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+
+                  {search.trim() && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white text-slate-800 rounded-md text-[11px] font-medium border border-slate-200">
+                      Search: &quot;{search}&quot;
+                      <button onClick={() => setSearch("")} className="hover:text-rose-600">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
-            {filteredPayments.length === 0 ? (
+            {sortedPayments.length === 0 ? (
               <div className="p-10 text-center bg-slate-50/50 rounded-lg border border-dashed border-slate-200">
                 <p className="text-xs text-slate-500">No payment records found.</p>
               </div>
@@ -271,7 +455,7 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
               <>
                 {/* Mobile Transactions Cards (block md:hidden) */}
                 <div className="grid grid-cols-1 gap-2.5 md:hidden">
-                  {filteredPayments.map((pm) => (
+                  {sortedPayments.map((pm) => (
                     <div
                       key={pm.id}
                       className="p-3.5 bg-white rounded-xl border border-slate-200/90 shadow-2xs space-y-2.5"
@@ -361,7 +545,7 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                      {filteredPayments.map((pm) => (
+                      {sortedPayments.map((pm) => (
                         <tr key={pm.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition group">
                           <td className="py-3 px-4">
                             <span className="font-mono font-bold text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">

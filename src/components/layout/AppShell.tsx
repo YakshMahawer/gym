@@ -186,36 +186,65 @@ export function AppShell({ children }: AppShellProps) {
       {/* Full-width container using side space */}
       <div className="flex-1 flex w-full px-3 sm:px-6 lg:px-8 py-3.5 sm:py-5 gap-6">
         
-        {/* Left Sidebar - Minimal & Sleek (Desktop) */}
-        <aside className="hidden md:flex flex-col w-56 shrink-0 space-y-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 p-2 space-y-1 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-colors">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive =
-                item.href === "/portal"
-                  ? pathname === "/portal"
-                  : pathname.startsWith(item.href);
+        {/* Left Sidebar - Elegant Dark Navy / Slate (Desktop) */}
+        <aside className="hidden md:flex flex-col w-60 shrink-0 space-y-4">
+          <div className="bg-slate-900 text-slate-300 rounded-2xl border border-slate-800/90 p-3 space-y-1.5 shadow-lg shadow-slate-950/10 transition-colors flex flex-col min-h-[calc(100vh-8.5rem)]">
+            <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              Main Menu
+            </div>
+            
+            <div className="space-y-1 flex-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive =
+                  item.href === "/portal"
+                    ? pathname === "/portal"
+                    : pathname.startsWith(item.href);
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                    isActive
-                      ? "bg-slate-900 dark:bg-slate-800 dark:border dark:border-slate-700/80 text-white shadow-xs"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/60"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Icon className={`w-4 h-4 ${isActive ? "text-rose-400" : "text-slate-400 dark:text-slate-500"}`} />
-                    <span>{item.label}</span>
-                  </div>
-                  {isActive && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                  )}
-                </Link>
-              );
-            })}
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
+                      isActive
+                        ? "bg-gradient-to-r from-rose-600 to-rose-700 text-white shadow-md shadow-rose-950/30 font-bold"
+                        : "text-slate-300 hover:text-white hover:bg-slate-800/80"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-400"}`} />
+                      <span>{item.label}</span>
+                    </div>
+                    {isActive ? (
+                      <span className="w-1.5 h-1.5 rounded-full bg-white shadow-xs" />
+                    ) : (
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-500 opacity-0 group-hover:opacity-100 transition" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Reception Desk Live Status Footer */}
+            <div className="mt-auto pt-3 border-t border-slate-800/80 px-1 space-y-2">
+              <div className="flex items-center justify-between text-[11px] px-2">
+                <div className="flex items-center gap-1.5 text-slate-300 font-medium">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Front Desk Active</span>
+                </div>
+                <span className="text-[10px] text-slate-500 font-mono">v1.2</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-800/50 border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Main Facility</span>
+                  <span className="font-semibold text-slate-200">Concept I</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px] text-slate-500">
+                  <span>Shift Status</span>
+                  <span className="text-emerald-400 font-medium">Online</span>
+                </div>
+              </div>
+            </div>
           </div>
         </aside>
 
