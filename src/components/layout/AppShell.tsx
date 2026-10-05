@@ -46,7 +46,7 @@ export function AppShell({ children }: AppShellProps) {
       color: "text-indigo-600 dark:text-indigo-400",
       bgColor: "bg-indigo-50 dark:bg-indigo-950/60",
       activeBg: "bg-indigo-600 text-white",
-      activePill: "bg-indigo-50/90 border-indigo-200/90 text-indigo-950 dark:bg-indigo-950/80 dark:border-indigo-800 dark:text-indigo-100",
+      activePill: "bg-white dark:bg-slate-800 border-slate-200/90 dark:border-slate-700 text-slate-950 dark:text-white shadow-xs",
       indicatorColor: "bg-indigo-600",
     },
     {
@@ -56,7 +56,7 @@ export function AppShell({ children }: AppShellProps) {
       color: "text-blue-600 dark:text-blue-400",
       bgColor: "bg-blue-50 dark:bg-blue-950/60",
       activeBg: "bg-blue-600 text-white",
-      activePill: "bg-blue-50/90 border-blue-200/90 text-blue-950 dark:bg-blue-950/80 dark:border-blue-800 dark:text-blue-100",
+      activePill: "bg-white dark:bg-slate-800 border-slate-200/90 dark:border-slate-700 text-slate-950 dark:text-white shadow-xs",
       indicatorColor: "bg-blue-600",
     },
     {
@@ -66,7 +66,7 @@ export function AppShell({ children }: AppShellProps) {
       color: "text-amber-600 dark:text-amber-400",
       bgColor: "bg-amber-50 dark:bg-amber-950/60",
       activeBg: "bg-amber-600 text-white",
-      activePill: "bg-amber-50/90 border-amber-200/90 text-amber-950 dark:bg-amber-950/80 dark:border-amber-800 dark:text-amber-100",
+      activePill: "bg-white dark:bg-slate-800 border-slate-200/90 dark:border-slate-700 text-slate-950 dark:text-white shadow-xs",
       indicatorColor: "bg-amber-600",
     },
     {
@@ -76,7 +76,7 @@ export function AppShell({ children }: AppShellProps) {
       color: "text-emerald-600 dark:text-emerald-400",
       bgColor: "bg-emerald-50 dark:bg-emerald-950/60",
       activeBg: "bg-emerald-600 text-white",
-      activePill: "bg-emerald-50/90 border-emerald-200/90 text-emerald-950 dark:bg-emerald-950/80 dark:border-emerald-800 dark:text-emerald-100",
+      activePill: "bg-white dark:bg-slate-800 border-slate-200/90 dark:border-slate-700 text-slate-950 dark:text-white shadow-xs",
       indicatorColor: "bg-emerald-600",
     },
     {
@@ -86,7 +86,7 @@ export function AppShell({ children }: AppShellProps) {
       color: "text-purple-600 dark:text-purple-400",
       bgColor: "bg-purple-50 dark:bg-purple-950/60",
       activeBg: "bg-purple-600 text-white",
-      activePill: "bg-purple-50/90 border-purple-200/90 text-purple-950 dark:bg-purple-950/80 dark:border-purple-800 dark:text-purple-100",
+      activePill: "bg-white dark:bg-slate-800 border-slate-200/90 dark:border-slate-700 text-slate-950 dark:text-white shadow-xs",
       indicatorColor: "bg-purple-600",
     },
   ];
@@ -228,12 +228,12 @@ export function AppShell({ children }: AppShellProps) {
         </div>
       </header>
 
-      {/* Full-width container using side space */}
-      <div className="flex-1 flex w-full px-3 sm:px-6 lg:px-8 py-3.5 sm:py-5 gap-6">
+      {/* Full-width container using side space with items-start for sticky sidebar */}
+      <div className="flex-1 flex w-full px-3 sm:px-6 lg:px-8 py-3.5 sm:py-5 gap-6 items-start">
         
-        {/* Left Sidebar - Modern Clean Card with Colorful Icon Accents (Desktop) */}
-        <aside className="hidden md:flex flex-col w-60 shrink-0 space-y-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-3 space-y-1.5 shadow-sm transition-colors flex flex-col min-h-[calc(100vh-8.5rem)]">
+        {/* Left Sidebar - Fixed / Sticky with distinctive soft background & colorful badges (Desktop) */}
+        <aside className="hidden md:flex flex-col w-60 shrink-0 sticky top-20 z-20">
+          <div className="bg-slate-100/90 dark:bg-slate-900/90 backdrop-blur-xs rounded-2xl border border-slate-200/90 dark:border-slate-800 p-3 space-y-1.5 shadow-sm transition-colors flex flex-col max-h-[calc(100vh-6rem)] overflow-y-auto">
             <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
               Navigation
             </div>
@@ -252,13 +252,13 @@ export function AppShell({ children }: AppShellProps) {
                     href={item.href}
                     className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 ${
                       isActive
-                        ? `${item.activePill} border shadow-xs font-bold`
-                        : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/70"
+                        ? `${item.activePill} border font-bold shadow-xs`
+                        : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800/80 hover:shadow-2xs"
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
                       <div
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors shadow-2xs ${
                           isActive ? item.activeBg : `${item.bgColor} ${item.color}`
                         }`}
                       >
@@ -275,8 +275,8 @@ export function AppShell({ children }: AppShellProps) {
             </div>
 
             {/* Reception Desk Live Status Footer Card */}
-            <div className="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-slate-50 to-indigo-50/40 dark:from-slate-800/60 dark:to-indigo-950/30 border border-slate-200/70 dark:border-slate-800 text-[11px] space-y-1.5">
+            <div className="mt-auto pt-3 border-t border-slate-200/70 dark:border-slate-800 space-y-2">
+              <div className="p-3 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/60 text-[11px] space-y-1.5 shadow-2xs">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 font-semibold text-slate-800 dark:text-slate-200">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
