@@ -39,37 +39,82 @@ export function AppShell({ children }: AppShellProps) {
   const [notificationOpen, setNotificationOpen] = useState(false);
 
   const navItems = [
-    { label: "Dashboard", href: "/portal", icon: LayoutDashboard },
-    { label: "Members", href: "/portal/members", icon: Users },
-    { label: "Enquiries", href: "/portal/enquiries", icon: UserPlus },
-    { label: "Payments & Dues", href: "/portal/payments", icon: CreditCard },
-    { label: "Reports", href: "/portal/reports", icon: BarChart3 },
+    {
+      label: "Dashboard",
+      href: "/portal",
+      icon: LayoutDashboard,
+      color: "text-indigo-600 dark:text-indigo-400",
+      bgColor: "bg-indigo-50 dark:bg-indigo-950/60",
+      activeBg: "bg-indigo-600 text-white",
+      activePill: "bg-indigo-50/90 border-indigo-200/90 text-indigo-950 dark:bg-indigo-950/80 dark:border-indigo-800 dark:text-indigo-100",
+      indicatorColor: "bg-indigo-600",
+    },
+    {
+      label: "Members",
+      href: "/portal/members",
+      icon: Users,
+      color: "text-blue-600 dark:text-blue-400",
+      bgColor: "bg-blue-50 dark:bg-blue-950/60",
+      activeBg: "bg-blue-600 text-white",
+      activePill: "bg-blue-50/90 border-blue-200/90 text-blue-950 dark:bg-blue-950/80 dark:border-blue-800 dark:text-blue-100",
+      indicatorColor: "bg-blue-600",
+    },
+    {
+      label: "Enquiries",
+      href: "/portal/enquiries",
+      icon: UserPlus,
+      color: "text-amber-600 dark:text-amber-400",
+      bgColor: "bg-amber-50 dark:bg-amber-950/60",
+      activeBg: "bg-amber-600 text-white",
+      activePill: "bg-amber-50/90 border-amber-200/90 text-amber-950 dark:bg-amber-950/80 dark:border-amber-800 dark:text-amber-100",
+      indicatorColor: "bg-amber-600",
+    },
+    {
+      label: "Payments & Dues",
+      href: "/portal/payments",
+      icon: CreditCard,
+      color: "text-emerald-600 dark:text-emerald-400",
+      bgColor: "bg-emerald-50 dark:bg-emerald-950/60",
+      activeBg: "bg-emerald-600 text-white",
+      activePill: "bg-emerald-50/90 border-emerald-200/90 text-emerald-950 dark:bg-emerald-950/80 dark:border-emerald-800 dark:text-emerald-100",
+      indicatorColor: "bg-emerald-600",
+    },
+    {
+      label: "Reports",
+      href: "/portal/reports",
+      icon: BarChart3,
+      color: "text-purple-600 dark:text-purple-400",
+      bgColor: "bg-purple-50 dark:bg-purple-950/60",
+      activeBg: "bg-purple-600 text-white",
+      activePill: "bg-purple-50/90 border-purple-200/90 text-purple-950 dark:bg-purple-950/80 dark:border-purple-800 dark:text-purple-100",
+      indicatorColor: "bg-purple-600",
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50/70 dark:bg-slate-950 flex flex-col antialiased text-slate-800 dark:text-slate-100 pb-20 md:pb-0 transition-colors duration-200">
-      {/* Top Header Bar - Minimal & Clean */}
-      <header className="sticky top-0 z-40 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-colors duration-200">
+    <div className="min-h-screen bg-slate-50/80 dark:bg-slate-950 flex flex-col antialiased text-slate-800 dark:text-slate-100 pb-20 md:pb-0 transition-colors duration-200">
+      {/* Top Header Bar - Colorful Slate/Indigo Gradient with Brand Elements */}
+      <header className="sticky top-0 z-40 bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white border-b border-indigo-900/40 shadow-md transition-colors duration-200">
         <div className="w-full px-3.5 sm:px-6 lg:px-8 h-15 sm:h-16 flex items-center justify-between gap-3 sm:gap-4">
           
           {/* Brand Logo & Mobile Menu Toggle */}
           <div className="flex items-center gap-2.5 sm:gap-3">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 -ml-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 md:hidden text-slate-600 dark:text-slate-300 active:bg-slate-200 transition"
+              className="p-2 -ml-1 rounded-lg hover:bg-white/10 md:hidden text-slate-300 active:bg-white/20 transition"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
-            <Link href="/portal" className="flex items-center gap-2 sm:gap-2.5 group">
-              <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-xl bg-slate-900 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-white flex items-center justify-center font-bold shadow-sm transition-colors">
-                <Dumbbell className="w-4 h-4 text-white" />
+            <Link href="/portal" className="flex items-center gap-2.5 group">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-amber-500 text-white flex items-center justify-center font-bold shadow-md shadow-rose-500/20 transition-transform group-hover:scale-105">
+                <Dumbbell className="w-4.5 h-4.5 text-white" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm sm:text-base font-bold tracking-tight text-slate-900 dark:text-white leading-none">
-                  Concept I <span className="text-rose-600 dark:text-rose-500">Gym</span>
+                <span className="text-sm sm:text-base font-bold tracking-tight text-white leading-none">
+                  Concept I <span className="text-rose-400 font-extrabold">Gym</span>
                 </span>
-                <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium tracking-wide">
+                <span className="text-[9px] sm:text-[10px] text-indigo-200/70 font-medium tracking-wide">
                   Reception Desk
                 </span>
               </div>
@@ -77,12 +122,12 @@ export function AppShell({ children }: AppShellProps) {
           </div>
 
           {/* Quick Actions in Top Bar */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* View Live Website link */}
             <Link
               href="/"
               target="_blank"
-              className="hidden lg:inline-flex items-center gap-1 px-2.5 py-1 text-[11px] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+              className="hidden lg:inline-flex items-center gap-1 px-3 py-1.5 text-xs text-indigo-200 hover:text-white hover:bg-white/10 border border-white/10 rounded-xl transition"
               title="Open Public Website"
             >
               <span>Live Site ↗</span>
@@ -91,40 +136,40 @@ export function AppShell({ children }: AppShellProps) {
             {/* Desktop + New Enquiry Button */}
             <button
               onClick={() => setEnquiryModalOpen(true)}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold shadow-sm transition hover:border-slate-300"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white rounded-xl text-xs font-semibold shadow-xs transition backdrop-blur-xs"
             >
-              <Plus className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+              <Plus className="w-3.5 h-3.5 text-indigo-200" />
               <span>New Enquiry</span>
             </button>
 
             {/* Desktop + New Member Button */}
             <Link
               href="/portal/members/new"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white border border-transparent dark:border-slate-700 rounded-lg text-xs font-semibold shadow-sm transition"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-rose-950/30 transition active:scale-[0.98]"
             >
               <Plus className="w-3.5 h-3.5 text-white" />
               <span>Add Member</span>
             </Link>
 
-            {/* Dark Mode Toggle (Manager View) */}
+            {/* Dark Mode Toggle */}
             <ThemeToggle />
 
             {/* Notifications Button */}
             <div className="relative">
               <button
                 onClick={() => setNotificationOpen(!notificationOpen)}
-                className="relative p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 transition"
+                className="relative p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 active:bg-white/20 transition"
                 title="Alerts & Reminders"
               >
-                <Bell className="w-4 h-4 sm:w-4 sm:h-4" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white dark:ring-slate-900" />
+                <Bell className="w-4.5 h-4.5" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-slate-900" />
               </button>
 
               {notificationOpen && (
-                <div className="fixed sm:absolute inset-x-3 sm:inset-x-auto right-3 sm:right-0 top-16 sm:top-auto sm:mt-2 max-w-sm sm:w-80 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-2xl sm:rounded-xl shadow-2xl sm:shadow-xl border border-slate-200 dark:border-slate-800 p-3 z-50 animate-in fade-in zoom-in-95 duration-100">
+                <div className="fixed sm:absolute inset-x-3 sm:inset-x-auto right-3 sm:right-0 top-16 sm:top-auto sm:mt-2 max-w-sm sm:w-80 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-3 z-50 animate-in fade-in zoom-in-95 duration-100">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                     <h4 className="font-semibold text-xs text-slate-800 dark:text-slate-100">Today&apos;s Alerts</h4>
-                    <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                    <span className="text-[10px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md">
                       Live
                     </span>
                   </div>
@@ -163,20 +208,20 @@ export function AppShell({ children }: AppShellProps) {
             {/* Mobile Quick Action Button */}
             <button
               onClick={() => setMobileActionSheetOpen(true)}
-              className="sm:hidden p-2 rounded-lg bg-slate-900 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-white active:bg-slate-800 shadow-xs flex items-center gap-1 text-xs font-bold"
+              className="sm:hidden p-2 rounded-xl bg-rose-600 text-white active:bg-rose-700 shadow-xs flex items-center gap-1 text-xs font-bold"
               aria-label="Quick Actions"
             >
               <Plus className="w-4 h-4" />
             </button>
 
             {/* Quick Staff Badge */}
-            <div className="hidden lg:flex items-center gap-2 pl-3 border-l border-slate-200 dark:border-slate-800 text-xs">
-              <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold flex items-center justify-center text-[11px]">
+            <div className="hidden lg:flex items-center gap-2 pl-3 border-l border-white/15 text-xs">
+              <div className="w-7 h-7 rounded-full bg-white/10 border border-white/20 text-white font-semibold flex items-center justify-center text-[11px]">
                 REC
               </div>
               <div className="flex flex-col">
-                <span className="font-semibold text-slate-800 dark:text-slate-200 leading-none">Front Desk</span>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500">Main Branch</span>
+                <span className="font-semibold text-white leading-none">Front Desk</span>
+                <span className="text-[10px] text-indigo-200/70">Main Branch</span>
               </div>
             </div>
           </div>
@@ -186,11 +231,11 @@ export function AppShell({ children }: AppShellProps) {
       {/* Full-width container using side space */}
       <div className="flex-1 flex w-full px-3 sm:px-6 lg:px-8 py-3.5 sm:py-5 gap-6">
         
-        {/* Left Sidebar - Elegant Dark Navy / Slate (Desktop) */}
+        {/* Left Sidebar - Modern Clean Card with Colorful Icon Accents (Desktop) */}
         <aside className="hidden md:flex flex-col w-60 shrink-0 space-y-4">
-          <div className="bg-slate-900 text-slate-300 rounded-2xl border border-slate-800/90 p-3 space-y-1.5 shadow-lg shadow-slate-950/10 transition-colors flex flex-col min-h-[calc(100vh-8.5rem)]">
-            <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Main Menu
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-3 space-y-1.5 shadow-sm transition-colors flex flex-col min-h-[calc(100vh-8.5rem)]">
+            <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              Navigation
             </div>
             
             <div className="space-y-1 flex-1">
@@ -205,43 +250,45 @@ export function AppShell({ children }: AppShellProps) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
+                    className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 ${
                       isActive
-                        ? "bg-gradient-to-r from-rose-600 to-rose-700 text-white shadow-md shadow-rose-950/30 font-bold"
-                        : "text-slate-300 hover:text-white hover:bg-slate-800/80"
+                        ? `${item.activePill} border shadow-xs font-bold`
+                        : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/70"
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-400"}`} />
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                          isActive ? item.activeBg : `${item.bgColor} ${item.color}`
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                      </div>
                       <span>{item.label}</span>
                     </div>
-                    {isActive ? (
-                      <span className="w-1.5 h-1.5 rounded-full bg-white shadow-xs" />
-                    ) : (
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-500 opacity-0 group-hover:opacity-100 transition" />
+                    {isActive && (
+                      <span className={`w-1.5 h-1.5 rounded-full ${item.indicatorColor}`} />
                     )}
                   </Link>
                 );
               })}
             </div>
 
-            {/* Reception Desk Live Status Footer */}
-            <div className="mt-auto pt-3 border-t border-slate-800/80 px-1 space-y-2">
-              <div className="flex items-center justify-between text-[11px] px-2">
-                <div className="flex items-center gap-1.5 text-slate-300 font-medium">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Front Desk Active</span>
+            {/* Reception Desk Live Status Footer Card */}
+            <div className="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-slate-50 to-indigo-50/40 dark:from-slate-800/60 dark:to-indigo-950/30 border border-slate-200/70 dark:border-slate-800 text-[11px] space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-semibold text-slate-800 dark:text-slate-200">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Front Desk</span>
+                  </div>
+                  <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100/70 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded">
+                    Active
+                  </span>
                 </div>
-                <span className="text-[10px] text-slate-500 font-mono">v1.2</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-slate-800/50 border border-slate-800 text-[11px] text-slate-400 space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Main Facility</span>
-                  <span className="font-semibold text-slate-200">Concept I</span>
-                </div>
-                <div className="flex justify-between items-center text-[10px] text-slate-500">
-                  <span>Shift Status</span>
-                  <span className="text-emerald-400 font-medium">Online</span>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between">
+                  <span>Facility</span>
+                  <span className="font-medium text-slate-700 dark:text-slate-300">Concept I</span>
                 </div>
               </div>
             </div>
@@ -250,12 +297,12 @@ export function AppShell({ children }: AppShellProps) {
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs md:hidden flex animate-in fade-in duration-150">
+          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs md:hidden flex animate-in fade-in duration-150">
             <div className="w-72 bg-white dark:bg-slate-900 h-full p-4 space-y-4 flex flex-col justify-between shadow-2xl animate-in slide-in-from-left duration-200 border-r border-slate-200 dark:border-slate-800">
               <div className="space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-white flex items-center justify-center font-bold">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-amber-500 text-white flex items-center justify-center font-bold">
                       <Dumbbell className="w-4 h-4" />
                     </div>
                     <div>
@@ -268,37 +315,44 @@ export function AppShell({ children }: AppShellProps) {
                   <div className="flex items-center gap-1">
                     <ThemeToggle />
                     <button 
-                    onClick={() => setMobileMenuOpen(false)} 
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = item.href === "/portal" ? pathname === "/portal" : pathname.startsWith(item.href);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
-                        isActive 
-                          ? "bg-slate-900 dark:bg-slate-800 dark:border dark:border-slate-700 text-white shadow-xs" 
-                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60"
-                      }`}
+                      onClick={() => setMobileMenuOpen(false)} 
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
                     >
-                      <div className="flex items-center gap-3">
-                        <Icon className={`w-4 h-4 ${isActive ? "text-rose-400" : "text-slate-500 dark:text-slate-400"}`} />
-                        <span>{item.label}</span>
-                      </div>
-                      <ChevronRight className={`w-3.5 h-3.5 ${isActive ? "text-rose-400" : "text-slate-400"}`} />
-                    </Link>
-                  );
-                })}
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  {navItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = item.href === "/portal" ? pathname === "/portal" : pathname.startsWith(item.href);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition ${
+                          isActive 
+                            ? `${item.activePill} border font-bold shadow-xs` 
+                            : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                              isActive ? item.activeBg : `${item.bgColor} ${item.color}`
+                            }`}
+                          >
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <span>{item.label}</span>
+                        </div>
+                        <ChevronRight className={`w-3.5 h-3.5 ${isActive ? item.color : "text-slate-400"}`} />
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Quick Add Section inside Drawer */}
@@ -340,175 +394,167 @@ export function AppShell({ children }: AppShellProps) {
                 <Link
                   href="/"
                   target="_blank"
-                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
+                  className="flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                 >
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
                   <span>View Public Website ↗</span>
                 </Link>
               </div>
+
+              {/* Bottom Drawer Footer */}
+              <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-center text-[11px] text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-700">
+                <p className="font-semibold text-slate-700 dark:text-slate-200">Concept I Gym Manager</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Mobile Desk v1.0</p>
+              </div>
             </div>
-
-            {/* Bottom Drawer Footer */}
-            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-center text-[11px] text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-700">
-              <p className="font-semibold text-slate-700 dark:text-slate-200">Concept I Gym Manager</p>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Mobile Desk v1.0</p>
-            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Main Content Area - Expansive width */}
-      <main className="flex-1 min-w-0">{children}</main>
-    </div>
-
-    {/* Mobile Bottom Navigation Bar - Standard 1-touch navigation */}
-    <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 shadow-[0_-2px_10px_rgba(0,0,0,0.04)] md:hidden">
-      <div className="grid grid-cols-5 items-center h-16 px-1 safe-area-pb">
-        {/* 1. Dashboard */}
-        <Link
-          href="/portal"
-          className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
-            pathname === "/portal" ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
-          }`}
-        >
-          <div className={`p-1 rounded-md ${pathname === "/portal" ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
-            <LayoutDashboard className="w-4.5 h-4.5" />
-          </div>
-          <span className="text-[10px] mt-0.5 leading-none">Home</span>
-        </Link>
-
-        {/* 2. Members */}
-        <Link
-          href="/portal/members"
-          className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
-            pathname.startsWith("/portal/members") ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
-          }`}
-        >
-          <div className={`p-1 rounded-md ${pathname.startsWith("/portal/members") ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
-            <Users className="w-4.5 h-4.5" />
-          </div>
-          <span className="text-[10px] mt-0.5 leading-none">Members</span>
-        </Link>
-
-        {/* 3. Central Elevated Action Button */}
-        <div className="flex flex-col items-center justify-center -mt-4">
-          <button
-            onClick={() => setMobileActionSheetOpen(true)}
-            className="w-12 h-12 rounded-full bg-slate-900 dark:bg-slate-800 text-white shadow-lg shadow-slate-900/20 dark:shadow-slate-950/40 border border-transparent dark:border-slate-700 flex items-center justify-center active:scale-90 transition transform hover:bg-slate-800"
-            aria-label="New Actions"
-          >
-            <Plus className="w-6 h-6 text-white" />
-          </button>
-          <span className="text-[9px] font-bold text-slate-700 dark:text-slate-300 mt-1 leading-none">Create</span>
-        </div>
-
-        {/* 4. Enquiries */}
-        <Link
-          href="/portal/enquiries"
-          className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
-            pathname.startsWith("/portal/enquiries") ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
-          }`}
-        >
-          <div className={`p-1 rounded-md ${pathname.startsWith("/portal/enquiries") ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
-            <UserPlus className="w-4.5 h-4.5" />
-          </div>
-          <span className="text-[10px] mt-0.5 leading-none">Enquiries</span>
-        </Link>
-
-        {/* 5. Payments & Dues */}
-        <Link
-          href="/portal/payments"
-          className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
-            pathname.startsWith("/portal/payments") ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
-          }`}
-        >
-          <div className={`p-1 rounded-md ${pathname.startsWith("/portal/payments") ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
-            <CreditCard className="w-4.5 h-4.5" />
-          </div>
-          <span className="text-[10px] mt-0.5 leading-none">Ledger</span>
-        </Link>
+        {/* Main Content Area */}
+        <main className="flex-1 min-w-0">{children}</main>
       </div>
-    </nav>
 
-    {/* Mobile Quick Action Bottom Sheet */}
-    {mobileActionSheetOpen && (
-      <div 
-        className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end justify-center md:hidden animate-in fade-in duration-150"
-        onClick={() => setMobileActionSheetOpen(false)}
-      >
-        <div 
-          className="w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl p-5 space-y-4 shadow-2xl animate-in slide-in-from-bottom duration-200 border-t border-slate-200 dark:border-slate-800"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="w-12 h-1 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto" />
-          
-          <div className="flex items-center justify-between pb-1">
-            <div>
-              <h3 className="font-bold text-base text-slate-900 dark:text-white">Quick Actions</h3>
-              <p className="text-xs text-slate-400 dark:text-slate-500">Choose an action to perform</p>
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 shadow-[0_-2px_10px_rgba(0,0,0,0.04)] md:hidden">
+        <div className="grid grid-cols-5 items-center h-16 px-1 safe-area-pb">
+          {/* 1. Dashboard */}
+          <Link
+            href="/portal"
+            className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
+              pathname === "/portal" ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
+            }`}
+          >
+            <div className={`p-1 rounded-md ${pathname === "/portal" ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60" : ""}`}>
+              <LayoutDashboard className="w-4.5 h-4.5" />
             </div>
-            <button 
-              onClick={() => setMobileActionSheetOpen(false)}
-              className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+            <span className="text-[10px] mt-0.5 leading-none">Home</span>
+          </Link>
+
+          {/* 2. Members */}
+          <Link
+            href="/portal/members"
+            className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
+              pathname.startsWith("/portal/members") ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
+            }`}
+          >
+            <div className={`p-1 rounded-md ${pathname.startsWith("/portal/members") ? "bg-blue-50 text-blue-600 dark:bg-blue-950/60" : ""}`}>
+              <Users className="w-4.5 h-4.5" />
+            </div>
+            <span className="text-[10px] mt-0.5 leading-none">Members</span>
+          </Link>
+
+          {/* 3. Central Elevated Action Button */}
+          <div className="flex flex-col items-center justify-center -mt-4">
+            <button
+              onClick={() => setMobileActionSheetOpen(true)}
+              className="w-12 h-12 rounded-full bg-rose-600 text-white shadow-lg shadow-rose-600/30 flex items-center justify-center active:scale-90 transition transform hover:bg-rose-500"
+              aria-label="New Actions"
             >
-              <X className="w-5 h-5" />
+              <Plus className="w-6 h-6 text-white" />
             </button>
+            <span className="text-[9px] font-bold text-slate-700 dark:text-slate-300 mt-1 leading-none">Create</span>
           </div>
 
-          <div className="grid grid-cols-1 gap-2.5 pt-1">
-            <Link
-              href="/portal/members/new"
-              onClick={() => setMobileActionSheetOpen(false)}
-              className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-900 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-white font-semibold text-xs shadow-sm active:scale-98 transition"
-            >
-              <div className="w-9 h-9 rounded-xl bg-white/10 dark:bg-white/5 flex items-center justify-center">
-                <Plus className="w-5 h-5 text-white" />
-              </div>
-              <div className="text-left">
-                <p className="font-bold text-sm text-white">Add New Member</p>
-                <p className="text-[11px] text-slate-300 dark:text-slate-400">Register member with health profile & plan</p>
-              </div>
-            </Link>
+          {/* 4. Enquiries */}
+          <Link
+            href="/portal/enquiries"
+            className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
+              pathname.startsWith("/portal/enquiries") ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
+            }`}
+          >
+            <div className={`p-1 rounded-md ${pathname.startsWith("/portal/enquiries") ? "bg-amber-50 text-amber-600 dark:bg-amber-950/60" : ""}`}>
+              <UserPlus className="w-4.5 h-4.5" />
+            </div>
+            <span className="text-[10px] mt-0.5 leading-none">Enquiries</span>
+          </Link>
 
-            <button
-              onClick={() => {
-                setMobileActionSheetOpen(false);
-                setEnquiryModalOpen(true);
-              }}
-              className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs shadow-2xs active:bg-slate-50 dark:active:bg-slate-750 transition text-left"
-            >
-              <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
-                <UserPlus className="w-5 h-5" />
-              </div>
+          {/* 5. Payments */}
+          <Link
+            href="/portal/payments"
+            className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
+              pathname.startsWith("/portal/payments") ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
+            }`}
+          >
+            <div className={`p-1 rounded-md ${pathname.startsWith("/portal/payments") ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60" : ""}`}>
+              <CreditCard className="w-4.5 h-4.5" />
+            </div>
+            <span className="text-[10px] mt-0.5 leading-none">Payments</span>
+          </Link>
+        </div>
+      </nav>
+
+      {/* Mobile Action Sheet Modal */}
+      {mobileActionSheetOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150">
+          <div 
+            className="w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl p-5 space-y-4 shadow-2xl border-t sm:border border-slate-200 dark:border-slate-800 animate-in slide-in-from-bottom-5 duration-200"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <p className="font-bold text-sm text-slate-900 dark:text-white">New Enquiry / Lead</p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500">Log walk-in visitor & set follow-up date</p>
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">Quick Actions</h3>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Choose an action to perform</p>
               </div>
-            </button>
+              <button 
+                onClick={() => setMobileActionSheetOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-            <button
-              onClick={() => {
-                setMobileActionSheetOpen(false);
-                setPaymentModalOpen(true);
-              }}
-              className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs shadow-2xs active:bg-slate-50 dark:active:bg-slate-750 transition text-left"
-            >
-              <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                <CreditCard className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="font-bold text-sm text-slate-900 dark:text-white">Record / Collect Payment</p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500">Clear member pending due or add transaction</p>
-              </div>
-            </button>
+            <div className="grid grid-cols-1 gap-2.5 pt-1">
+              <Link
+                href="/portal/members/new"
+                onClick={() => setMobileActionSheetOpen(false)}
+                className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-900 dark:bg-slate-800 text-white font-semibold text-xs shadow-sm active:scale-98 transition"
+              >
+                <div className="w-9 h-9 rounded-xl bg-white/10 dark:bg-white/5 flex items-center justify-center">
+                  <Plus className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-sm text-white">Add New Member</p>
+                  <p className="text-[11px] text-slate-300 dark:text-slate-400">Register member with health profile & plan</p>
+                </div>
+              </Link>
 
-            <Link
-              href="/portal/reports"
-              onClick={() => setMobileActionSheetOpen(false)}
-              className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs shadow-2xs active:bg-slate-50 dark:active:bg-slate-750 transition text-left"
-            >
-              <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/50 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                <BarChart3 className="w-5 h-5" />
+              <button
+                onClick={() => {
+                  setMobileActionSheetOpen(false);
+                  setEnquiryModalOpen(true);
+                }}
+                className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs shadow-2xs active:bg-slate-50 dark:active:bg-slate-750 transition text-left"
+              >
+                <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                  <UserPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-slate-900 dark:text-white">New Enquiry / Lead</p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">Log walk-in visitor & set follow-up date</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setMobileActionSheetOpen(false);
+                  setPaymentModalOpen(true);
+                }}
+                className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs shadow-2xs active:bg-slate-50 dark:active:bg-slate-750 transition text-left"
+              >
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-slate-900 dark:text-white">Record / Collect Payment</p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">Clear member pending due or add transaction</p>
+                </div>
+              </button>
+
+              <Link
+                href="/portal/reports"
+                onClick={() => setMobileActionSheetOpen(false)}
+                className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs shadow-2xs active:bg-slate-50 dark:active:bg-slate-750 transition text-left"
+              >
+                <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/50 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                  <BarChart3 className="w-5 h-5" />
                 </div>
                 <div>
                   <p className="font-bold text-sm text-slate-900 dark:text-white">Tax Invoices & Reports</p>
@@ -539,4 +585,3 @@ export function AppShell({ children }: AppShellProps) {
     </div>
   );
 }
-
