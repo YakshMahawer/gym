@@ -1,9 +1,8 @@
 "use client";
 
 import React from "react";
-import { X, Printer, CheckCircle2, Edit, MessageCircle } from "lucide-react";
+import { X, Printer, CheckCircle2, Edit } from "lucide-react";
 import { formatINR, formatDate } from "@/lib/utils";
-import { openWhatsAppReceipt } from "@/lib/receipt-share";
 
 interface ReceiptModalProps {
   receipt: {
@@ -101,15 +100,6 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
 
   const handlePrint = () => {
     window.print();
-  };
-
-  const handleWhatsAppShare = () => {
-    openWhatsAppReceipt({
-      ...receipt,
-      planName,
-      startDate,
-      endDate,
-    });
   };
 
   return (
@@ -314,26 +304,14 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
             Close
           </button>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={handleWhatsAppShare}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow-sm transition active:scale-[0.98]"
-              title="Open WhatsApp with receipt details and direct digital receipt link"
-            >
-              <MessageCircle className="w-4 h-4 text-white" />
-              <span>Send on WhatsApp</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow-sm transition active:scale-[0.98]"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Print</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow-sm transition active:scale-[0.98]"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span>Print Invoice</span>
+          </button>
         </div>
       </div>
     </div>
