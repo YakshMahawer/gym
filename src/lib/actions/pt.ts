@@ -67,11 +67,11 @@ export async function addOrRenewMemberPT(input: AddMemberPTInput) {
     }
 
     try {
-      revalidatePath(`/admin/members/${input.memberId}`);
-      revalidatePath("/admin/members");
-      revalidatePath("/admin/payments");
-      revalidatePath("/admin/reports");
-      revalidatePath("/admin");
+      revalidatePath(`/portal/members/${input.memberId}`);
+      revalidatePath("/portal/members");
+      revalidatePath("/portal/payments");
+      revalidatePath("/portal/reports");
+      revalidatePath("/portal");
     } catch {
       // Ignore revalidation outside request context
     }
@@ -106,9 +106,9 @@ export async function updatePTSessions(ptId: string, completedSessions: number) 
     });
 
     try {
-      revalidatePath(`/admin/members/${pt.memberId}`);
-      revalidatePath("/admin/members");
-      revalidatePath("/admin");
+      revalidatePath(`/portal/members/${pt.memberId}`);
+      revalidatePath("/portal/members");
+      revalidatePath("/portal");
     } catch {
       // Ignore
     }

@@ -235,7 +235,7 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
 
                     {enq.status !== "CONVERTED" && (
                       <Link
-                        href={`/admin/members/new?name=${encodeURIComponent(
+                        href={`/portal/members/new?name=${encodeURIComponent(
                           enq.name
                         )}&phone=${encodeURIComponent(enq.phone)}&plan=${encodeURIComponent(
                           enq.preferredPlan || ""
@@ -349,7 +349,7 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
 
                           {enq.status !== "CONVERTED" && (
                             <Link
-                              href={`/admin/members/new?name=${encodeURIComponent(
+                              href={`/portal/members/new?name=${encodeURIComponent(
                                 enq.name
                               )}&phone=${encodeURIComponent(enq.phone)}&plan=${encodeURIComponent(
                                 enq.preferredPlan || ""

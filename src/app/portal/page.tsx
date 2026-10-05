@@ -3,7 +3,7 @@ import { DashboardClient } from "@/components/dashboard/DashboardClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminDashboardPage() {
+export default async function PortalDashboardPage() {
   const data = await getDashboardData();
   return <DashboardClient data={data} />;
 }

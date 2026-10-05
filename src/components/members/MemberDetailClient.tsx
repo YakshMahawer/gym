@@ -131,7 +131,7 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
       setDeleting(true);
       const res = await deleteMember(member.id);
       if (res.success) {
-        router.push("/admin/members");
+        router.push("/portal/members");
         router.refresh();
       } else {
         alert(res.error || "Failed to delete");
@@ -159,7 +159,7 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
         <div className="flex items-center gap-3">
           <Link
-            href="/admin/members"
+            href="/portal/members"
             className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-900 transition active:bg-slate-100"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -250,7 +250,7 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
           )}
 
           <Link
-            href={`/admin/members/${member.id}/edit`}
+            href={`/portal/members/${member.id}/edit`}
             className="p-1.5 sm:p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition"
             title="Edit Details"
           >

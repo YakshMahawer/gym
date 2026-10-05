@@ -255,11 +255,11 @@ export async function addPayment(input: AddPaymentInput) {
     }
 
     try {
-      revalidatePath("/admin/payments");
-      revalidatePath(`/admin/members/${input.memberId}`);
-      revalidatePath("/admin/members");
-      revalidatePath("/admin/reports");
-      revalidatePath("/admin");
+      revalidatePath("/portal/payments");
+      revalidatePath(`/portal/members/${input.memberId}`);
+      revalidatePath("/portal/members");
+      revalidatePath("/portal/reports");
+      revalidatePath("/portal");
     } catch {
       // Ignore
     }
@@ -320,11 +320,11 @@ export async function deletePayment(paymentId: string) {
     });
 
     try {
-      revalidatePath("/admin/payments");
-      revalidatePath(`/admin/members/${memberId}`);
-      revalidatePath("/admin/members");
-      revalidatePath("/admin/reports");
-      revalidatePath("/admin");
+      revalidatePath("/portal/payments");
+      revalidatePath(`/portal/members/${memberId}`);
+      revalidatePath("/portal/members");
+      revalidatePath("/portal/reports");
+      revalidatePath("/portal");
     } catch {
       // Ignore
     }
@@ -421,11 +421,11 @@ export async function updatePaymentDate(input: {
     });
 
     try {
-      revalidatePath("/admin/payments");
-      revalidatePath(`/admin/members/${targetPayment.memberId}`);
-      revalidatePath("/admin/members");
-      revalidatePath("/admin/reports");
-      revalidatePath("/admin");
+      revalidatePath("/portal/payments");
+      revalidatePath(`/portal/members/${targetPayment.memberId}`);
+      revalidatePath("/portal/members");
+      revalidatePath("/portal/reports");
+      revalidatePath("/portal");
     } catch {}
 
     return {
@@ -481,10 +481,10 @@ export async function resequenceAllReceipts() {
     await prisma.$transaction([...phase1All, ...phase2All]);
 
     try {
-      revalidatePath("/admin/payments");
-      revalidatePath("/admin/members");
-      revalidatePath("/admin/reports");
-      revalidatePath("/admin");
+      revalidatePath("/portal/payments");
+      revalidatePath("/portal/members");
+      revalidatePath("/portal/reports");
+      revalidatePath("/portal");
     } catch {}
 
     return { success: true, count: toUpdate.length, updatedList: toUpdate };

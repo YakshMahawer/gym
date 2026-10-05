@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Modern, minimal and simple Gym CRM for memberships, sales, dues and member tracking",
 };
 
-export default function AdminLayout({
+export default function PortalLayout({
   children,
 }: {
   children: React.ReactNode;

@@ -184,7 +184,7 @@ export function DashboardClient({ data }: DashboardDataProps) {
             </p>
           </div>
           <Link
-            href="/admin/members"
+            href="/portal/members"
             className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-blue-600 hover:text-blue-700 mt-0.5"
           >
             <span>View all</span>
@@ -211,7 +211,7 @@ export function DashboardClient({ data }: DashboardDataProps) {
             </p>
           </div>
           <Link
-            href="/admin/payments"
+            href="/portal/payments"
             className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-emerald-600 hover:text-emerald-700 mt-0.5"
           >
             <span>Ledger</span>
@@ -238,7 +238,7 @@ export function DashboardClient({ data }: DashboardDataProps) {
             </p>
           </div>
           <Link
-            href="/admin/enquiries"
+            href="/portal/enquiries"
             className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-amber-600 hover:text-amber-700 mt-0.5"
           >
             <span>Manage</span>
@@ -374,7 +374,7 @@ export function DashboardClient({ data }: DashboardDataProps) {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <Link
-                            href={`/admin/members/${sub.member.id}`}
+                            href={`/portal/members/${sub.member.id}`}
                             className="font-bold text-xs text-slate-900 hover:text-blue-600 block"
                           >
                             {sub.member.fullName}
@@ -444,7 +444,7 @@ export function DashboardClient({ data }: DashboardDataProps) {
                         <tr key={sub.id} className="hover:bg-slate-50/60 transition">
                           <td className="py-3 px-3">
                             <Link
-                              href={`/admin/members/${sub.member.id}`}
+                              href={`/portal/members/${sub.member.id}`}
                               className="font-semibold text-slate-900 hover:text-blue-600 block"
                             >
                               {sub.member.fullName}
@@ -600,7 +600,7 @@ export function DashboardClient({ data }: DashboardDataProps) {
                 </p>
               </div>
               <Link
-                href="/admin/enquiries"
+                href="/portal/enquiries"
                 className="text-xs font-semibold text-blue-600 hover:underline"
               >
                 All Enquiries →
@@ -673,7 +673,7 @@ export function DashboardClient({ data }: DashboardDataProps) {
                         </a>
 
                         <Link
-                          href={`/admin/members/new?name=${encodeURIComponent(
+                          href={`/portal/members/new?name=${encodeURIComponent(
                             enq.name
                           )}&phone=${encodeURIComponent(enq.phone)}&plan=${encodeURIComponent(
                             enq.preferredPlan || ""
@@ -743,7 +743,7 @@ export function DashboardClient({ data }: DashboardDataProps) {
                                 <span>Call</span>
                               </a>
                               <Link
-                                href={`/admin/members/new?name=${encodeURIComponent(
+                                href={`/portal/members/new?name=${encodeURIComponent(
                                   enq.name
                                 )}&phone=${encodeURIComponent(enq.phone)}&plan=${encodeURIComponent(
                                   enq.preferredPlan || ""
@@ -773,7 +773,7 @@ export function DashboardClient({ data }: DashboardDataProps) {
                 <p className="text-[11px] sm:text-xs text-slate-500">Newly registered members.</p>
               </div>
               <Link
-                href="/admin/members/new"
+                href="/portal/members/new"
                 className="text-xs font-semibold text-blue-600 hover:underline"
               >
                 + Register Member
@@ -790,7 +790,7 @@ export function DashboardClient({ data }: DashboardDataProps) {
                   <div className="flex items-start justify-between">
                     <div>
                       <Link
-                        href={`/admin/members/${m.id}`}
+                        href={`/portal/members/${m.id}`}
                         className="font-bold text-xs text-slate-900 hover:text-blue-600 block"
                       >
                         {m.fullName}
@@ -821,7 +821,7 @@ export function DashboardClient({ data }: DashboardDataProps) {
                     </a>
 
                     <Link
-                      href={`/admin/members/${m.id}`}
+                      href={`/portal/members/${m.id}`}
                       className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-md text-xs font-semibold"
                     >
                       Profile →
@@ -849,7 +849,7 @@ export function DashboardClient({ data }: DashboardDataProps) {
                     <tr key={m.id} className="hover:bg-slate-50/60 transition">
                       <td className="py-3 px-3">
                         <Link
-                          href={`/admin/members/${m.id}`}
+                          href={`/portal/members/${m.id}`}
                           className="font-semibold text-slate-900 hover:text-blue-600 block"
                         >
                           {m.fullName}
@@ -870,7 +870,7 @@ export function DashboardClient({ data }: DashboardDataProps) {
                       </td>
                       <td className="py-3 px-3 text-right">
                         <Link
-                          href={`/admin/members/${m.id}`}
+                          href={`/portal/members/${m.id}`}
                           className="text-xs font-semibold text-blue-600 hover:underline"
                         >
                           View Profile →
@@ -912,7 +912,7 @@ export function DashboardClient({ data }: DashboardDataProps) {
                       <div className="flex items-start justify-between">
                         <div>
                           <Link
-                            href={`/admin/members/${item.member.id}`}
+                            href={`/portal/members/${item.member.id}`}
                             className="font-bold text-xs text-slate-900 hover:text-blue-600 block"
                           >
                             {item.member.fullName}
@@ -946,7 +946,7 @@ export function DashboardClient({ data }: DashboardDataProps) {
                         </a>
 
                         <Link
-                          href={`/admin/members/${item.member.id}`}
+                          href={`/portal/members/${item.member.id}`}
                           className="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold text-center shadow-xs active:bg-slate-800"
                         >
                           Renew
@@ -972,7 +972,7 @@ export function DashboardClient({ data }: DashboardDataProps) {
                         <tr key={item.id} className="hover:bg-slate-50/60 transition">
                           <td className="py-3 px-3">
                             <Link
-                              href={`/admin/members/${item.member.id}`}
+                              href={`/portal/members/${item.member.id}`}
                               className="font-semibold text-slate-900 hover:text-blue-600 block"
                             >
                               {item.member.fullName}
@@ -990,6 +990,8 @@ export function DashboardClient({ data }: DashboardDataProps) {
                               <a
                                 href={`https://wa.me/91${item.member.phone}?text=Hi%20${encodeURIComponent(
                                   item.member.fullName
+                                )}?text=Hi%20${encodeURIComponent(
+                                  item.member.fullName
                                 )},%20your%20gym%20membership%20is%20expiring%20on%20${formatDate(
                                   item.endDate
                                 )}.%20Renew%20now%20to%20continue%20your%20fitness%20streak!%20💪`}
@@ -1001,7 +1003,7 @@ export function DashboardClient({ data }: DashboardDataProps) {
                                 <span>WhatsApp</span>
                               </a>
                               <Link
-                                href={`/admin/members/${item.member.id}`}
+                                href={`/portal/members/${item.member.id}`}
                                 className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold transition"
                               >
                                 Renew

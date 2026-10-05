@@ -39,11 +39,11 @@ export function AppShell({ children }: AppShellProps) {
   const [notificationOpen, setNotificationOpen] = useState(false);
 
   const navItems = [
-    { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-    { label: "Members", href: "/admin/members", icon: Users },
-    { label: "Enquiries", href: "/admin/enquiries", icon: UserPlus },
-    { label: "Payments & Dues", href: "/admin/payments", icon: CreditCard },
-    { label: "Reports", href: "/admin/reports", icon: BarChart3 },
+    { label: "Dashboard", href: "/portal", icon: LayoutDashboard },
+    { label: "Members", href: "/portal/members", icon: Users },
+    { label: "Enquiries", href: "/portal/enquiries", icon: UserPlus },
+    { label: "Payments & Dues", href: "/portal/payments", icon: CreditCard },
+    { label: "Reports", href: "/portal/reports", icon: BarChart3 },
   ];
 
   return (
@@ -61,7 +61,7 @@ export function AppShell({ children }: AppShellProps) {
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
-            <Link href="/admin" className="flex items-center gap-2 sm:gap-2.5 group">
+            <Link href="/portal" className="flex items-center gap-2 sm:gap-2.5 group">
               <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-xl bg-slate-900 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-white flex items-center justify-center font-bold shadow-sm transition-colors">
                 <Dumbbell className="w-4 h-4 text-white" />
               </div>
@@ -99,7 +99,7 @@ export function AppShell({ children }: AppShellProps) {
 
             {/* Desktop + New Member Button */}
             <Link
-              href="/admin/members/new"
+              href="/portal/members/new"
               className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white border border-transparent dark:border-slate-700 rounded-lg text-xs font-semibold shadow-sm transition"
             >
               <Plus className="w-3.5 h-3.5 text-white" />
@@ -192,8 +192,8 @@ export function AppShell({ children }: AppShellProps) {
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive =
-                item.href === "/admin"
-                  ? pathname === "/admin"
+                item.href === "/portal"
+                  ? pathname === "/portal"
                   : pathname.startsWith(item.href);
 
               return (
@@ -239,247 +239,247 @@ export function AppShell({ children }: AppShellProps) {
                   <div className="flex items-center gap-1">
                     <ThemeToggle />
                     <button 
-                      onClick={() => setMobileMenuOpen(false)} 
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    onClick={() => setMobileMenuOpen(false)} 
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = item.href === "/portal" ? pathname === "/portal" : pathname.startsWith(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
+                        isActive 
+                          ? "bg-slate-900 dark:bg-slate-800 dark:border dark:border-slate-700 text-white shadow-xs" 
+                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60"
+                      }`}
                     >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  {navItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
-                          isActive 
-                            ? "bg-slate-900 dark:bg-slate-800 dark:border dark:border-slate-700 text-white shadow-xs" 
-                            : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Icon className={`w-4 h-4 ${isActive ? "text-rose-400" : "text-slate-500 dark:text-slate-400"}`} />
-                          <span>{item.label}</span>
-                        </div>
-                        <ChevronRight className={`w-3.5 h-3.5 ${isActive ? "text-rose-400" : "text-slate-400"}`} />
-                      </Link>
-                    );
-                  })}
-                </div>
-
-                {/* Quick Add Section inside Drawer */}
-                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
-                  <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-slate-500 px-1">
-                    Quick Actions
-                  </p>
-                  <Link
-                    href="/admin/members/new"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-900 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-white shadow-xs"
-                  >
-                    <Plus className="w-4 h-4 text-white" />
-                    <span>Add New Member</span>
-                  </Link>
-
-                  <button
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      setEnquiryModalOpen(true);
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750"
-                  >
-                    <Plus className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                    <span>New Lead / Enquiry</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      setPaymentModalOpen(true);
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750"
-                  >
-                    <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Record Payment</span>
-                  </button>
-
-                  <Link
-                    href="/"
-                    target="_blank"
-                    className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
-                  >
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
-                    <span>View Public Website ↗</span>
-                  </Link>
-                </div>
+                      <div className="flex items-center gap-3">
+                        <Icon className={`w-4 h-4 ${isActive ? "text-rose-400" : "text-slate-500 dark:text-slate-400"}`} />
+                        <span>{item.label}</span>
+                      </div>
+                      <ChevronRight className={`w-3.5 h-3.5 ${isActive ? "text-rose-400" : "text-slate-400"}`} />
+                    </Link>
+                  );
+                })}
               </div>
 
-              {/* Bottom Drawer Footer */}
-              <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-center text-[11px] text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-700">
-                <p className="font-semibold text-slate-700 dark:text-slate-200">Concept I Gym Manager</p>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Mobile Desk v1.0</p>
+              {/* Quick Add Section inside Drawer */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-slate-500 px-1">
+                  Quick Actions
+                </p>
+                <Link
+                  href="/portal/members/new"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-900 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-white shadow-xs"
+                >
+                  <Plus className="w-4 h-4 text-white" />
+                  <span>Add New Member</span>
+                </Link>
+
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setEnquiryModalOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750"
+                >
+                  <Plus className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  <span>New Lead / Enquiry</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setPaymentModalOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750"
+                >
+                  <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Record Payment</span>
+                </button>
+
+                <Link
+                  href="/"
+                  target="_blank"
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
+                >
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                  <span>View Public Website ↗</span>
+                </Link>
               </div>
             </div>
+
+            {/* Bottom Drawer Footer */}
+            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-center text-[11px] text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-700">
+              <p className="font-semibold text-slate-700 dark:text-slate-200">Concept I Gym Manager</p>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Mobile Desk v1.0</p>
+            </div>
           </div>
-        )}
-
-        {/* Main Content Area - Expansive width */}
-        <main className="flex-1 min-w-0">{children}</main>
-      </div>
-
-      {/* Mobile Bottom Navigation Bar - Standard 1-touch navigation */}
-      <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 shadow-[0_-2px_10px_rgba(0,0,0,0.04)] md:hidden">
-        <div className="grid grid-cols-5 items-center h-16 px-1 safe-area-pb">
-          {/* 1. Dashboard */}
-          <Link
-            href="/admin"
-            className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
-              pathname === "/admin" ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
-            }`}
-          >
-            <div className={`p-1 rounded-md ${pathname === "/admin" ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
-              <LayoutDashboard className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] mt-0.5 leading-none">Home</span>
-          </Link>
-
-          {/* 2. Members */}
-          <Link
-            href="/admin/members"
-            className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
-              pathname.startsWith("/admin/members") ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
-            }`}
-          >
-            <div className={`p-1 rounded-md ${pathname.startsWith("/admin/members") ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
-              <Users className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] mt-0.5 leading-none">Members</span>
-          </Link>
-
-          {/* 3. Central Elevated Action Button */}
-          <div className="flex flex-col items-center justify-center -mt-4">
-            <button
-              onClick={() => setMobileActionSheetOpen(true)}
-              className="w-12 h-12 rounded-full bg-slate-900 dark:bg-slate-800 text-white shadow-lg shadow-slate-900/20 dark:shadow-slate-950/40 border border-transparent dark:border-slate-700 flex items-center justify-center active:scale-90 transition transform hover:bg-slate-800"
-              aria-label="New Actions"
-            >
-              <Plus className="w-6 h-6 text-white" />
-            </button>
-            <span className="text-[9px] font-bold text-slate-700 dark:text-slate-300 mt-1 leading-none">Create</span>
-          </div>
-
-          {/* 4. Enquiries */}
-          <Link
-            href="/admin/enquiries"
-            className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
-              pathname.startsWith("/admin/enquiries") ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
-            }`}
-          >
-            <div className={`p-1 rounded-md ${pathname.startsWith("/admin/enquiries") ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
-              <UserPlus className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] mt-0.5 leading-none">Enquiries</span>
-          </Link>
-
-          {/* 5. Payments & Dues */}
-          <Link
-            href="/admin/payments"
-            className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
-              pathname.startsWith("/admin/payments") ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
-            }`}
-          >
-            <div className={`p-1 rounded-md ${pathname.startsWith("/admin/payments") ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
-              <CreditCard className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] mt-0.5 leading-none">Ledger</span>
-          </Link>
         </div>
-      </nav>
+      )}
 
-      {/* Mobile Quick Action Bottom Sheet */}
-      {mobileActionSheetOpen && (
-        <div 
-          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end justify-center md:hidden animate-in fade-in duration-150"
-          onClick={() => setMobileActionSheetOpen(false)}
+      {/* Main Content Area - Expansive width */}
+      <main className="flex-1 min-w-0">{children}</main>
+    </div>
+
+    {/* Mobile Bottom Navigation Bar - Standard 1-touch navigation */}
+    <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 shadow-[0_-2px_10px_rgba(0,0,0,0.04)] md:hidden">
+      <div className="grid grid-cols-5 items-center h-16 px-1 safe-area-pb">
+        {/* 1. Dashboard */}
+        <Link
+          href="/portal"
+          className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
+            pathname === "/portal" ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
+          }`}
         >
-          <div 
-            className="w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl p-5 space-y-4 shadow-2xl animate-in slide-in-from-bottom duration-200 border-t border-slate-200 dark:border-slate-800"
-            onClick={(e) => e.stopPropagation()}
+          <div className={`p-1 rounded-md ${pathname === "/portal" ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
+            <LayoutDashboard className="w-4.5 h-4.5" />
+          </div>
+          <span className="text-[10px] mt-0.5 leading-none">Home</span>
+        </Link>
+
+        {/* 2. Members */}
+        <Link
+          href="/portal/members"
+          className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
+            pathname.startsWith("/portal/members") ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
+          }`}
+        >
+          <div className={`p-1 rounded-md ${pathname.startsWith("/portal/members") ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
+            <Users className="w-4.5 h-4.5" />
+          </div>
+          <span className="text-[10px] mt-0.5 leading-none">Members</span>
+        </Link>
+
+        {/* 3. Central Elevated Action Button */}
+        <div className="flex flex-col items-center justify-center -mt-4">
+          <button
+            onClick={() => setMobileActionSheetOpen(true)}
+            className="w-12 h-12 rounded-full bg-slate-900 dark:bg-slate-800 text-white shadow-lg shadow-slate-900/20 dark:shadow-slate-950/40 border border-transparent dark:border-slate-700 flex items-center justify-center active:scale-90 transition transform hover:bg-slate-800"
+            aria-label="New Actions"
           >
-            <div className="w-12 h-1 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto" />
-            
-            <div className="flex items-center justify-between pb-1">
-              <div>
-                <h3 className="font-bold text-base text-slate-900 dark:text-white">Quick Actions</h3>
-                <p className="text-xs text-slate-400 dark:text-slate-500">Choose an action to perform</p>
-              </div>
-              <button 
-                onClick={() => setMobileActionSheetOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <X className="w-5 h-5" />
-              </button>
+            <Plus className="w-6 h-6 text-white" />
+          </button>
+          <span className="text-[9px] font-bold text-slate-700 dark:text-slate-300 mt-1 leading-none">Create</span>
+        </div>
+
+        {/* 4. Enquiries */}
+        <Link
+          href="/portal/enquiries"
+          className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
+            pathname.startsWith("/portal/enquiries") ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
+          }`}
+        >
+          <div className={`p-1 rounded-md ${pathname.startsWith("/portal/enquiries") ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
+            <UserPlus className="w-4.5 h-4.5" />
+          </div>
+          <span className="text-[10px] mt-0.5 leading-none">Enquiries</span>
+        </Link>
+
+        {/* 5. Payments & Dues */}
+        <Link
+          href="/portal/payments"
+          className={`flex flex-col items-center justify-center py-1 rounded-lg transition active:scale-95 ${
+            pathname.startsWith("/portal/payments") ? "text-slate-900 dark:text-white font-bold" : "text-slate-500 dark:text-slate-400 font-medium"
+          }`}
+        >
+          <div className={`p-1 rounded-md ${pathname.startsWith("/portal/payments") ? "bg-slate-100 dark:bg-slate-800" : ""}`}>
+            <CreditCard className="w-4.5 h-4.5" />
+          </div>
+          <span className="text-[10px] mt-0.5 leading-none">Ledger</span>
+        </Link>
+      </div>
+    </nav>
+
+    {/* Mobile Quick Action Bottom Sheet */}
+    {mobileActionSheetOpen && (
+      <div 
+        className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end justify-center md:hidden animate-in fade-in duration-150"
+        onClick={() => setMobileActionSheetOpen(false)}
+      >
+        <div 
+          className="w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl p-5 space-y-4 shadow-2xl animate-in slide-in-from-bottom duration-200 border-t border-slate-200 dark:border-slate-800"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="w-12 h-1 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto" />
+          
+          <div className="flex items-center justify-between pb-1">
+            <div>
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">Quick Actions</h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Choose an action to perform</p>
             </div>
+            <button 
+              onClick={() => setMobileActionSheetOpen(false)}
+              className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
-            <div className="grid grid-cols-1 gap-2.5 pt-1">
-              <Link
-                href="/admin/members/new"
-                onClick={() => setMobileActionSheetOpen(false)}
-                className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-900 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-white font-semibold text-xs shadow-sm active:scale-98 transition"
-              >
-                <div className="w-9 h-9 rounded-xl bg-white/10 dark:bg-white/5 flex items-center justify-center">
-                  <Plus className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-bold text-sm text-white">Add New Member</p>
-                  <p className="text-[11px] text-slate-300 dark:text-slate-400">Register member with health profile & plan</p>
-                </div>
-              </Link>
+          <div className="grid grid-cols-1 gap-2.5 pt-1">
+            <Link
+              href="/portal/members/new"
+              onClick={() => setMobileActionSheetOpen(false)}
+              className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-900 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-white font-semibold text-xs shadow-sm active:scale-98 transition"
+            >
+              <div className="w-9 h-9 rounded-xl bg-white/10 dark:bg-white/5 flex items-center justify-center">
+                <Plus className="w-5 h-5 text-white" />
+              </div>
+              <div className="text-left">
+                <p className="font-bold text-sm text-white">Add New Member</p>
+                <p className="text-[11px] text-slate-300 dark:text-slate-400">Register member with health profile & plan</p>
+              </div>
+            </Link>
 
-              <button
-                onClick={() => {
-                  setMobileActionSheetOpen(false);
-                  setEnquiryModalOpen(true);
-                }}
-                className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs shadow-2xs active:bg-slate-50 dark:active:bg-slate-750 transition text-left"
-              >
-                <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
-                  <UserPlus className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="font-bold text-sm text-slate-900 dark:text-white">New Enquiry / Lead</p>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500">Log walk-in visitor & set follow-up date</p>
-                </div>
-              </button>
+            <button
+              onClick={() => {
+                setMobileActionSheetOpen(false);
+                setEnquiryModalOpen(true);
+              }}
+              className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs shadow-2xs active:bg-slate-50 dark:active:bg-slate-750 transition text-left"
+            >
+              <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                <UserPlus className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-bold text-sm text-slate-900 dark:text-white">New Enquiry / Lead</p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">Log walk-in visitor & set follow-up date</p>
+              </div>
+            </button>
 
-              <button
-                onClick={() => {
-                  setMobileActionSheetOpen(false);
-                  setPaymentModalOpen(true);
-                }}
-                className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs shadow-2xs active:bg-slate-50 dark:active:bg-slate-750 transition text-left"
-              >
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                  <CreditCard className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="font-bold text-sm text-slate-900 dark:text-white">Record / Collect Payment</p>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500">Clear member pending due or add transaction</p>
-                </div>
-              </button>
+            <button
+              onClick={() => {
+                setMobileActionSheetOpen(false);
+                setPaymentModalOpen(true);
+              }}
+              className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs shadow-2xs active:bg-slate-50 dark:active:bg-slate-750 transition text-left"
+            >
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                <CreditCard className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-bold text-sm text-slate-900 dark:text-white">Record / Collect Payment</p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">Clear member pending due or add transaction</p>
+              </div>
+            </button>
 
-              <Link
-                href="/admin/reports"
-                onClick={() => setMobileActionSheetOpen(false)}
-                className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs shadow-2xs active:bg-slate-50 dark:active:bg-slate-750 transition text-left"
-              >
-                <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/50 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                  <BarChart3 className="w-5 h-5" />
+            <Link
+              href="/portal/reports"
+              onClick={() => setMobileActionSheetOpen(false)}
+              className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs shadow-2xs active:bg-slate-50 dark:active:bg-slate-750 transition text-left"
+            >
+              <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/50 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                <BarChart3 className="w-5 h-5" />
                 </div>
                 <div>
                   <p className="font-bold text-sm text-slate-900 dark:text-white">Tax Invoices & Reports</p>
