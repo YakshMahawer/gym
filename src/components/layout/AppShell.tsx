@@ -48,7 +48,7 @@ export function AppShell({ children }: AppShellProps) {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const handleLogout = async (e?: React.MouseEvent) => {
+  const handleLogout = async (e?: React.SyntheticEvent) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -57,17 +57,18 @@ export function AppShell({ children }: AppShellProps) {
     setLoggingOut(true);
 
     try {
-      // 1. Immediately wipe client cookie for 0ms edge middleware effect
+      // 1. Immediately clear client session cookies
       document.cookie = "gym_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax";
+      document.cookie = "gym_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
       localStorage.clear();
       sessionStorage.clear();
     } catch {}
 
-    // 2. Fire backend logout in background without waiting
+    // 2. Fire server action in background
     logoutUser().catch(() => {});
 
-    // 3. Instant hard redirect to login
-    window.location.href = "/login";
+    // 3. Instant hard replace to /login so browser history cannot return to dashboard
+    window.location.replace("/login");
   };
 
   const navItems = [
@@ -373,11 +374,11 @@ export function AppShell({ children }: AppShellProps) {
                 </div>
                 <button
                   type="button"
-                  onClick={(e) => handleLogout(e)}
+                  onClick={handleLogout}
                   disabled={loggingOut}
-                  className="relative z-20 p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition disabled:opacity-50 cursor-pointer"
-                  title="Sign Out"
-                  aria-label="Sign Out"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:bg-rose-100 transition disabled:opacity-50 cursor-pointer"
+                  title="Sign Out of Portal"
+                  aria-label="Logout"
                 >
                   {loggingOut ? (
                     <div className="w-4 h-4 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin" />
