@@ -73,9 +73,7 @@ export function formatWhatsAppReceiptText(receipt: ReceiptData): string {
       ? formatINR(receipt.ptSubscription.dueAmount)
       : "₹0.00";
 
-  const invoiceNo = receipt.receiptNo.startsWith("REC-")
-    ? receipt.receiptNo.replace("REC-", "INV-")
-    : receipt.receiptNo;
+  const invoiceNo = receipt.receiptNo.padStart(5, "0");
 
   // Construct origin URL
   let origin = "https://concept1gym.vercel.app";

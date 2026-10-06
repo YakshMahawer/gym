@@ -93,10 +93,8 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
   const cgst = Math.round((totalGst / 2) * 100) / 100;
   const sgst = Math.round((totalGst - cgst) * 100) / 100;
 
-  // Professional Invoice Number
-  const invoiceNo = receipt.receiptNo.startsWith("REC-")
-    ? receipt.receiptNo.replace("REC-", "INV-")
-    : receipt.receiptNo;
+  // 5-digit Receipt / Tax Invoice Number
+  const invoiceNo = receipt.receiptNo.padStart(5, "0");
 
   const handlePrint = () => {
     window.print();

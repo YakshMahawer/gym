@@ -18,22 +18,7 @@ export interface AddPaymentInput {
 
 export async function getNextSequentialReceiptNo(paymentDate?: Date | string): Promise<string> {
   try {
-    const d = paymentDate
-      ? typeof paymentDate === "string"
-        ? new Date(paymentDate.includes("T") ? paymentDate : `${paymentDate}T00:00:00.000Z`)
-        : paymentDate
-      : new Date();
-
-    const validDate = isNaN(d.getTime()) ? new Date() : d;
-    const dateStr = validDate.toISOString().slice(2, 10).replace(/-/g, ""); // e.g. "261003"
-    const prefix = `REC-${dateStr}-`;
-
     const existingPayments = await prisma.payment.findMany({
-      where: {
-        receiptNo: {
-          startsWith: prefix,
-        },
-      },
       select: {
         receiptNo: true,
       },
@@ -41,20 +26,18 @@ export async function getNextSequentialReceiptNo(paymentDate?: Date | string): P
 
     let maxNum = 0;
     for (const p of existingPayments) {
-      const suffix = p.receiptNo.slice(prefix.length);
-      const num = parseInt(suffix, 10);
+      const clean = p.receiptNo.replace(/\D/g, "");
+      const num = parseInt(clean, 10);
       if (!isNaN(num) && num > maxNum) {
         maxNum = num;
       }
     }
 
     const nextNum = maxNum + 1;
-    const formattedSuffix = nextNum.toString().padStart(3, "0");
-    return `${prefix}${formattedSuffix}`;
+    return nextNum.toString().padStart(5, "0");
   } catch (error) {
     console.error("Failed to generate sequential receipt number:", error);
-    const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, "");
-    return `REC-${dateStr}-001`;
+    return "00001";
   }
 }
 
@@ -368,7 +351,7 @@ export async function updatePaymentDate(input: {
       data: { paymentDate: newDate },
     });
 
-    // 2. Automatically resequence all receipts chronologically by paymentDate so receipt IDs match their dates
+    // 2. Automatically resequence all receipts chronologically by paymentDate so receipt IDs maintain 5-digit sequence (+1)
     const allPayments = await prisma.payment.findMany({
       orderBy: [
         { paymentDate: "asc" },
@@ -376,15 +359,11 @@ export async function updatePaymentDate(input: {
       ],
     });
 
-    const dateCounters: Record<string, number> = {};
     const toUpdate: { id: string; oldReceiptNo: string; newReceiptNo: string }[] = [];
 
-    for (const p of allPayments) {
-      const d = p.paymentDate;
-      const dateStr = d.toISOString().slice(2, 10).replace(/-/g, ""); // YYMMDD
-      dateCounters[dateStr] = (dateCounters[dateStr] || 0) + 1;
-      const seq = dateCounters[dateStr].toString().padStart(3, "0");
-      const generatedNo = `REC-${dateStr}-${seq}`;
+    for (let i = 0; i < allPayments.length; i++) {
+      const p = allPayments[i];
+      const generatedNo = (i + 1).toString().padStart(5, "0");
 
       if (p.receiptNo !== generatedNo) {
         toUpdate.push({
@@ -448,37 +427,38 @@ export async function resequenceAllReceipts() {
       ],
     });
 
-    const dateCounters: Record<string, number> = {};
     const toUpdate: { id: string; oldReceiptNo: string; newReceiptNo: string }[] = [];
 
-    for (const p of payments) {
-      const d = p.paymentDate;
-      const dateStr = d.toISOString().slice(2, 10).replace(/-/g, ""); // YYMMDD
-      dateCounters[dateStr] = (dateCounters[dateStr] || 0) + 1;
-      const seq = dateCounters[dateStr].toString().padStart(3, "0");
-      toUpdate.push({
-        id: p.id,
-        oldReceiptNo: p.receiptNo,
-        newReceiptNo: `REC-${dateStr}-${seq}`,
-      });
+    for (let i = 0; i < payments.length; i++) {
+      const p = payments[i];
+      const generatedNo = (i + 1).toString().padStart(5, "0");
+      if (p.receiptNo !== generatedNo) {
+        toUpdate.push({
+          id: p.id,
+          oldReceiptNo: p.receiptNo,
+          newReceiptNo: generatedNo,
+        });
+      }
     }
 
-    const timestamp = Date.now();
-    const phase1All = toUpdate.map((item, i) =>
-      prisma.payment.update({
-        where: { id: item.id },
-        data: { receiptNo: `__TEMP_ALL_${timestamp}_${i}__` },
-      })
-    );
+    if (toUpdate.length > 0) {
+      const timestamp = Date.now();
+      const phase1All = toUpdate.map((item, i) =>
+        prisma.payment.update({
+          where: { id: item.id },
+          data: { receiptNo: `__TEMP_ALL_${timestamp}_${i}__` },
+        })
+      );
 
-    const phase2All = toUpdate.map((item) =>
-      prisma.payment.update({
-        where: { id: item.id },
-        data: { receiptNo: item.newReceiptNo },
-      })
-    );
+      const phase2All = toUpdate.map((item) =>
+        prisma.payment.update({
+          where: { id: item.id },
+          data: { receiptNo: item.newReceiptNo },
+        })
+      );
 
-    await prisma.$transaction([...phase1All, ...phase2All]);
+      await prisma.$transaction([...phase1All, ...phase2All]);
+    }
 
     try {
       revalidatePath("/portal/payments");

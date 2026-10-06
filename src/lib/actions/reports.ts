@@ -170,7 +170,7 @@ export async function getReportsData() {
     return {
       id: p.id,
       receiptNo: p.receiptNo,
-      invoiceNo: p.receiptNo.startsWith("REC-") ? p.receiptNo.replace("REC-", "INV-") : p.receiptNo,
+      invoiceNo: p.receiptNo.padStart(5, "0"),
       paymentDate: p.paymentDate,
       amount: totalAmount,
       taxableValue,

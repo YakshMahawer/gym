@@ -233,7 +233,7 @@ export function AppShell({ children }: AppShellProps) {
         
         {/* Left Sidebar - Light Sky & Ice Blue Palette (Desktop) */}
         <aside className="hidden md:flex flex-col w-64 shrink-0 sticky top-20 z-20">
-          <div className="bg-gradient-to-b from-sky-50/90 via-blue-50/70 to-sky-100/60 dark:bg-gradient-to-b dark:from-slate-900 dark:via-blue-950/20 dark:to-slate-900 text-slate-700 dark:text-slate-200 rounded-2xl border border-sky-200/80 dark:border-blue-900/40 p-3.5 space-y-3 shadow-md shadow-sky-900/5 transition-all">
+          <div className="bg-gradient-to-b from-sky-50/90 via-blue-50/70 to-sky-100/60 dark:bg-gradient-to-b dark:from-slate-900 dark:via-blue-950/20 dark:to-slate-900 text-slate-700 dark:text-slate-200 rounded-2xl border border-sky-200/80 dark:border-blue-900/40 p-3.5 space-y-3 shadow-md shadow-sky-900/5 transition-all min-h-[calc(100vh-6.5rem)] flex flex-col">
             <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-sky-700 dark:text-sky-300 flex items-center justify-between">
               <span>Navigation</span>
               <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shadow-[0_0_6px_rgba(14,165,233,0.6)]" />

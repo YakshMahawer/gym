@@ -20,6 +20,7 @@ export default async function PublicReceiptPage({ params }: ReceiptPageProps) {
       OR: [
         { id: decodedId },
         { receiptNo: decodedId },
+        { receiptNo: decodedId.padStart(5, "0") },
         { receiptNo: `REC-${decodedId}` },
       ],
     },
@@ -56,9 +57,7 @@ export default async function PublicReceiptPage({ params }: ReceiptPageProps) {
   const cgst = Math.round((totalGst / 2) * 100) / 100;
   const sgst = Math.round((totalGst - cgst) * 100) / 100;
 
-  const invoiceNo = payment.receiptNo.startsWith("REC-")
-    ? payment.receiptNo.replace("REC-", "INV-")
-    : payment.receiptNo;
+  const invoiceNo = payment.receiptNo.padStart(5, "0");
 
   return (
     <div className="min-h-screen bg-slate-100 py-6 sm:py-10 px-4 sm:px-6 flex flex-col items-center justify-start print:p-0 print:bg-white">
