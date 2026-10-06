@@ -54,13 +54,12 @@ export async function loginUser(formData: {
 export async function logoutUser(): Promise<{ success: boolean }> {
   try {
     const cookieStore = cookies();
+    cookieStore.set(SESSION_COOKIE_NAME, "", {
+      path: "/",
+      maxAge: 0,
+      expires: new Date(0),
+    });
     cookieStore.delete(SESSION_COOKIE_NAME);
-
-    try {
-      revalidatePath("/portal");
-      revalidatePath("/login");
-    } catch {}
-
     return { success: true };
   } catch (error) {
     console.error("Logout error:", error);
