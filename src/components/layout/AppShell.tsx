@@ -43,51 +43,51 @@ export function AppShell({ children }: AppShellProps) {
       label: "Dashboard",
       href: "/portal",
       icon: LayoutDashboard,
-      color: "text-sky-400",
-      bgColor: "bg-sky-500/15",
+      color: "text-sky-600 dark:text-sky-400",
+      bgColor: "bg-sky-100 dark:bg-sky-500/20",
       activeBg: "bg-sky-600 text-white",
-      activePill: "bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow-md shadow-blue-950/60 border border-sky-400/40 font-bold",
-      indicatorColor: "bg-sky-300",
+      activePill: "bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/30 font-bold",
+      indicatorColor: "bg-white",
     },
     {
       label: "Members",
       href: "/portal/members",
       icon: Users,
-      color: "text-blue-400",
-      bgColor: "bg-blue-500/15",
+      color: "text-blue-600 dark:text-blue-400",
+      bgColor: "bg-blue-100 dark:bg-blue-500/20",
       activeBg: "bg-blue-600 text-white",
-      activePill: "bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-600 text-white shadow-md shadow-blue-950/60 border border-blue-400/40 font-bold",
-      indicatorColor: "bg-blue-300",
+      activePill: "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/30 font-bold",
+      indicatorColor: "bg-white",
     },
     {
       label: "Enquiries",
       href: "/portal/enquiries",
       icon: UserPlus,
-      color: "text-cyan-400",
-      bgColor: "bg-cyan-500/15",
+      color: "text-cyan-600 dark:text-cyan-400",
+      bgColor: "bg-cyan-100 dark:bg-cyan-500/20",
       activeBg: "bg-cyan-600 text-white",
-      activePill: "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-950/60 border border-cyan-400/40 font-bold",
-      indicatorColor: "bg-cyan-300",
+      activePill: "bg-gradient-to-r from-cyan-600 to-sky-600 text-white shadow-md shadow-cyan-500/30 font-bold",
+      indicatorColor: "bg-white",
     },
     {
       label: "Payments & Dues",
       href: "/portal/payments",
       icon: CreditCard,
-      color: "text-teal-300",
-      bgColor: "bg-sky-400/15",
-      activeBg: "bg-sky-600 text-white",
-      activePill: "bg-gradient-to-r from-blue-600 to-teal-500 text-white shadow-md shadow-blue-950/60 border border-teal-400/40 font-bold",
-      indicatorColor: "bg-teal-300",
+      color: "text-teal-600 dark:text-teal-400",
+      bgColor: "bg-teal-100 dark:bg-teal-500/20",
+      activeBg: "bg-teal-600 text-white",
+      activePill: "bg-gradient-to-r from-teal-600 to-blue-600 text-white shadow-md shadow-teal-500/30 font-bold",
+      indicatorColor: "bg-white",
     },
     {
       label: "Reports",
       href: "/portal/reports",
       icon: BarChart3,
-      color: "text-indigo-400",
-      bgColor: "bg-indigo-500/15",
+      color: "text-indigo-600 dark:text-indigo-400",
+      bgColor: "bg-indigo-100 dark:bg-indigo-500/20",
       activeBg: "bg-indigo-600 text-white",
-      activePill: "bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-600 text-white shadow-md shadow-indigo-950/60 border border-indigo-400/40 font-bold",
-      indicatorColor: "bg-indigo-300",
+      activePill: "bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md shadow-indigo-500/30 font-bold",
+      indicatorColor: "bg-white",
     },
   ];
 
@@ -231,71 +231,50 @@ export function AppShell({ children }: AppShellProps) {
       {/* Full-width container with items-start for sticky sidebar */}
       <div className="flex-1 flex w-full px-3 sm:px-6 lg:px-8 py-3.5 sm:py-5 gap-6 items-start">
         
-        {/* Left Sidebar - Deep Navy & Sapphire Blue Shades (Desktop) */}
+        {/* Left Sidebar - Light Sky & Ice Blue Palette (Desktop) */}
         <aside className="hidden md:flex flex-col w-64 shrink-0 sticky top-20 z-20">
-          <div className="bg-gradient-to-b from-[#0b192e] via-[#0d2347] to-[#08152b] text-slate-100 rounded-2xl border border-blue-800/40 p-3.5 space-y-2 shadow-xl shadow-blue-950/40 transition-colors flex flex-col min-h-[calc(100vh-6.5rem)] justify-between">
-            <div className="space-y-3">
-              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-blue-300/85 flex items-center justify-between">
-                <span>Navigation</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.7)]" />
-              </div>
-              
-              <div className="space-y-1.5">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive =
-                    item.href === "/portal"
-                      ? pathname === "/portal"
-                      : pathname.startsWith(item.href);
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
-                        isActive
-                          ? item.activePill
-                          : "text-slate-300 hover:text-white hover:bg-blue-600/20 hover:border-blue-500/30 border border-transparent"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors shadow-2xs ${
-                            isActive ? "bg-white/20 text-white" : `${item.bgColor} ${item.color}`
-                          }`}
-                        >
-                          <Icon className="w-4 h-4" />
-                        </div>
-                        <span>{item.label}</span>
-                      </div>
-                      {isActive ? (
-                        <span className={`w-1.5 h-1.5 rounded-full ${item.indicatorColor}`} />
-                      ) : (
-                        <ChevronRight className="w-3.5 h-3.5 text-blue-400/40 opacity-0 group-hover:opacity-100 transition" />
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
+          <div className="bg-gradient-to-b from-sky-50/90 via-blue-50/70 to-sky-100/60 dark:bg-gradient-to-b dark:from-slate-900 dark:via-blue-950/20 dark:to-slate-900 text-slate-700 dark:text-slate-200 rounded-2xl border border-sky-200/80 dark:border-blue-900/40 p-3.5 space-y-3 shadow-md shadow-sky-900/5 transition-all">
+            <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-sky-700 dark:text-sky-300 flex items-center justify-between">
+              <span>Navigation</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shadow-[0_0_6px_rgba(14,165,233,0.6)]" />
             </div>
+            
+            <div className="space-y-1.5">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive =
+                  item.href === "/portal"
+                    ? pathname === "/portal"
+                    : pathname.startsWith(item.href);
 
-            {/* Reception Desk Live Status Footer Card */}
-            <div className="pt-3 border-t border-blue-900/60 space-y-2">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-blue-950/70 via-blue-900/30 to-sky-950/40 border border-blue-700/35 text-[11px] space-y-1.5 backdrop-blur-xs shadow-inner shadow-blue-500/5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 font-semibold text-white">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>Front Desk</span>
-                  </div>
-                  <span className="text-[10px] font-semibold text-sky-300 bg-blue-500/25 px-2 py-0.5 rounded-full border border-sky-400/30">
-                    Active
-                  </span>
-                </div>
-                <div className="text-[10px] text-blue-200/75 flex justify-between pt-0.5">
-                  <span>Facility</span>
-                  <span className="font-semibold text-white">Concept I Gym</span>
-                </div>
-              </div>
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
+                      isActive
+                        ? item.activePill
+                        : "text-slate-600 dark:text-slate-300 hover:text-sky-900 dark:hover:text-white hover:bg-sky-100/80 dark:hover:bg-blue-900/30"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors shadow-2xs ${
+                          isActive ? "bg-white/20 text-white" : `${item.bgColor} ${item.color}`
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <span>{item.label}</span>
+                    </div>
+                    {isActive ? (
+                      <span className={`w-1.5 h-1.5 rounded-full ${item.indicatorColor}`} />
+                    ) : (
+                      <ChevronRight className="w-3.5 h-3.5 text-sky-400 opacity-0 group-hover:opacity-100 transition" />
+                    )}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </aside>
