@@ -43,11 +43,11 @@ export function AppShell({ children }: AppShellProps) {
       label: "Dashboard",
       href: "/portal",
       icon: LayoutDashboard,
-      color: "text-indigo-400",
-      bgColor: "bg-indigo-500/15",
-      activeBg: "bg-indigo-600 text-white",
-      activePill: "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-950/50 border border-indigo-400/30 font-bold",
-      indicatorColor: "bg-indigo-300",
+      color: "text-sky-400",
+      bgColor: "bg-sky-500/15",
+      activeBg: "bg-sky-600 text-white",
+      activePill: "bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow-md shadow-blue-950/60 border border-sky-400/40 font-bold",
+      indicatorColor: "bg-sky-300",
     },
     {
       label: "Members",
@@ -56,45 +56,45 @@ export function AppShell({ children }: AppShellProps) {
       color: "text-blue-400",
       bgColor: "bg-blue-500/15",
       activeBg: "bg-blue-600 text-white",
-      activePill: "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-950/50 border border-blue-400/30 font-bold",
+      activePill: "bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-600 text-white shadow-md shadow-blue-950/60 border border-blue-400/40 font-bold",
       indicatorColor: "bg-blue-300",
     },
     {
       label: "Enquiries",
       href: "/portal/enquiries",
       icon: UserPlus,
-      color: "text-amber-400",
-      bgColor: "bg-amber-500/15",
-      activeBg: "bg-amber-500 text-white",
-      activePill: "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md shadow-amber-950/50 border border-amber-400/30 font-bold",
-      indicatorColor: "bg-amber-300",
+      color: "text-cyan-400",
+      bgColor: "bg-cyan-500/15",
+      activeBg: "bg-cyan-600 text-white",
+      activePill: "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-950/60 border border-cyan-400/40 font-bold",
+      indicatorColor: "bg-cyan-300",
     },
     {
       label: "Payments & Dues",
       href: "/portal/payments",
       icon: CreditCard,
-      color: "text-emerald-400",
-      bgColor: "bg-emerald-500/15",
-      activeBg: "bg-emerald-600 text-white",
-      activePill: "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-950/50 border border-emerald-400/30 font-bold",
-      indicatorColor: "bg-emerald-300",
+      color: "text-teal-300",
+      bgColor: "bg-sky-400/15",
+      activeBg: "bg-sky-600 text-white",
+      activePill: "bg-gradient-to-r from-blue-600 to-teal-500 text-white shadow-md shadow-blue-950/60 border border-teal-400/40 font-bold",
+      indicatorColor: "bg-teal-300",
     },
     {
       label: "Reports",
       href: "/portal/reports",
       icon: BarChart3,
-      color: "text-purple-400",
-      bgColor: "bg-purple-500/15",
-      activeBg: "bg-purple-600 text-white",
-      activePill: "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md shadow-purple-950/50 border border-purple-400/30 font-bold",
-      indicatorColor: "bg-purple-300",
+      color: "text-indigo-400",
+      bgColor: "bg-indigo-500/15",
+      activeBg: "bg-indigo-600 text-white",
+      activePill: "bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-600 text-white shadow-md shadow-indigo-950/60 border border-indigo-400/40 font-bold",
+      indicatorColor: "bg-indigo-300",
     },
   ];
 
   return (
     <div className="min-h-screen bg-slate-50/80 dark:bg-slate-950 flex flex-col antialiased text-slate-800 dark:text-slate-100 pb-20 md:pb-0 transition-colors duration-200">
-      {/* Top Header Bar - Colorful Slate/Indigo Gradient with Brand Elements */}
-      <header className="sticky top-0 z-40 bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white border-b border-indigo-900/40 shadow-md transition-colors duration-200">
+      {/* Top Header Bar - Midnight Blue / Sapphire Gradient */}
+      <header className="sticky top-0 z-40 bg-gradient-to-r from-slate-950 via-[#0b1b36] to-[#0c234a] text-white border-b border-blue-900/40 shadow-md transition-colors duration-200">
         <div className="w-full px-3.5 sm:px-6 lg:px-8 h-15 sm:h-16 flex items-center justify-between gap-3 sm:gap-4">
           
           {/* Brand Logo & Mobile Menu Toggle */}
@@ -114,7 +114,7 @@ export function AppShell({ children }: AppShellProps) {
                 <span className="text-sm sm:text-base font-bold tracking-tight text-white leading-none">
                   Concept I <span className="text-rose-400 font-extrabold">Gym</span>
                 </span>
-                <span className="text-[9px] sm:text-[10px] text-indigo-200/70 font-medium tracking-wide">
+                <span className="text-[9px] sm:text-[10px] text-blue-200/70 font-medium tracking-wide">
                   Reception Desk
                 </span>
               </div>
@@ -127,7 +127,7 @@ export function AppShell({ children }: AppShellProps) {
             <Link
               href="/"
               target="_blank"
-              className="hidden lg:inline-flex items-center gap-1 px-3 py-1.5 text-xs text-indigo-200 hover:text-white hover:bg-white/10 border border-white/10 rounded-xl transition"
+              className="hidden lg:inline-flex items-center gap-1 px-3 py-1.5 text-xs text-blue-200 hover:text-white hover:bg-white/10 border border-white/10 rounded-xl transition"
               title="Open Public Website"
             >
               <span>Live Site ↗</span>
@@ -138,7 +138,7 @@ export function AppShell({ children }: AppShellProps) {
               onClick={() => setEnquiryModalOpen(true)}
               className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white rounded-xl text-xs font-semibold shadow-xs transition backdrop-blur-xs"
             >
-              <Plus className="w-3.5 h-3.5 text-indigo-200" />
+              <Plus className="w-3.5 h-3.5 text-blue-200" />
               <span>New Enquiry</span>
             </button>
 
@@ -221,7 +221,7 @@ export function AppShell({ children }: AppShellProps) {
               </div>
               <div className="flex flex-col">
                 <span className="font-semibold text-white leading-none">Front Desk</span>
-                <span className="text-[10px] text-indigo-200/70">Main Branch</span>
+                <span className="text-[10px] text-blue-200/70">Main Branch</span>
               </div>
             </div>
           </div>
@@ -231,13 +231,13 @@ export function AppShell({ children }: AppShellProps) {
       {/* Full-width container with items-start for sticky sidebar */}
       <div className="flex-1 flex w-full px-3 sm:px-6 lg:px-8 py-3.5 sm:py-5 gap-6 items-start">
         
-        {/* Left Sidebar - Long, Fixed, Rich Midnight Indigo Theme (Desktop) */}
+        {/* Left Sidebar - Deep Navy & Sapphire Blue Shades (Desktop) */}
         <aside className="hidden md:flex flex-col w-64 shrink-0 sticky top-20 z-20">
-          <div className="bg-gradient-to-b from-slate-950 via-[#0f172a] to-[#1e1b4b] text-slate-200 rounded-2xl border border-indigo-900/50 p-3.5 space-y-2 shadow-xl shadow-slate-950/20 transition-colors flex flex-col min-h-[calc(100vh-6.5rem)] justify-between">
+          <div className="bg-gradient-to-b from-[#0b192e] via-[#0d2347] to-[#08152b] text-slate-100 rounded-2xl border border-blue-800/40 p-3.5 space-y-2 shadow-xl shadow-blue-950/40 transition-colors flex flex-col min-h-[calc(100vh-6.5rem)] justify-between">
             <div className="space-y-3">
-              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-indigo-300/80 flex items-center justify-between">
-                <span>Menu</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-blue-300/85 flex items-center justify-between">
+                <span>Navigation</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.7)]" />
               </div>
               
               <div className="space-y-1.5">
@@ -255,7 +255,7 @@ export function AppShell({ children }: AppShellProps) {
                       className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
                         isActive
                           ? item.activePill
-                          : "text-slate-300 hover:text-white hover:bg-white/10"
+                          : "text-slate-300 hover:text-white hover:bg-blue-600/20 hover:border-blue-500/30 border border-transparent"
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -271,7 +271,7 @@ export function AppShell({ children }: AppShellProps) {
                       {isActive ? (
                         <span className={`w-1.5 h-1.5 rounded-full ${item.indicatorColor}`} />
                       ) : (
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-500 opacity-0 group-hover:opacity-100 transition" />
+                        <ChevronRight className="w-3.5 h-3.5 text-blue-400/40 opacity-0 group-hover:opacity-100 transition" />
                       )}
                     </Link>
                   );
@@ -280,18 +280,18 @@ export function AppShell({ children }: AppShellProps) {
             </div>
 
             {/* Reception Desk Live Status Footer Card */}
-            <div className="pt-3 border-t border-indigo-900/50 space-y-2">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-white/10 to-indigo-500/10 border border-white/10 text-[11px] space-y-1.5 backdrop-blur-xs">
+            <div className="pt-3 border-t border-blue-900/60 space-y-2">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-blue-950/70 via-blue-900/30 to-sky-950/40 border border-blue-700/35 text-[11px] space-y-1.5 backdrop-blur-xs shadow-inner shadow-blue-500/5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 font-semibold text-white">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                     <span>Front Desk</span>
                   </div>
-                  <span className="text-[10px] font-semibold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-400/30">
+                  <span className="text-[10px] font-semibold text-sky-300 bg-blue-500/25 px-2 py-0.5 rounded-full border border-sky-400/30">
                     Active
                   </span>
                 </div>
-                <div className="text-[10px] text-indigo-200/70 flex justify-between pt-0.5">
+                <div className="text-[10px] text-blue-200/75 flex justify-between pt-0.5">
                   <span>Facility</span>
                   <span className="font-semibold text-white">Concept I Gym</span>
                 </div>
