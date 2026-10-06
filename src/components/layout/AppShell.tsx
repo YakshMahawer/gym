@@ -48,20 +48,26 @@ export function AppShell({ children }: AppShellProps) {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const handleLogout = async () => {
+  const handleLogout = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (loggingOut) return;
     setLoggingOut(true);
 
     try {
       // 1. Immediately wipe client cookie for 0ms edge middleware effect
       document.cookie = "gym_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax";
+      localStorage.clear();
+      sessionStorage.clear();
     } catch {}
 
     // 2. Fire backend logout in background without waiting
     logoutUser().catch(() => {});
 
     // 3. Instant hard redirect to login
-    window.location.replace("/login");
+    window.location.href = "/login";
   };
 
   const navItems = [
@@ -276,9 +282,10 @@ export function AppShell({ children }: AppShellProps) {
                 </span>
               </div>
               <button
-                onClick={handleLogout}
+                type="button"
+                onClick={(e) => handleLogout(e)}
                 disabled={loggingOut}
-                className="p-1.5 rounded-lg text-rose-300 hover:text-white hover:bg-rose-500/20 active:bg-rose-500/30 transition disabled:opacity-50"
+                className="p-1.5 rounded-lg text-rose-300 hover:text-white hover:bg-rose-500/20 active:bg-rose-500/30 transition disabled:opacity-50 cursor-pointer"
                 title="Sign Out of Portal"
                 aria-label="Logout"
               >
@@ -365,10 +372,12 @@ export function AppShell({ children }: AppShellProps) {
                   </div>
                 </div>
                 <button
-                  onClick={handleLogout}
+                  type="button"
+                  onClick={(e) => handleLogout(e)}
                   disabled={loggingOut}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition disabled:opacity-50"
+                  className="relative z-20 p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition disabled:opacity-50 cursor-pointer"
                   title="Sign Out"
+                  aria-label="Sign Out"
                 >
                   {loggingOut ? (
                     <div className="w-4 h-4 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin" />
@@ -480,9 +489,10 @@ export function AppShell({ children }: AppShellProps) {
                 </button>
 
                 <button
-                  onClick={handleLogout}
+                  type="button"
+                  onClick={(e) => handleLogout(e)}
                   disabled={loggingOut}
-                  className="w-full flex items-center justify-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition disabled:opacity-50 cursor-pointer"
                 >
                   {loggingOut ? (
                     <div className="w-4 h-4 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin" />

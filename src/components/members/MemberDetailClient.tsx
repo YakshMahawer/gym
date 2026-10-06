@@ -936,34 +936,16 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                     onFocus={(e) => e.target.select()}
                     onChange={(e) => {
                       const raw = e.target.value.replace(/^0+(?=\d)/, "");
-                      setRenewalTotal(raw === "" ? 0 : Number(raw));
+                      const val = raw === "" ? 0 : Number(raw);
+                      setRenewalTotal(val);
+                      if (renewalPaid > val) setRenewalPaid(val);
                     }}
                     className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg font-semibold"
                   />
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Paid Today (₹)</label>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setRenewalPaid(renewalTotal)}
-                        className="text-[10px] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-2 py-0.5 rounded transition"
-                        title="Set full package fee as paid"
-                      >
-                        Paid in Full
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRenewalPaid(0)}
-                        className="text-[10px] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-2 py-0.5 rounded transition"
-                        title="Mark full package fee as due"
-                      >
-                        Full Due (₹0)
-                      </button>
-                    </div>
-                  </div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Paid Today (₹)</label>
                   <input
                     type="number"
                     placeholder="0"
@@ -977,6 +959,13 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                   />
                 </div>
               </div>
+
+              {renewalTotal > renewalPaid && (
+                <div className="flex items-center justify-between text-xs text-rose-700 bg-rose-50 px-3 py-2 rounded-lg border border-rose-200">
+                  <span className="font-medium">Pending Due:</span>
+                  <span className="font-bold">{formatINR(renewalTotal - renewalPaid)}</span>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Payment Method</label>
