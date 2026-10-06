@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { EnquiryStatus } from "@prisma/client";
+import { getSessionUser } from "@/lib/auth";
 
 export interface CreateEnquiryInput {
   name: string;
@@ -78,6 +79,11 @@ export async function createEnquiry(input: CreateEnquiryInput) {
 
 export async function updateEnquiryStatus(id: string, status: EnquiryStatus, notes?: string) {
   try {
+    const session = await getSessionUser();
+    if (session?.role === "FRONTDESK") {
+      return { success: false, error: "Front Desk staff are not authorized to update enquiries." };
+    }
+
     const enquiry = await prisma.enquiry.update({
       where: { id },
       data: {
@@ -97,6 +103,11 @@ export async function updateEnquiryStatus(id: string, status: EnquiryStatus, not
 
 export async function deleteEnquiry(id: string) {
   try {
+    const session = await getSessionUser();
+    if (session?.role === "FRONTDESK") {
+      return { success: false, error: "Front Desk staff are not authorized to delete enquiries." };
+    }
+
     await prisma.enquiry.delete({
       where: { id },
     });

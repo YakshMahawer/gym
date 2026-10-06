@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { PaymentMethod, PTStatus } from "@prisma/client";
 import { getNextSequentialReceiptNo } from "@/lib/actions/payments";
+import { getSessionUser } from "@/lib/auth";
 
 export interface AddMemberPTInput {
   memberId: string;
@@ -85,6 +86,11 @@ export async function addOrRenewMemberPT(input: AddMemberPTInput) {
 
 export async function updatePTSessions(ptId: string, completedSessions: number) {
   try {
+    const session = await getSessionUser();
+    if (session?.role === "FRONTDESK") {
+      return { success: false, error: "Front Desk staff are not authorized to edit PT session counts." };
+    }
+
     const pt = await prisma.memberPT.findUnique({
       where: { id: ptId },
     });

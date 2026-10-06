@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { extractNumericId, normalizeMemberId } from "@/lib/utils";
 import { getNextSequentialReceiptNo } from "@/lib/actions/payments";
 import { PaymentMethod, MembershipStatus } from "@prisma/client";
+import { getSessionUser } from "@/lib/auth";
 
 export interface CreateMemberInput {
   memberId?: string;
@@ -424,6 +425,11 @@ export async function createMember(input: CreateMemberInput) {
 
 export async function updateMember(id: string, input: Partial<CreateMemberInput>) {
   try {
+    const session = await getSessionUser();
+    if (session?.role === "FRONTDESK") {
+      return { success: false, error: "Front Desk staff are not authorized to edit member details." };
+    }
+
     let finalMemberId: string | undefined = undefined;
     if (input.memberId) {
       const desiredId = normalizeMemberId(input.memberId.trim());
@@ -507,6 +513,11 @@ export async function updateMember(id: string, input: Partial<CreateMemberInput>
 
 export async function deleteMember(id: string) {
   try {
+    const session = await getSessionUser();
+    if (session?.role === "FRONTDESK") {
+      return { success: false, error: "Front Desk staff are not authorized to delete member records." };
+    }
+
     await prisma.member.delete({
       where: { id },
     });

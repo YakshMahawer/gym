@@ -29,6 +29,7 @@ import { EditPaymentDateModal } from "@/components/modals/EditPaymentDateModal";
 import { ReceiptModal } from "@/components/payments/ReceiptModal";
 import { DeleteReceiptModal } from "@/components/modals/DeleteReceiptModal";
 import { exportToExcel } from "@/lib/export-excel";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 interface PaymentsClientProps {
   payments: any[];
@@ -38,6 +39,7 @@ interface PaymentsClientProps {
 
 export function PaymentsClient({ payments, dueSubscriptions, allMembers }: PaymentsClientProps) {
   const router = useRouter();
+  const { canEdit, canDelete } = useAuth();
   const [activeTab, setActiveTab] = useState<"history" | "dues">("history");
   const [search, setSearch] = useState("");
   const [methodFilter, setMethodFilter] = useState("ALL");
@@ -517,13 +519,15 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                             <Printer className="w-3.5 h-3.5 text-amber-500" />
                             <span>Receipt</span>
                           </button>
-                          <button
-                            onClick={() => setDeletingPayment(pm)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition"
-                            title="Delete Receipt"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {canDelete && (
+                            <button
+                              onClick={() => setDeletingPayment(pm)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition"
+                              title="Delete Receipt"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -566,13 +570,15 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                           <td className="py-3 px-4 text-slate-500 dark:text-slate-400">
                             <div className="flex items-center gap-1.5 group/date">
                               <span>{formatDateTime(pm.paymentDate)}</span>
-                              <button
-                                onClick={() => setEditingPayment(pm)}
-                                className="opacity-0 group-hover/date:opacity-100 p-1 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded transition"
-                                title="Edit Payment Date"
-                              >
-                                <Pencil className="w-3 h-3" />
-                              </button>
+                              {canEdit && (
+                                <button
+                                  onClick={() => setEditingPayment(pm)}
+                                  className="opacity-0 group-hover/date:opacity-100 p-1 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded transition"
+                                  title="Edit Payment Date"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                              )}
                             </div>
                           </td>
                           <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">
@@ -603,13 +609,15 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                                 <Printer className="w-3 h-3 text-amber-400" />
                                 <span>Receipt</span>
                               </button>
-                              <button
-                                onClick={() => setDeletingPayment(pm)}
-                                className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition"
-                                title="Delete Receipt"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              {canDelete && (
+                                <button
+                                  onClick={() => setDeletingPayment(pm)}
+                                  className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition"
+                                  title="Delete Receipt"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>

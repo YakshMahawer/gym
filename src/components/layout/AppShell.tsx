@@ -20,23 +20,38 @@ import {
   FileText,
   ChevronRight,
   ShieldAlert,
+  Settings,
+  LogOut,
+  ShieldCheck,
 } from "lucide-react";
 import { NewEnquiryModal } from "@/components/modals/NewEnquiryModal";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { logoutUser } from "@/lib/actions/auth";
+import { SessionUser } from "@/lib/auth";
 
 interface AppShellProps {
   children: React.ReactNode;
+  user?: SessionUser | null;
 }
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { user, isAdmin, isSuperUser, isFrontDesk } = useAuth();
+
   const [enquiryModalOpen, setEnquiryModalOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileActionSheetOpen, setMobileActionSheetOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await logoutUser();
+    router.push("/login");
+    router.refresh();
+  };
 
   const navItems = [
     {
@@ -89,6 +104,20 @@ export function AppShell({ children }: AppShellProps) {
       activePill: "bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md shadow-indigo-500/30 font-bold",
       indicatorColor: "bg-white",
     },
+    ...(isAdmin || isSuperUser
+      ? [
+          {
+            label: "Settings",
+            href: "/portal/settings",
+            icon: Settings,
+            color: "text-slate-600 dark:text-slate-400",
+            bgColor: "bg-slate-100 dark:bg-slate-800",
+            activeBg: "bg-slate-700 text-white",
+            activePill: "bg-gradient-to-r from-slate-700 to-slate-800 text-white shadow-md shadow-slate-900/30 font-bold",
+            indicatorColor: "bg-white",
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -214,15 +243,35 @@ export function AppShell({ children }: AppShellProps) {
               <Plus className="w-4 h-4" />
             </button>
 
-            {/* Quick Staff Badge */}
-            <div className="hidden lg:flex items-center gap-2 pl-3 border-l border-white/15 text-xs">
-              <div className="w-7 h-7 rounded-full bg-white/10 border border-white/20 text-white font-semibold flex items-center justify-center text-[11px]">
-                REC
+            {/* Staff Role Badge & Logout Button */}
+            <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-white/15 text-xs">
+              <div
+                className={`w-7 h-7 rounded-full text-white font-bold flex items-center justify-center text-[10px] shadow-xs ${
+                  isSuperUser
+                    ? "bg-rose-500 border border-rose-300 shadow-rose-500/30"
+                    : isAdmin
+                    ? "bg-indigo-600 border border-indigo-300 shadow-indigo-500/30"
+                    : "bg-sky-500 border border-sky-300 shadow-sky-500/30"
+                }`}
+              >
+                {isSuperUser ? "ROOT" : isAdmin ? "ADM" : "REC"}
               </div>
-              <div className="flex flex-col">
-                <span className="font-semibold text-white leading-none">Front Desk</span>
-                <span className="text-[10px] text-blue-200/70">Main Branch</span>
+              <div className="hidden lg:flex flex-col">
+                <span className="font-semibold text-white leading-none">
+                  {user?.name || (isSuperUser ? "Superuser" : isAdmin ? "Administrator" : "Front Desk")}
+                </span>
+                <span className="text-[10px] text-blue-200/70">
+                  {isSuperUser ? "Root Master" : isAdmin ? "Full Admin" : "Receptionist"}
+                </span>
               </div>
+              <button
+                onClick={handleLogout}
+                className="p-1.5 rounded-lg text-rose-300 hover:text-white hover:bg-rose-500/20 active:bg-rose-500/30 transition"
+                title="Sign Out of Portal"
+                aria-label="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
@@ -233,48 +282,80 @@ export function AppShell({ children }: AppShellProps) {
         
         {/* Left Sidebar - Light Sky & Ice Blue Palette (Desktop) */}
         <aside className="hidden md:flex flex-col w-64 shrink-0 sticky top-20 z-20">
-          <div className="bg-gradient-to-b from-sky-50/90 via-blue-50/70 to-sky-100/60 dark:bg-gradient-to-b dark:from-slate-900 dark:via-blue-950/20 dark:to-slate-900 text-slate-700 dark:text-slate-200 rounded-2xl border border-sky-200/80 dark:border-blue-900/40 p-3.5 space-y-3 shadow-md shadow-sky-900/5 transition-all min-h-[calc(100vh-6.5rem)] flex flex-col">
-            <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-sky-700 dark:text-sky-300 flex items-center justify-between">
-              <span>Navigation</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shadow-[0_0_6px_rgba(14,165,233,0.6)]" />
-            </div>
-            
-            <div className="space-y-1.5">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive =
-                  item.href === "/portal"
-                    ? pathname === "/portal"
-                    : pathname.startsWith(item.href);
+          <div className="bg-gradient-to-b from-sky-50/90 via-blue-50/70 to-sky-100/60 dark:bg-gradient-to-b dark:from-slate-900 dark:via-blue-950/20 dark:to-slate-900 text-slate-700 dark:text-slate-200 rounded-2xl border border-sky-200/80 dark:border-blue-900/40 p-3.5 space-y-3 shadow-md shadow-sky-900/5 transition-all min-h-[calc(100vh-6.5rem)] flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-sky-700 dark:text-sky-300 flex items-center justify-between">
+                <span>Navigation</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shadow-[0_0_6px_rgba(14,165,233,0.6)]" />
+              </div>
+              
+              <div className="space-y-1.5">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive =
+                    item.href === "/portal"
+                      ? pathname === "/portal"
+                      : pathname.startsWith(item.href);
 
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
-                      isActive
-                        ? item.activePill
-                        : "text-slate-600 dark:text-slate-300 hover:text-sky-900 dark:hover:text-white hover:bg-sky-100/80 dark:hover:bg-blue-900/30"
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
+                        isActive
+                          ? item.activePill
+                          : "text-slate-600 dark:text-slate-300 hover:text-sky-900 dark:hover:text-white hover:bg-sky-100/80 dark:hover:bg-blue-900/30"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors shadow-2xs ${
+                            isActive ? "bg-white/20 text-white" : `${item.bgColor} ${item.color}`
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <span>{item.label}</span>
+                      </div>
+                      {isActive ? (
+                        <span className={`w-1.5 h-1.5 rounded-full ${item.indicatorColor}`} />
+                      ) : (
+                        <ChevronRight className="w-3.5 h-3.5 text-sky-400 opacity-0 group-hover:opacity-100 transition" />
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Desktop Sidebar Bottom Profile & Logout Card */}
+            <div className="pt-3 border-t border-sky-200/80 dark:border-blue-900/40 space-y-2">
+              <div className="p-2.5 rounded-xl bg-sky-100/70 dark:bg-slate-800/70 border border-sky-200/70 dark:border-slate-700/60 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div
+                    className={`w-7 h-7 shrink-0 rounded-lg text-white font-bold flex items-center justify-center text-[10px] ${
+                      isSuperUser ? "bg-rose-600" : isAdmin ? "bg-indigo-600" : "bg-sky-600"
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors shadow-2xs ${
-                          isActive ? "bg-white/20 text-white" : `${item.bgColor} ${item.color}`
-                        }`}
-                      >
-                        <Icon className="w-4 h-4" />
-                      </div>
-                      <span>{item.label}</span>
-                    </div>
-                    {isActive ? (
-                      <span className={`w-1.5 h-1.5 rounded-full ${item.indicatorColor}`} />
-                    ) : (
-                      <ChevronRight className="w-3.5 h-3.5 text-sky-400 opacity-0 group-hover:opacity-100 transition" />
-                    )}
-                  </Link>
-                );
-              })}
+                    {isSuperUser ? "ROOT" : isAdmin ? "ADM" : "REC"}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="font-bold text-slate-800 dark:text-slate-200 text-xs block truncate">
+                      {user?.name || (isSuperUser ? "Superuser" : isAdmin ? "Administrator" : "Front Desk")}
+                    </span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate">
+                      @{user?.username || "deskmanager"}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         </aside>
@@ -293,7 +374,9 @@ export function AppShell({ children }: AppShellProps) {
                       <span className="font-bold text-sm text-slate-900 dark:text-white block leading-tight">
                         Concept I <span className="text-rose-600 dark:text-rose-500">Gym</span>
                       </span>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500">Reception & Management</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                        {user?.name || "Portal User"}
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
@@ -375,19 +458,21 @@ export function AppShell({ children }: AppShellProps) {
                   <span>Record Payment</span>
                 </button>
 
-                <Link
-                  href="/"
-                  target="_blank"
-                  className="flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition"
                 >
-                  <span>View Public Website ↗</span>
-                </Link>
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out (@{user?.username || "user"})</span>
+                </button>
               </div>
 
               {/* Bottom Drawer Footer */}
               <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-center text-[11px] text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-700">
                 <p className="font-semibold text-slate-700 dark:text-slate-200">Concept I Gym Manager</p>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Mobile Desk v1.0</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+                  Logged in as {user?.role || "FRONTDESK"}
+                </p>
               </div>
             </div>
           </div>

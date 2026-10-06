@@ -35,6 +35,7 @@ import { renewSubscription, deleteMember } from "@/lib/actions/members";
 import { updatePTSessions } from "@/lib/actions/pt";
 import { PaymentMethod } from "@prisma/client";
 import { Dumbbell } from "lucide-react";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 interface MemberDetailClientProps {
   member: any;
@@ -43,6 +44,7 @@ interface MemberDetailClientProps {
 
 export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
   const router = useRouter();
+  const { canEdit, canDelete } = useAuth();
   const [activeTab, setActiveTab] = useState<"overview" | "payments" | "health">("overview");
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [renewalModalOpen, setRenewalModalOpen] = useState(false);
@@ -249,22 +251,26 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
             </button>
           )}
 
-          <Link
-            href={`/portal/members/${member.id}/edit`}
-            className="p-1.5 sm:p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition"
-            title="Edit Details"
-          >
-            <Edit className="w-4 h-4" />
-          </Link>
+          {canEdit && (
+            <Link
+              href={`/portal/members/${member.id}/edit`}
+              className="p-1.5 sm:p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition"
+              title="Edit Details"
+            >
+              <Edit className="w-4 h-4" />
+            </Link>
+          )}
 
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="p-1.5 sm:p-2 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 rounded-lg transition"
-            title="Delete Member"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          {canDelete && (
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="p-1.5 sm:p-2 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 rounded-lg transition"
+              title="Delete Member"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -606,22 +612,24 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                                 <span className="text-[10px] text-slate-400 dark:text-slate-400">
                                   {formatDateTime(pm.paymentDate)}
                                 </span>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setEditingPayment({
-                                      ...pm,
-                                      member: {
-                                        fullName: member.fullName,
-                                        memberId: member.memberId,
-                                      },
-                                    })
-                                  }
-                                  className="p-0.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition"
-                                  title="Change Payment Date"
-                                >
-                                  <Pencil className="w-2.5 h-2.5" />
-                                </button>
+                                {canEdit && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setEditingPayment({
+                                        ...pm,
+                                        member: {
+                                          fullName: member.fullName,
+                                          memberId: member.memberId,
+                                        },
+                                      })
+                                    }
+                                    className="p-0.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition"
+                                    title="Change Payment Date"
+                                  >
+                                    <Pencil className="w-2.5 h-2.5" />
+                                  </button>
+                                )}
                               </div>
                             </div>
                             <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
@@ -659,21 +667,23 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                                 <Printer className="w-3 h-3 text-amber-500" />
                                 <span>Receipt</span>
                               </button>
-                              <button
-                                onClick={() =>
-                                  setDeletingPayment({
-                                    ...pm,
-                                    member: {
-                                      fullName: member.fullName,
-                                      memberId: member.memberId,
-                                    },
-                                  })
-                                }
-                                className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition"
-                                title="Delete Receipt"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              {canDelete && (
+                                <button
+                                  onClick={() =>
+                                    setDeletingPayment({
+                                      ...pm,
+                                      member: {
+                                        fullName: member.fullName,
+                                        memberId: member.memberId,
+                                      },
+                                    })
+                                  }
+                                  className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition"
+                                  title="Delete Receipt"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -700,22 +710,24 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                               <td className="py-2.5 px-3 text-slate-500 dark:text-slate-400">
                                 <div className="flex items-center gap-1.5">
                                   <span>{formatDateTime(pm.paymentDate)}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setEditingPayment({
-                                        ...pm,
-                                        member: {
-                                          fullName: member.fullName,
-                                          memberId: member.memberId,
-                                        },
-                                      })
-                                    }
-                                    className="p-0.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition"
-                                    title="Change Payment Date"
-                                  >
-                                    <Pencil className="w-3 h-3" />
-                                  </button>
+                                  {canEdit && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setEditingPayment({
+                                          ...pm,
+                                          member: {
+                                            fullName: member.fullName,
+                                            memberId: member.memberId,
+                                          },
+                                        })
+                                      }
+                                      className="p-0.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition"
+                                      title="Change Payment Date"
+                                    >
+                                      <Pencil className="w-3 h-3" />
+                                    </button>
+                                  )}
                                 </div>
                               </td>
                               <td className="py-2.5 px-3 font-medium text-slate-700 dark:text-slate-300">{pm.paymentMethod}</td>
@@ -749,21 +761,23 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                                     <Printer className="w-3 h-3 text-amber-500" />
                                     <span>Receipt</span>
                                   </button>
-                                  <button
-                                    onClick={() =>
-                                      setDeletingPayment({
-                                        ...pm,
-                                        member: {
-                                          fullName: member.fullName,
-                                          memberId: member.memberId,
-                                        },
-                                      })
-                                    }
-                                    className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition"
-                                    title="Delete Receipt"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
+                                  {canDelete && (
+                                    <button
+                                      onClick={() =>
+                                        setDeletingPayment({
+                                          ...pm,
+                                          member: {
+                                            fullName: member.fullName,
+                                            memberId: member.memberId,
+                                          },
+                                        })
+                                      }
+                                      className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition"
+                                      title="Delete Receipt"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
                                 </div>
                               </td>
                             </tr>
@@ -1005,11 +1019,15 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
         <ReceiptModal
           receipt={selectedReceiptForPrint}
           onClose={() => setSelectedReceiptForPrint(null)}
-          onEditPaymentDate={() => {
-            const cur = selectedReceiptForPrint;
-            setSelectedReceiptForPrint(null);
-            setEditingPayment(cur);
-          }}
+          onEditPaymentDate={
+            canEdit
+              ? () => {
+                  const cur = selectedReceiptForPrint;
+                  setSelectedReceiptForPrint(null);
+                  setEditingPayment(cur);
+                }
+              : undefined
+          }
         />
       )}
 

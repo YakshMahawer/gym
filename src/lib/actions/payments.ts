@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { PaymentMethod } from "@prisma/client";
+import { getSessionUser } from "@/lib/auth";
 
 export interface AddPaymentInput {
   memberId: string;
@@ -256,6 +257,11 @@ export async function addPayment(input: AddPaymentInput) {
 
 export async function deletePayment(paymentId: string) {
   try {
+    const session = await getSessionUser();
+    if (session?.role === "FRONTDESK") {
+      return { success: false, error: "Front Desk staff are not authorized to delete payment receipts." };
+    }
+
     const payment = await prisma.payment.findUnique({
       where: { id: paymentId },
       include: {
@@ -328,6 +334,11 @@ export async function updatePaymentDate(input: {
   newPaymentDate: string | Date;
 }) {
   try {
+    const session = await getSessionUser();
+    if (session?.role === "FRONTDESK") {
+      return { success: false, error: "Front Desk staff are not authorized to change payment dates." };
+    }
+
     const targetPayment = await prisma.payment.findUnique({
       where: { id: input.paymentId },
       include: { member: true },
@@ -420,6 +431,11 @@ export async function updatePaymentDate(input: {
 
 export async function resequenceAllReceipts() {
   try {
+    const session = await getSessionUser();
+    if (session?.role === "FRONTDESK") {
+      return { success: false, error: "Front Desk staff are not authorized to resequence receipts." };
+    }
+
     const payments = await prisma.payment.findMany({
       orderBy: [
         { paymentDate: "asc" },

@@ -20,6 +20,7 @@ import { updateEnquiryStatus, deleteEnquiry } from "@/lib/actions/enquiries";
 import { NewEnquiryModal } from "@/components/modals/NewEnquiryModal";
 import { EnquiryStatus } from "@prisma/client";
 import { exportToExcel } from "@/lib/export-excel";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 interface EnquiryListClientProps {
   enquiries: any[];
@@ -28,6 +29,7 @@ interface EnquiryListClientProps {
 
 export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientProps) {
   const router = useRouter();
+  const { canEdit, canDelete } = useAuth();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [modalOpen, setModalOpen] = useState(false);
@@ -246,13 +248,15 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
                       </Link>
                     )}
 
-                    <button
-                      onClick={() => handleDelete(enq.id, enq.name)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDelete(enq.id, enq.name)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -301,7 +305,7 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
                         <select
                           value={enq.status}
                           onChange={(e) => handleStatusChange(enq.id, e.target.value as EnquiryStatus)}
-                          disabled={loadingId === enq.id}
+                          disabled={loadingId === enq.id || !canEdit}
                           className={`text-xs font-semibold px-2 py-1 rounded border focus:outline-none bg-white transition ${
                             enq.status === "CONVERTED"
                               ? "text-emerald-700 border-emerald-200"
@@ -361,13 +365,15 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
                             </Link>
                           )}
 
-                          <button
-                            onClick={() => handleDelete(enq.id, enq.name)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {canDelete && (
+                            <button
+                              onClick={() => handleDelete(enq.id, enq.name)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
