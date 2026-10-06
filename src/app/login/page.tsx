@@ -46,7 +46,7 @@ function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl shadow-[0_20px_50px_rgba(15,23,42,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-200/80 dark:border-slate-800 overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[540px]">
+    <div className="w-full max-w-4xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl shadow-[0_25px_60px_rgba(15,23,42,0.12)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.6)] border border-slate-200/90 dark:border-slate-800 overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[540px]">
       
       {/* Left Visual Branding Panel with Gym Vector Art */}
       <div className="md:col-span-5 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 p-8 sm:p-9 text-white flex flex-col justify-between relative overflow-hidden">
@@ -160,7 +160,7 @@ function LoginForm() {
       </div>
 
       {/* Right Login Form Panel */}
-      <div className="md:col-span-7 p-8 sm:p-12 flex flex-col justify-center bg-white dark:bg-slate-900">
+      <div className="md:col-span-7 p-8 sm:p-12 flex flex-col justify-center bg-white/90 dark:bg-slate-900/90">
         <div className="max-w-sm w-full mx-auto space-y-6">
           
           {/* Form Header */}
@@ -263,17 +263,33 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center p-4 sm:p-6 relative">
-      <Suspense
-        fallback={
-          <div className="w-full max-w-md bg-white p-8 rounded-3xl text-center space-y-3 shadow-lg">
-            <div className="w-8 h-8 border-3 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-xs text-slate-500">Loading Login Portal...</p>
-          </div>
-        }
-      >
-        <LoginForm />
-      </Suspense>
+    <div className="min-h-screen relative flex items-center justify-center p-4 sm:p-6 overflow-hidden bg-slate-100 dark:bg-slate-950">
+      
+      {/* Aesthetic Tiled Repeating Pattern Background with Subtle Blur & Overlay */}
+      <div
+        className="absolute inset-0 bg-repeat opacity-[0.08] dark:opacity-[0.04] pointer-events-none filter blur-[1px] scale-105"
+        style={{
+          backgroundImage: "url('/gym-pattern.jpg')",
+          backgroundSize: "360px auto",
+        }}
+      />
+      
+      {/* Ambient Gradient Glows */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-slate-200/50 via-transparent to-sky-100/40 dark:from-slate-950/80 dark:via-transparent dark:to-blue-950/40 pointer-events-none" />
+
+      {/* Floating Center Card */}
+      <div className="relative z-10 w-full flex items-center justify-center">
+        <Suspense
+          fallback={
+            <div className="w-full max-w-md bg-white p-8 rounded-3xl text-center space-y-3 shadow-lg">
+              <div className="w-8 h-8 border-3 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-xs text-slate-500">Loading Login Portal...</p>
+            </div>
+          }
+        >
+          <LoginForm />
+        </Suspense>
+      </div>
     </div>
   );
 }
