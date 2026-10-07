@@ -25,6 +25,7 @@ import {
 import { formatINR, formatDate, calculateDaysRemaining } from "@/lib/utils";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
 import { exportToExcel } from "@/lib/export-excel";
+import { Pagination } from "@/components/ui/Pagination";
 
 interface MemberListClientProps {
   members: any[];
@@ -39,6 +40,8 @@ export function MemberListClient({ members }: MemberListClientProps) {
   const [dueFilter, setDueFilter] = useState<"ALL" | "HAS_DUE" | "PAID">("ALL");
   const [genderFilter, setGenderFilter] = useState("ALL");
   const [sortBy, setSortBy] = useState<"ID_DESC" | "ID_ASC" | "NAME_ASC" | "NAME_DESC" | "EXPIRY_ASC" | "ENROLL_DESC">("ID_DESC");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   // Payment modal state
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -158,6 +161,11 @@ export function MemberListClient({ members }: MemberListClientProps) {
     }
     return 0;
   });
+
+  const paginatedMembers = sortedMembers.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const activeFiltersCount =
     (statusFilter !== "ALL" ? 1 : 0) +
@@ -506,7 +514,7 @@ export function MemberListClient({ members }: MemberListClientProps) {
           <>
             {/* Mobile Member Cards View (block md:hidden) */}
             <div className="p-3 grid grid-cols-1 gap-2.5 md:hidden">
-              {sortedMembers.map((member) => {
+              {paginatedMembers.map((member) => {
                 const activeSub = member.subscriptions?.[0];
                 const latestPT = member.ptSubscriptions?.[0];
                 const isPTActive = latestPT && latestPT.status === "ACTIVE" && new Date(latestPT.endDate) >= now;
@@ -671,7 +679,7 @@ export function MemberListClient({ members }: MemberListClientProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
-                  {sortedMembers.map((member) => {
+                  {paginatedMembers.map((member) => {
                     const activeSub = member.subscriptions?.[0];
                     const latestPT = member.ptSubscriptions?.[0];
                     const isPTActive = latestPT && latestPT.status === "ACTIVE" && new Date(latestPT.endDate) >= now;
@@ -822,6 +830,16 @@ export function MemberListClient({ members }: MemberListClientProps) {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            <Pagination
+              totalItems={sortedMembers.length}
+              currentPage={currentPage}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              itemLabel="members"
+            />
           </>
         )}
       </div>

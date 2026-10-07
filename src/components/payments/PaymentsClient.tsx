@@ -30,6 +30,7 @@ import { ReceiptModal } from "@/components/payments/ReceiptModal";
 import { DeleteReceiptModal } from "@/components/modals/DeleteReceiptModal";
 import { exportToExcel } from "@/lib/export-excel";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { Pagination } from "@/components/ui/Pagination";
 
 interface PaymentsClientProps {
   payments: any[];
@@ -46,6 +47,8 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [timeframeFilter, setTimeframeFilter] = useState<"ALL" | "TODAY" | "THIS_WEEK" | "THIS_MONTH" | "LAST_MONTH">("ALL");
   const [sortOrder, setSortOrder] = useState<"REC_DESC" | "REC_ASC" | "DATE_DESC" | "DATE_ASC" | "AMOUNT_DESC" | "AMOUNT_ASC">("REC_DESC");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<any | null>(null);
@@ -124,6 +127,11 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
     }
     return 0;
   });
+
+  const paginatedPayments = sortedPayments.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const filteredTotalAmount = sortedPayments.reduce((acc, p) => acc + p.amount, 0);
 
@@ -457,7 +465,7 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
               <>
                 {/* Mobile Transactions Cards (block md:hidden) */}
                 <div className="grid grid-cols-1 gap-2.5 md:hidden">
-                  {sortedPayments.map((pm) => (
+                  {paginatedPayments.map((pm) => (
                     <div
                       key={pm.id}
                       className="p-3.5 bg-white rounded-xl border border-slate-200/90 shadow-2xs space-y-2.5"
@@ -549,7 +557,7 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                      {sortedPayments.map((pm) => (
+                      {paginatedPayments.map((pm) => (
                         <tr key={pm.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition group">
                           <td className="py-3 px-4">
                             <span className="font-mono font-bold text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
@@ -625,6 +633,16 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                     </tbody>
                   </table>
                 </div>
+
+                {/* Pagination Controls */}
+                <Pagination
+                  totalItems={sortedPayments.length}
+                  currentPage={currentPage}
+                  pageSize={pageSize}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setPageSize}
+                  itemLabel="receipts"
+                />
               </>
             )}
           </div>

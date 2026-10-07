@@ -92,3 +92,31 @@ export function generateReceiptNo(): string {
   const randomSuffix = Math.floor(100 + Math.random() * 900);
   return `REC-${dateStr}-${randomSuffix}`;
 }
+
+export function isValidPhoneNumber(phone: string | null | undefined): boolean {
+  if (!phone) return false;
+  // Clean all whitespace, dashes, parentheses, dots
+  const clean = phone.replace(/[\s\-\(\)\.]/g, "");
+  if (!clean) return false;
+
+  // 1. Standard Indian mobile number (10 digits starting with 6, 7, 8, 9, with optional +91, 91, or 0)
+  const indianRegex = /^(?:\+91|91|0)?[6-9]\d{9}$/;
+  if (indianRegex.test(clean)) return true;
+
+  // 2. International phone number (7 to 15 digits, optional +)
+  const internationalRegex = /^\+?[1-9]\d{6,14}$/;
+  if (internationalRegex.test(clean)) return true;
+
+  return false;
+}
+
+export function cleanPhoneNumber(phone: string | null | undefined): string {
+  if (!phone) return "";
+  const clean = phone.replace(/[\s\-\(\)\.]/g, "");
+  // If it's a 10-digit Indian number with +91, 91, or 0, return normalized 10 digits
+  if (/^(?:\+91|91|0)[6-9]\d{9}$/.test(clean)) {
+    return clean.slice(-10);
+  }
+  return clean;
+}
+

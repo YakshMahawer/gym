@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { createMember, updateMember, CreateMemberInput } from "@/lib/actions/members";
-import { generateMemberId, formatINR, formatDateTime, formatDate, calculateDaysRemaining } from "@/lib/utils";
+import { generateMemberId, formatINR, formatDateTime, formatDate, calculateDaysRemaining, isValidPhoneNumber, cleanPhoneNumber } from "@/lib/utils";
 import { PaymentMethod } from "@prisma/client";
 import { ReceiptModal } from "@/components/payments/ReceiptModal";
 
@@ -208,16 +208,27 @@ export function MemberForm({
       return;
     }
 
+    if (!isValidPhoneNumber(formData.phone)) {
+      setError("Please enter a valid 10-digit mobile number or valid international phone number");
+      setActiveTab("basic");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
+    const payload = {
+      ...formData,
+      phone: cleanPhoneNumber(formData.phone),
+    };
+
     let res;
     if (isEdit && initialData?.id) {
-      res = await updateMember(initialData.id, formData);
+      res = await updateMember(initialData.id, payload);
     } else if (currentMemberId) {
-      res = await updateMember(currentMemberId, formData);
+      res = await updateMember(currentMemberId, payload);
     } else {
-      res = await createMember(formData);
+      res = await createMember(payload);
       if (res.success && res.member) {
         setCurrentMemberId(res.member.id);
       }

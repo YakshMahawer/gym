@@ -57,18 +57,12 @@ export function AppShell({ children }: AppShellProps) {
     setLoggingOut(true);
 
     try {
-      // 1. Immediately clear client session cookies
-      document.cookie = "gym_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax";
-      document.cookie = "gym_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
       localStorage.clear();
       sessionStorage.clear();
     } catch {}
 
-    // 2. Fire server action in background
-    logoutUser().catch(() => {});
-
-    // 3. Instant hard replace to /login so browser history cannot return to dashboard
-    window.location.replace("/login");
+    // Navigate to server logout route which deletes httpOnly cookie and redirects to /login
+    window.location.href = "/api/auth/logout";
   };
 
   const navItems = [

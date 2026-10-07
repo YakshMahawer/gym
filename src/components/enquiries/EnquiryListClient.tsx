@@ -21,6 +21,7 @@ import { NewEnquiryModal } from "@/components/modals/NewEnquiryModal";
 import { EnquiryStatus } from "@prisma/client";
 import { exportToExcel } from "@/lib/export-excel";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { Pagination } from "@/components/ui/Pagination";
 
 interface EnquiryListClientProps {
   enquiries: any[];
@@ -35,6 +36,10 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
   const [modalOpen, setModalOpen] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
   const filteredEnquiries = enquiries.filter((enq) => {
     const q = search.toLowerCase();
     const matchesSearch =
@@ -47,6 +52,21 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
 
     return matchesSearch && matchesStatus;
   });
+
+  const paginatedEnquiries = filteredEnquiries.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setCurrentPage(1);
+  };
+
+  const handleStatusFilterChange = (val: string) => {
+    setStatusFilter(val);
+    setCurrentPage(1);
+  };
 
   const handleStatusChange = async (id: string, newStatus: EnquiryStatus) => {
     setLoadingId(id);
@@ -123,7 +143,7 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
             type="text"
             placeholder="Search by name, phone, plan..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
           />
         </div>
@@ -134,7 +154,7 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
             {["ALL", "NEW", "FOLLOW_UP", "CONVERTED", "LOST"].map((st) => (
               <button
                 key={st}
-                onClick={() => setStatusFilter(st)}
+                onClick={() => handleStatusFilterChange(st)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
                   statusFilter === st
                     ? "bg-slate-900 text-white shadow-xs"
@@ -169,7 +189,7 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
           <>
             {/* Mobile Lead Cards View (block md:hidden) */}
             <div className="p-3 grid grid-cols-1 gap-2.5 md:hidden">
-              {filteredEnquiries.map((enq) => (
+              {paginatedEnquiries.map((enq) => (
                 <div
                   key={enq.id}
                   className="p-3.5 bg-white rounded-xl border border-slate-200/90 shadow-2xs space-y-2.5"
@@ -276,7 +296,7 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
-                  {filteredEnquiries.map((enq) => (
+                  {paginatedEnquiries.map((enq) => (
                     <tr key={enq.id} className="hover:bg-slate-50/60 transition">
                       
                       {/* Contact */}
@@ -381,6 +401,16 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            <Pagination
+              totalItems={filteredEnquiries.length}
+              currentPage={currentPage}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              itemLabel="enquiries"
+            />
           </>
         )}
       </div>

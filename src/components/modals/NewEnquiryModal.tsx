@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { X, Search, ChevronDown, Check, Dumbbell } from "lucide-react";
 import { createEnquiry, CreateEnquiryInput } from "@/lib/actions/enquiries";
+import { isValidPhoneNumber, cleanPhoneNumber } from "@/lib/utils";
 
 interface NewEnquiryModalProps {
   isOpen: boolean;
@@ -40,6 +41,20 @@ const ALL_GYM_PLANS: PlanItem[] = [
   { name: "12 Months PT (288 Sessions)", price: 102000, category: "Personal Training" },
 ];
 
+const INITIAL_FORM_DATA: CreateEnquiryInput = {
+  name: "",
+  phone: "",
+  email: "",
+  gender: "Male",
+  source: "Walk-in",
+  preferredPlan: "3 Months",
+  budget: undefined,
+  followUpDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+  status: "NEW",
+  notes: "",
+  assignedStaff: "None",
+};
+
 export function NewEnquiryModal({ isOpen, onClose, onSuccess, plans }: NewEnquiryModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,25 +72,26 @@ export function NewEnquiryModal({ isOpen, onClose, onSuccess, plans }: NewEnquir
         ]
       : ALL_GYM_PLANS;
 
-  const [formData, setFormData] = useState<CreateEnquiryInput>({
-    name: "",
-    phone: "",
-    email: "",
-    gender: "Male",
-    source: "Walk-in",
-    preferredPlan: "3 Months",
-    budget: undefined,
-    followUpDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-    status: "NEW",
-    notes: "",
-    assignedStaff: "None",
-  });
+  const [formData, setFormData] = useState<CreateEnquiryInput>(INITIAL_FORM_DATA);
 
   // Custom Dropdown State
   const [isPlanDropdownOpen, setIsPlanDropdownOpen] = useState(false);
   const [planSearch, setPlanSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<"ALL" | "Membership" | "Personal Training">("ALL");
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Reset form whenever modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        ...INITIAL_FORM_DATA,
+        followUpDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      });
+      setError(null);
+      setPlanSearch("");
+      setIsPlanDropdownOpen(false);
+    }
+  }, [isOpen]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -107,18 +123,33 @@ export function NewEnquiryModal({ isOpen, onClose, onSuccess, plans }: NewEnquir
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.phone.trim()) {
-      setError("Please enter visitor name and phone number");
+    if (!formData.name.trim()) {
+      setError("Please enter visitor full name");
+      return;
+    }
+
+    if (!formData.phone.trim()) {
+      setError("Please enter visitor phone number");
+      return;
+    }
+
+    if (!isValidPhoneNumber(formData.phone)) {
+      setError("Please enter a valid 10-digit mobile number or valid international phone number");
       return;
     }
 
     setLoading(true);
     setError(null);
 
-    const res = await createEnquiry(formData);
+    const cleanedPhone = cleanPhoneNumber(formData.phone);
+    const res = await createEnquiry({
+      ...formData,
+      phone: cleanedPhone,
+    });
     setLoading(false);
 
     if (res.success) {
+      setFormData(INITIAL_FORM_DATA);
       onClose();
       if (onSuccess) onSuccess();
     } else {
