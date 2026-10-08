@@ -164,7 +164,7 @@ export function UploadClient() {
         const firstName = String(first.FirstName || "").trim();
         const lastName = first.LastName && first.LastName !== "NULL" ? String(first.LastName).trim() : "";
         const fullName = lastName ? `${firstName} ${lastName}` : firstName;
-        const phone = cleanPhoneNumber(first.PhoneNo)!;
+        const phone = cleanPhoneNumber(first.PhoneNo);
         const email = first.Email && first.Email !== "NULL" ? String(first.Email).trim() : null;
         const gender = first.Gender && first.Gender !== "NULL" ? String(first.Gender).trim() : "Male";
         const address = first.Address && first.Address !== "NULL" ? String(first.Address).trim() : null;

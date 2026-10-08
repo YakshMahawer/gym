@@ -35,9 +35,9 @@ export interface ReceiptData {
   endDate?: string | Date;
 }
 
-export function sanitizePhone(phone?: string): string {
+export function sanitizePhone(phone?: string | number | null): string {
   if (!phone) return "";
-  const digits = phone.replace(/\D/g, "");
+  const digits = String(phone).replace(/\D/g, "");
   if (digits.length === 10) {
     return `91${digits}`;
   }

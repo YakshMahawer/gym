@@ -77,9 +77,9 @@ export function extractNumericId(memberId: string | null | undefined): number | 
   return match ? parseInt(match[0], 10) : null;
 }
 
-export function normalizeMemberId(id: string | null | undefined): string {
-  if (!id) return "1001";
-  const trimmed = id.trim();
+export function normalizeMemberId(id: string | number | null | undefined): string {
+  if (id === null || id === undefined) return "1001";
+  const trimmed = String(id).trim();
   const numeric = trimmed.replace(/\D/g, "");
   if (numeric) {
     return numeric;
@@ -93,10 +93,12 @@ export function generateReceiptNo(): string {
   return `REC-${dateStr}-${randomSuffix}`;
 }
 
-export function isValidPhoneNumber(phone: string | null | undefined): boolean {
-  if (!phone) return false;
+export function isValidPhoneNumber(phone: string | number | null | undefined): boolean {
+  if (phone === null || phone === undefined) return false;
+  const str = String(phone).trim();
+  if (!str) return false;
   // Clean all whitespace, dashes, parentheses, dots
-  const clean = phone.replace(/[\s\-\(\)\.]/g, "");
+  const clean = str.replace(/[\s\-\(\)\.]/g, "");
   if (!clean) return false;
 
   // 1. Standard Indian mobile number (10 digits starting with 6, 7, 8, 9, with optional +91, 91, or 0)
@@ -110,9 +112,11 @@ export function isValidPhoneNumber(phone: string | null | undefined): boolean {
   return false;
 }
 
-export function cleanPhoneNumber(phone: string | null | undefined): string {
-  if (!phone) return "";
-  const clean = phone.replace(/[\s\-\(\)\.]/g, "");
+export function cleanPhoneNumber(phone: string | number | null | undefined): string {
+  if (phone === null || phone === undefined) return "";
+  const str = String(phone).trim();
+  if (!str) return "";
+  const clean = str.replace(/[\s\-\(\)\.]/g, "");
   // If it's a 10-digit Indian number with +91, 91, or 0, return normalized 10 digits
   if (/^(?:\+91|91|0)[6-9]\d{9}$/.test(clean)) {
     return clean.slice(-10);
