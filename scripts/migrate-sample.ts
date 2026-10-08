@@ -81,7 +81,7 @@ async function run() {
   for (const [custCode, custRows] of customerMap.entries()) {
     const first = custRows[0];
     if (!first.FirstName || first.FirstName === "NULL") continue;
-    
+
     // Check if member has valid start and end dates on any subscription
     const hasValidSub = custRows.some((r) => excelSerialToDate(r.StartDate) && excelSerialToDate(r.EndDate));
     if (!hasValidSub) continue;
