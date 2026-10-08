@@ -23,6 +23,7 @@ import {
   Settings,
   LogOut,
   ShieldCheck,
+  FileSpreadsheet,
 } from "lucide-react";
 import { NewEnquiryModal } from "@/components/modals/NewEnquiryModal";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
@@ -126,6 +127,20 @@ export function AppShell({ children }: AppShellProps) {
             bgColor: "bg-slate-100 dark:bg-slate-800",
             activeBg: "bg-slate-700 text-white",
             activePill: "bg-gradient-to-r from-slate-700 to-slate-800 text-white shadow-md shadow-slate-900/30 font-bold",
+            indicatorColor: "bg-white",
+          },
+        ]
+      : []),
+    ...(isSuperUser
+      ? [
+          {
+            label: "Data Migration",
+            href: "/portal/upload",
+            icon: FileSpreadsheet,
+            color: "text-rose-600 dark:text-rose-400",
+            bgColor: "bg-rose-100 dark:bg-rose-950/40",
+            activeBg: "bg-rose-600 text-white",
+            activePill: "bg-gradient-to-r from-rose-600 to-amber-600 text-white shadow-md shadow-rose-900/30 font-bold",
             indicatorColor: "bg-white",
           },
         ]

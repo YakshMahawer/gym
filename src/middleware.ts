@@ -27,6 +27,11 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
+    // Role-based protection: /portal/upload is restricted exclusively to SUPERUSER
+    if (pathname.startsWith("/portal/upload") && user.role !== "SUPERUSER") {
+      return NextResponse.redirect(new URL("/portal", request.url));
+    }
+
     // Role-based protection: /portal/settings is restricted to ADMIN and SUPERUSER
     if (pathname.startsWith("/portal/settings") && user.role === "FRONTDESK") {
       return NextResponse.redirect(new URL("/portal", request.url));
@@ -42,5 +47,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/portal/:path*", "/login"],
+  matcher: ["/portal/:path*", "/login", "/upload"],
 };
