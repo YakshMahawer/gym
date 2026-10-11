@@ -124,3 +124,61 @@ export function cleanPhoneNumber(phone: string | number | null | undefined): str
   return clean;
 }
 
+export interface FiscalYearInfo {
+  startYear: number;
+  endYear: number;
+  startDate: Date;
+  endDate: Date;
+  fyShort: string; // e.g. "26-27"
+  fyDot: string;   // e.g. "26.27"
+  fyFull: string;  // e.g. "2026-2027"
+}
+
+export function getFiscalYear(date?: Date | string | null): FiscalYearInfo {
+  const d = date ? (typeof date === "string" ? new Date(date) : date) : new Date();
+  const validDate = isNaN(d.getTime()) ? new Date() : d;
+
+  const month = validDate.getMonth(); // 0-indexed: 0=Jan, 3=Apr
+  const year = validDate.getFullYear();
+
+  const startYear = month >= 3 ? year : year - 1;
+  const endYear = startYear + 1;
+
+  const startDate = new Date(startYear, 3, 1, 0, 0, 0, 0); // April 1
+  const endDate = new Date(endYear, 2, 31, 23, 59, 59, 999); // March 31
+
+  const s2 = String(startYear).slice(-2);
+  const e2 = String(endYear).slice(-2);
+
+  return {
+    startYear,
+    endYear,
+    startDate,
+    endDate,
+    fyShort: `${s2}-${e2}`,
+    fyDot: `${s2}.${e2}`,
+    fyFull: `${startYear}-${endYear}`,
+  };
+}
+
+export function formatInvoiceNo(
+  receiptNo: string | null | undefined,
+  paymentDate?: Date | string | null
+): string {
+  if (!receiptNo) return "00001";
+  const str = String(receiptNo).trim();
+  if (str.startsWith("OLD-") || str.startsWith("REC-OLD-")) {
+    return str;
+  }
+
+  const digits = str.replace(/\D/g, "");
+  const padded = digits ? digits.padStart(5, "0") : str;
+
+  if (paymentDate) {
+    const { fyShort } = getFiscalYear(paymentDate);
+    return `${fyShort}/${padded}`;
+  }
+  return padded;
+}
+
+

@@ -42,24 +42,24 @@ export async function getDashboardData() {
     expiringPTs,
     allMembers,
   ] = await Promise.all([
-    // 1. Memberships & PT Sold
+    // 1. Memberships & PT Sold (based on subscription & PT start date)
     prisma.memberSubscription.count({
-      where: { createdAt: { gte: todayStart, lte: todayEnd } },
-    }),
-    prisma.memberSubscription.count({
-      where: { createdAt: { gte: weekStart, lte: weekEnd } },
+      where: { startDate: { gte: todayStart, lte: todayEnd } },
     }),
     prisma.memberSubscription.count({
-      where: { createdAt: { gte: monthStart, lte: monthEnd } },
+      where: { startDate: { gte: weekStart, lte: weekEnd } },
+    }),
+    prisma.memberSubscription.count({
+      where: { startDate: { gte: monthStart, lte: monthEnd } },
     }),
     prisma.memberPT.count({
-      where: { createdAt: { gte: todayStart, lte: todayEnd } },
+      where: { startDate: { gte: todayStart, lte: todayEnd } },
     }),
     prisma.memberPT.count({
-      where: { createdAt: { gte: weekStart, lte: weekEnd } },
+      where: { startDate: { gte: weekStart, lte: weekEnd } },
     }),
     prisma.memberPT.count({
-      where: { createdAt: { gte: monthStart, lte: monthEnd } },
+      where: { startDate: { gte: monthStart, lte: monthEnd } },
     }),
 
     // 2. Sales Aggregate (Payments table includes Membership, PT, and Due Clearances)
@@ -140,17 +140,17 @@ export async function getDashboardData() {
     // 6. Recent Members
     prisma.member.findMany({
       take: 10,
-      orderBy: { createdAt: "desc" },
+      orderBy: { enrollDate: "desc" },
       include: {
         subscriptions: {
           where: { status: "ACTIVE" },
           take: 1,
-          orderBy: { createdAt: "desc" },
+          orderBy: { startDate: "desc" },
         },
         ptSubscriptions: {
           where: { status: "ACTIVE" },
           take: 1,
-          orderBy: { createdAt: "desc" },
+          orderBy: { startDate: "desc" },
         },
       },
     }),

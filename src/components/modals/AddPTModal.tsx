@@ -35,6 +35,7 @@ interface AddPTModalProps {
 }
 
 const TRAINER_OPTIONS = [
+  "-",
   "Coach Vikram",
   "Coach Rahul",
   "Coach Priya",
@@ -110,15 +111,17 @@ export function AddPTModal({
       setEndDate(calculateExpiryDate(defaultStart, defaultPlan.durationInDays));
 
       // Check if existing trainer matches pre-defined options
-      const existingTrainer = member.activePT?.trainerName || member.representative || "Coach Vikram";
+      const existingTrainer =
+        member.activePT?.trainerName ||
+        (member.representative && member.representative !== "-" ? member.representative : "-");
       if (TRAINER_OPTIONS.includes(existingTrainer)) {
         setSelectedTrainerOption(existingTrainer);
         setCustomTrainerName("");
-      } else if (existingTrainer) {
+      } else if (existingTrainer && existingTrainer !== "-") {
         setSelectedTrainerOption("Other / Custom");
         setCustomTrainerName(existingTrainer);
       } else {
-        setSelectedTrainerOption("Coach Vikram");
+        setSelectedTrainerOption("-");
         setCustomTrainerName("");
       }
 
@@ -151,7 +154,7 @@ export function AddPTModal({
 
   const getEffectiveTrainerName = (): string => {
     if (selectedTrainerOption === "Other / Custom") {
-      return customTrainerName.trim() || "General Trainer";
+      return customTrainerName.trim() || "-";
     }
     return selectedTrainerOption;
   };

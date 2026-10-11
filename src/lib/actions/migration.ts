@@ -244,7 +244,13 @@ export async function executeFullMigration(rawRows: any[], options?: { wipeExist
     const address = firstRow.Address && firstRow.Address !== "NULL" ? String(firstRow.Address).trim() : null;
     const dob = excelSerialToDate(firstRow.DOB);
     const enrollDate = excelSerialToDate(firstRow.EnrollDate) || new Date();
-    const representative = firstRow.Representative && firstRow.Representative !== "NULL" ? String(firstRow.Representative).trim() : "Coach Vikram";
+    const representative =
+      firstRow.Representative &&
+      firstRow.Representative !== "NULL" &&
+      firstRow.Representative !== "Coach Vikram" &&
+      String(firstRow.Representative).trim() !== ""
+        ? String(firstRow.Representative).trim()
+        : "-";
     const referredBy = firstRow.ReferenceBy && firstRow.ReferenceBy !== "NULL" ? String(firstRow.ReferenceBy).trim() : null;
 
     let latestEnd: Date | null = null;

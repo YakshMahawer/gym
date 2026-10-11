@@ -23,7 +23,7 @@ import {
   SlidersHorizontal,
   RotateCcw,
 } from "lucide-react";
-import { formatINR, formatDate, formatDateTime } from "@/lib/utils";
+import { formatINR, formatDate, formatDateTime, formatInvoiceNo } from "@/lib/utils";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
 import { EditPaymentDateModal } from "@/components/modals/EditPaymentDateModal";
 import { ReceiptModal } from "@/components/payments/ReceiptModal";
@@ -488,7 +488,12 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                       </div>
 
                       <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
-                        <span className="font-mono font-bold text-slate-800 dark:text-slate-100">{pm.receiptNo}</span>
+                        <div className="flex flex-col">
+                          <span className="font-mono font-bold text-slate-800 dark:text-slate-100">{pm.receiptNo.padStart(5, "0")}</span>
+                          {!pm.receiptNo.startsWith("OLD-") && (
+                            <span className="text-[10px] text-slate-500 font-mono">{formatInvoiceNo(pm.receiptNo, pm.paymentDate)}</span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-1.5">
                           <span>{formatDateTime(pm.paymentDate)}</span>
                           <button
@@ -560,9 +565,16 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                       {paginatedPayments.map((pm) => (
                         <tr key={pm.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition group">
                           <td className="py-3 px-4">
-                            <span className="font-mono font-bold text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
-                              {pm.receiptNo}
-                            </span>
+                            <div className="flex flex-col items-start gap-0.5">
+                              <span className="font-mono font-bold text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                                {pm.receiptNo.padStart(5, "0")}
+                              </span>
+                              {!pm.receiptNo.startsWith("OLD-") && (
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  {formatInvoiceNo(pm.receiptNo, pm.paymentDate)}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-3 px-4">
                             <Link

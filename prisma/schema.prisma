@@ -163,7 +163,7 @@ model MemberPT {
 
 model Payment {
   id             String              @id @default(cuid())
-  receiptNo      String              @unique
+  receiptNo      String
   memberId       String
   member         Member              @relation(fields: [memberId], references: [id], onDelete: Cascade)
   subscriptionId String?
@@ -181,6 +181,7 @@ model Payment {
 
   @@index([memberId])
   @@index([paymentDate])
+  @@index([receiptNo])
 }
 
 model Enquiry {

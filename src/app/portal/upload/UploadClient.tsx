@@ -169,9 +169,12 @@ export function UploadClient() {
         const gender = first.Gender && first.Gender !== "NULL" ? String(first.Gender).trim() : "Male";
         const address = first.Address && first.Address !== "NULL" ? String(first.Address).trim() : null;
         const representative =
-          first.Representative && first.Representative !== "NULL"
+          first.Representative &&
+          first.Representative !== "NULL" &&
+          first.Representative !== "Coach Vikram" &&
+          String(first.Representative).trim() !== ""
             ? String(first.Representative).trim()
-            : "Coach Vikram";
+            : "-";
         const referredBy =
           first.ReferenceBy && first.ReferenceBy !== "NULL" ? String(first.ReferenceBy).trim() : null;
 
@@ -235,7 +238,8 @@ export function UploadClient() {
       // Step 2: Batch import in chunks of 50 members
       const BATCH_SIZE = 50;
       const totalBatches = Math.ceil(listToMigrate.length / BATCH_SIZE);
-      let receiptIndex = 1;
+      let cleanReceiptIndex = 1;
+      let legacyReceiptIndex = 1;
       let totalImported = 0;
 
       for (let i = 0; i < totalBatches; i++) {
@@ -250,7 +254,8 @@ export function UploadClient() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             membersBatch: batch,
-            receiptStartIndex: receiptIndex,
+            cleanReceiptStartIndex: cleanReceiptIndex,
+            legacyReceiptStartIndex: legacyReceiptIndex,
           }),
         });
 
@@ -260,7 +265,8 @@ export function UploadClient() {
         }
 
         const data = await response.json();
-        receiptIndex = data.nextReceiptIndex || receiptIndex + batch.length;
+        cleanReceiptIndex = data.nextCleanReceiptIndex || cleanReceiptIndex;
+        legacyReceiptIndex = data.nextLegacyReceiptIndex || legacyReceiptIndex;
         totalImported += data.importedMembers || batch.length;
 
         const pct = Math.round(((i + 1) / totalBatches) * 100);
@@ -269,7 +275,7 @@ export function UploadClient() {
 
       setFinalStats({
         members: totalImported,
-        receipts: receiptIndex - 1,
+        receipts: cleanReceiptIndex - 1,
       });
       setMigrationDone(true);
       setProgressStatus("Migration successfully completed!");

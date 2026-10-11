@@ -22,9 +22,15 @@ function formatPlanName(months: any, amount: any, membershipId: any): string {
   return `Standard Plan (${membershipId || "General"})`;
 }
 
-function padReceiptNo(num: number): string {
-  return `REC-${String(num).padStart(5, "0")}`;
+function padCleanReceiptNo(num: number): string {
+  return String(num).padStart(5, "0");
 }
+
+function padLegacyReceiptNo(num: number): string {
+  return `OLD-${String(num).padStart(5, "0")}`;
+}
+
+const FY26_CUTOFF = new Date("2026-04-01T00:00:00.000Z");
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,14 +40,20 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { membersBatch, receiptStartIndex = 1 } = body;
+    const {
+      membersBatch,
+      receiptStartIndex = 1,
+      cleanReceiptStartIndex = 1,
+      legacyReceiptStartIndex = 1,
+    } = body;
 
     if (!Array.isArray(membersBatch) || membersBatch.length === 0) {
       return NextResponse.json({ error: "No members in batch" }, { status: 400 });
     }
 
     const now = new Date();
-    let currentReceiptIndex = receiptStartIndex;
+    let currentCleanIndex = cleanReceiptStartIndex || receiptStartIndex || 1;
+    let currentLegacyIndex = legacyReceiptStartIndex || 1;
     let importedMembers = 0;
     let importedSubs = 0;
     let importedPT = 0;
@@ -64,20 +76,42 @@ export async function POST(request: NextRequest) {
         records = [],
       } = memberItem;
 
-      // Check latest end date across renewal records
+      // Clean representative - default to "-" if missing, empty, or placeholder
+      const cleanRep =
+        representative &&
+        representative !== "NULL" &&
+        representative !== "Coach Vikram" &&
+        String(representative).trim() !== ""
+          ? String(representative).trim()
+          : "-";
+
+      // Find earliest known date across all records for this member to avoid defaulting to today
+      let earliestDate: Date | null = enrollDate ? excelSerialToDate(enrollDate) : null;
       let latestEnd: Date | null = null;
+
       for (const r of records) {
+        const d =
+          excelSerialToDate(r.EnrollDate) ||
+          excelSerialToDate(r.CreatedDate) ||
+          excelSerialToDate(r.StartDate) ||
+          excelSerialToDate(r.PaidDate) ||
+          excelSerialToDate(r.SaleDate);
+
+        if (d && (!earliestDate || d < earliestDate)) {
+          earliestDate = d;
+        }
+
         const e = excelSerialToDate(r.EndDate);
         if (e && (!latestEnd || e > latestEnd)) {
           latestEnd = e;
         }
       }
 
+      const parsedEnrollDate = earliestDate || new Date("2020-01-01");
       const isMemberActive = Boolean(latestEnd && latestEnd.getTime() >= now.getTime());
       const dobDate = dob ? excelSerialToDate(dob) : null;
-      const parsedEnrollDate = enrollDate ? excelSerialToDate(enrollDate) || new Date() : new Date();
 
-      // Upsert or create member
+      // Upsert or create member with historical createdAt
       const member = await prisma.member.upsert({
         where: { memberId: String(memberId) },
         update: {
@@ -90,7 +124,7 @@ export async function POST(request: NextRequest) {
           dob: dobDate,
           address: address || null,
           enrollDate: parsedEnrollDate,
-          representative: representative || "Coach Vikram",
+          representative: cleanRep,
           referredBy: referredBy || null,
           membershipStatus: isMemberActive ? MembershipStatus.ACTIVE : MembershipStatus.EXPIRED,
           notes: `Migrated from Old ERP (CustomerId: ${customerId})`,
@@ -106,30 +140,64 @@ export async function POST(request: NextRequest) {
           dob: dobDate,
           address: address || null,
           enrollDate: parsedEnrollDate,
-          representative: representative || "Coach Vikram",
+          representative: cleanRep,
           referredBy: referredBy || null,
           membershipStatus: isMemberActive ? MembershipStatus.ACTIVE : MembershipStatus.EXPIRED,
           notes: `Migrated from Old ERP (CustomerId: ${customerId})`,
+          createdAt: parsedEnrollDate,
         },
       });
 
       for (const r of records) {
-        const sDate = excelSerialToDate(r.StartDate) || parsedEnrollDate;
-        const eDate = excelSerialToDate(r.EndDate) || new Date(sDate.getTime() + 30 * 86400 * 1000);
+        const sDate =
+          excelSerialToDate(r.StartDate) ||
+          excelSerialToDate(r.PaidDate) ||
+          excelSerialToDate(r.SaleDate) ||
+          excelSerialToDate(r.CreatedDate) ||
+          parsedEnrollDate;
+
+        const monthsCount = Number(r.Month) || 1;
+        const eDate =
+          excelSerialToDate(r.EndDate) ||
+          new Date(sDate.getTime() + monthsCount * 30 * 86400 * 1000);
+
         const amount = Number(r.Amount) || 0;
         const planName = formatPlanName(r.Month, r.Amount, r.MembershipId);
         const isSubActive = eDate.getTime() >= now.getTime();
 
-        const isPT = String(r.MembershipId) === "605" || String(r.MembershipId) === "606" || Number(r.Sessions) > 0;
+        const payDate =
+          excelSerialToDate(r.PaidDate) ||
+          excelSerialToDate(r.SaleDate) ||
+          excelSerialToDate(r.CreatedDate) ||
+          sDate;
+
+        // Clean receipt number: receipts from April 1st 2026 start from 00001
+        // receipts before April 1st 2026 get legacy OLD-00001 format
+        const receiptNo =
+          payDate >= FY26_CUTOFF
+            ? padCleanReceiptNo(currentCleanIndex++)
+            : padLegacyReceiptNo(currentLegacyIndex++);
+
+        const isPT =
+          String(r.MembershipId) === "605" ||
+          String(r.MembershipId) === "606" ||
+          Number(r.Sessions) > 0;
 
         if (isPT) {
+          const ptTrainer =
+            r.TrainerName && r.TrainerName !== "NULL" && String(r.TrainerName).trim() !== ""
+              ? String(r.TrainerName).trim()
+              : cleanRep !== "-"
+              ? cleanRep
+              : "-";
+
           const ptSub = await prisma.memberPT.create({
             data: {
               memberId: member.id,
               planName: `Personal Training (${r.Month || 1}M)`,
-              trainerName: representative || "Trainer",
+              trainerName: ptTrainer,
               totalSessions: Number(r.Sessions) || 12,
-              completedSessions: isSubActive ? 4 : (Number(r.Sessions) || 12),
+              completedSessions: isSubActive ? 4 : Number(r.Sessions) || 12,
               startDate: sDate,
               endDate: eDate,
               totalAmount: amount,
@@ -137,19 +205,21 @@ export async function POST(request: NextRequest) {
               dueAmount: 0,
               status: isSubActive ? "ACTIVE" : "EXPIRED",
               notes: r.Note && r.Note !== "NULL" ? String(r.Note) : null,
+              createdAt: sDate,
             },
           });
 
           await prisma.payment.create({
             data: {
-              receiptNo: padReceiptNo(currentReceiptIndex++),
+              receiptNo,
               memberId: member.id,
               ptId: ptSub.id,
               amount: amount,
-              paymentDate: excelSerialToDate(r.PaidDate) || excelSerialToDate(r.SaleDate) || sDate,
+              paymentDate: payDate,
               paymentMethod: PaymentMethod.UPI,
               paymentType: "PERSONAL_TRAINING",
               notes: `Old ERP PT Migration (Rec #${r.Id})`,
+              createdAt: payDate,
             },
           });
           importedPT++;
@@ -164,19 +234,21 @@ export async function POST(request: NextRequest) {
               paidAmount: amount,
               dueAmount: 0,
               status: isSubActive ? SubscriptionStatus.ACTIVE : SubscriptionStatus.EXPIRED,
+              createdAt: sDate,
             },
           });
 
           await prisma.payment.create({
             data: {
-              receiptNo: padReceiptNo(currentReceiptIndex++),
+              receiptNo,
               memberId: member.id,
               subscriptionId: sub.id,
               amount: amount,
-              paymentDate: excelSerialToDate(r.PaidDate) || excelSerialToDate(r.SaleDate) || sDate,
+              paymentDate: payDate,
               paymentMethod: PaymentMethod.UPI,
               paymentType: "MEMBERSHIP_FEE",
               notes: `Old ERP Migration (Rec #${r.Id})`,
+              createdAt: payDate,
             },
           });
           importedSubs++;
@@ -191,7 +263,9 @@ export async function POST(request: NextRequest) {
       importedMembers,
       importedSubs,
       importedPT,
-      nextReceiptIndex: currentReceiptIndex,
+      nextCleanReceiptIndex: currentCleanIndex,
+      nextLegacyReceiptIndex: currentLegacyIndex,
+      nextReceiptIndex: currentCleanIndex,
     });
   } catch (error: any) {
     console.error("Batch migration error:", error);

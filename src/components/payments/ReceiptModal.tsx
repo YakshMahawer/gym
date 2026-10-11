@@ -2,7 +2,7 @@
 
 import React from "react";
 import { X, Printer, CheckCircle2, Edit } from "lucide-react";
-import { formatINR, formatDate } from "@/lib/utils";
+import { formatINR, formatDate, formatInvoiceNo } from "@/lib/utils";
 
 interface ReceiptModalProps {
   receipt: {
@@ -93,8 +93,8 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
   const cgst = Math.round((totalGst / 2) * 100) / 100;
   const sgst = Math.round((totalGst - cgst) * 100) / 100;
 
-  // 5-digit Receipt / Tax Invoice Number
-  const invoiceNo = receipt.receiptNo.padStart(5, "0");
+  // Tax Invoice Number with Fiscal Year (e.g. 26-27/00001)
+  const invoiceNo = formatInvoiceNo(receipt.receiptNo, receipt.paymentDate);
 
   const handlePrint = () => {
     window.print();
@@ -144,6 +144,11 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
               <span className="font-mono font-bold text-slate-900 text-sm">
                 {invoiceNo}
               </span>
+              {receipt.receiptNo && !receipt.receiptNo.startsWith("OLD-") && (
+                <span className="text-[10px] text-slate-500 font-mono block">
+                  Receipt #{receipt.receiptNo.padStart(5, "0")}
+                </span>
+              )}
             </div>
             <div className="text-right">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">

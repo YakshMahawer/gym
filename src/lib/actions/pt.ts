@@ -35,7 +35,7 @@ export async function addOrRenewMemberPT(input: AddMemberPTInput) {
       data: {
         memberId: input.memberId,
         planName: input.planName,
-        trainerName: input.trainerName?.trim() || "Coach Vikram",
+        trainerName: input.trainerName?.trim() || "-",
         totalSessions: sessions,
         completedSessions: 0,
         startDate,

@@ -543,13 +543,13 @@ export function MemberForm({
                     Representative
                   </label>
                   <select
-                    value={formData.representative || "None"}
+                    value={formData.representative || "-"}
                     onChange={(e) =>
                       setFormData({ ...formData, representative: e.target.value })
                     }
                     className="w-full px-3 py-1.5 text-xs sm:text-sm border border-slate-300 rounded-lg bg-white"
                   >
-                    <option value="None">None</option>
+                    <option value="-">-</option>
                     <option value="Coach Vikram">Coach Vikram</option>
                     <option value="Coach Ananya">Coach Ananya</option>
                     <option value="Desk Receptionist">Desk Receptionist</option>

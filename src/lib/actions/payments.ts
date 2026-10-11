@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { PaymentMethod } from "@prisma/client";
 import { getSessionUser } from "@/lib/auth";
+import { getFiscalYear } from "@/lib/utils";
 
 export interface AddPaymentInput {
   memberId: string;
@@ -19,7 +20,22 @@ export interface AddPaymentInput {
 
 export async function getNextSequentialReceiptNo(paymentDate?: Date | string): Promise<string> {
   try {
+    const { startDate: fyStart, endDate: fyEnd } = getFiscalYear(paymentDate);
+
+    // Only search payments within this specific fiscal year (April 1 to March 31)
+    // and ignore legacy/migrated receipts before 1st April 2026
     const existingPayments = await prisma.payment.findMany({
+      where: {
+        paymentDate: {
+          gte: fyStart,
+          lte: fyEnd,
+        },
+        NOT: {
+          receiptNo: {
+            startsWith: "OLD-",
+          },
+        },
+      },
       select: {
         receiptNo: true,
       },

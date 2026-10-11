@@ -1,4 +1,4 @@
-import { formatINR, formatDate } from "@/lib/utils";
+import { formatINR, formatDate, formatInvoiceNo } from "@/lib/utils";
 
 export interface ReceiptData {
   receiptNo: string;
@@ -73,7 +73,8 @@ export function formatWhatsAppReceiptText(receipt: ReceiptData): string {
       ? formatINR(receipt.ptSubscription.dueAmount)
       : "₹0.00";
 
-  const invoiceNo = receipt.receiptNo.padStart(5, "0");
+  const invoiceNo = formatInvoiceNo(receipt.receiptNo, receipt.paymentDate);
+  const receiptSeqNo = receipt.receiptNo.padStart(5, "0");
 
   // Construct origin URL
   let origin = "https://concept1gym.vercel.app";
@@ -87,7 +88,7 @@ export function formatWhatsAppReceiptText(receipt: ReceiptData): string {
     `*CONCEPT I GYM - PAYMENT RECEIPT* 🏋️‍♂️\n\n` +
     `Dear *${memberName}* (ID: #${memberId}),\n` +
     `Thank you for your payment! Here are your official payment details:\n\n` +
-    `🧾 *Receipt No:* ${invoiceNo}\n` +
+    `🧾 *Invoice No:* ${invoiceNo} (Receipt #${receiptSeqNo})\n` +
     `📅 *Date:* ${paymentDate}\n` +
     `💳 *Package / Plan:* ${planName}\n` +
     `💰 *Amount Paid:* ${amount}\n` +

@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { startOfMonth, subMonths, endOfMonth, format } from "date-fns";
 import { getPlans } from "./plans";
+import { formatInvoiceNo } from "@/lib/utils";
 
 export async function getReportsData() {
   const now = new Date();
@@ -170,7 +171,7 @@ export async function getReportsData() {
     return {
       id: p.id,
       receiptNo: p.receiptNo,
-      invoiceNo: p.receiptNo.padStart(5, "0"),
+      invoiceNo: formatInvoiceNo(p.receiptNo, p.paymentDate),
       paymentDate: p.paymentDate,
       amount: totalAmount,
       taxableValue,

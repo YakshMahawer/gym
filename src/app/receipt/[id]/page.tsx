@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { formatINR, formatDate } from "@/lib/utils";
+import { formatINR, formatDate, formatInvoiceNo } from "@/lib/utils";
 import { CheckCircle2, Dumbbell, Printer } from "lucide-react";
 import { PrintButton } from "./PrintButton";
 
@@ -57,7 +57,7 @@ export default async function PublicReceiptPage({ params }: ReceiptPageProps) {
   const cgst = Math.round((totalGst / 2) * 100) / 100;
   const sgst = Math.round((totalGst - cgst) * 100) / 100;
 
-  const invoiceNo = payment.receiptNo.padStart(5, "0");
+  const invoiceNo = formatInvoiceNo(payment.receiptNo, payment.paymentDate);
 
   return (
     <div className="min-h-screen bg-slate-100 py-6 sm:py-10 px-4 sm:px-6 flex flex-col items-center justify-start print:p-0 print:bg-white">
@@ -106,6 +106,11 @@ export default async function PublicReceiptPage({ params }: ReceiptPageProps) {
               <span className="font-mono font-bold text-slate-900 text-sm">
                 {invoiceNo}
               </span>
+              {payment.receiptNo && !payment.receiptNo.startsWith("OLD-") && (
+                <span className="text-[10px] text-slate-500 font-mono block">
+                  Receipt #{payment.receiptNo.padStart(5, "0")}
+                </span>
+              )}
             </div>
             <div className="text-right">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
