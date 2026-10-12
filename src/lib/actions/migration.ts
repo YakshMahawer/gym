@@ -108,16 +108,29 @@ export async function validateMigrationData(rawRows: any[]): Promise<MigrationPr
       return;
     }
 
-    const cleaned = cleanPhoneNumber(rawPhone);
-    if (!cleaned || cleaned === "NULL" || !isValidPhoneNumber(cleaned)) {
-      rejectedRows.push({
-        rowNumber: rowNum,
-        custCode,
-        name,
-        phone: rawPhone || "EMPTY",
-        reason: "Invalid or missing phone number (Required for WhatsApp & SMS notifications)",
-      });
-      return;
+    // Phone check: Allow rows without phone number to pass
+    const isPhoneEmpty =
+      !rawPhone ||
+      rawPhone === "NULL" ||
+      rawPhone.toLowerCase() === "null" ||
+      rawPhone.toLowerCase() === "n/a" ||
+      rawPhone.toLowerCase() === "none" ||
+      rawPhone.toLowerCase() === "nil" ||
+      rawPhone === "-" ||
+      rawPhone.trim() === "";
+
+    if (!isPhoneEmpty) {
+      const cleaned = cleanPhoneNumber(rawPhone);
+      if (!cleaned || !isValidPhoneNumber(cleaned)) {
+        rejectedRows.push({
+          rowNumber: rowNum,
+          custCode,
+          name,
+          phone: rawPhone,
+          reason: "Invalid phone number format",
+        });
+        return;
+      }
     }
 
     if (!custCode || custCode === "NULL") {
@@ -145,7 +158,17 @@ export async function validateMigrationData(rawRows: any[]): Promise<MigrationPr
     const first = custRows[0];
     const lastName = first.LastName && first.LastName !== "NULL" ? String(first.LastName).trim() : "";
     const fullName = lastName ? `${first.FirstName} ${lastName}` : first.FirstName;
-    const phone = cleanPhoneNumber(first.PhoneNo);
+    let phone = "-";
+    const phoneRow = custRows.find((r) => {
+      const p = cleanPhoneNumber(r.PhoneNo);
+      return p && isValidPhoneNumber(p);
+    });
+    if (phoneRow) {
+      phone = cleanPhoneNumber(phoneRow.PhoneNo);
+    } else {
+      const firstClean = cleanPhoneNumber(first.PhoneNo);
+      phone = firstClean || "-";
+    }
     const email = first.Email && first.Email !== "NULL" ? String(first.Email).trim() : null;
     const gender = first.Gender && first.Gender !== "NULL" ? String(first.Gender).trim() : "Male";
 
@@ -161,7 +184,7 @@ export async function validateMigrationData(rawRows: any[]): Promise<MigrationPr
     sampleValid.push({
       custCode,
       fullName,
-      phone: phone || "",
+      phone: phone || "-",
       email,
       gender,
       totalRecords: custRows.length,
@@ -199,8 +222,21 @@ export async function executeFullMigration(rawRows: any[], options?: { wipeExist
   // Filter valid rows
   for (const row of rawRows) {
     if (row.IsDeleted === 1 || row.IsDeleted_1 === 1) continue;
-    const phone = cleanPhoneNumber(row.PhoneNo);
-    if (!phone || !isValidPhoneNumber(phone)) continue;
+    const rawPhone = String(row.PhoneNo || "").trim();
+    const isPhoneEmpty =
+      !rawPhone ||
+      rawPhone === "NULL" ||
+      rawPhone.toLowerCase() === "null" ||
+      rawPhone.toLowerCase() === "n/a" ||
+      rawPhone.toLowerCase() === "none" ||
+      rawPhone.toLowerCase() === "nil" ||
+      rawPhone === "-" ||
+      rawPhone.trim() === "";
+
+    if (!isPhoneEmpty) {
+      const phone = cleanPhoneNumber(row.PhoneNo);
+      if (!phone || !isValidPhoneNumber(phone)) continue;
+    }
 
     const custCode = String(row.CustomerCode || row.CustomerId || "").trim();
     if (!custCode || custCode === "NULL") continue;
@@ -238,7 +274,18 @@ export async function executeFullMigration(rawRows: any[], options?: { wipeExist
     const firstName = String(firstRow.FirstName || "").trim();
     const lastName = firstRow.LastName && firstRow.LastName !== "NULL" ? String(firstRow.LastName).trim() : "";
     const fullName = lastName ? `${firstName} ${lastName}` : firstName;
-    const phone = cleanPhoneNumber(firstRow.PhoneNo)!;
+    
+    let phone = "-";
+    const phoneRow = custRows.find((r) => {
+      const p = cleanPhoneNumber(r.PhoneNo);
+      return p && isValidPhoneNumber(p);
+    });
+    if (phoneRow) {
+      phone = cleanPhoneNumber(phoneRow.PhoneNo);
+    } else {
+      const firstClean = cleanPhoneNumber(firstRow.PhoneNo);
+      phone = firstClean || "-";
+    }
     const email = firstRow.Email && firstRow.Email !== "NULL" ? String(firstRow.Email).trim() : null;
     const gender = firstRow.Gender && firstRow.Gender !== "NULL" ? String(firstRow.Gender).trim() : "Male";
     const address = firstRow.Address && firstRow.Address !== "NULL" ? String(firstRow.Address).trim() : null;

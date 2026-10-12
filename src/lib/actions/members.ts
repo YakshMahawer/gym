@@ -412,6 +412,22 @@ export async function createMember(input: CreateMemberInput) {
       console.warn("Auto-convert enquiry warning:", enqErr);
     }
 
+    // Audit Log & Owner Alert
+    const sessionUser = await getSessionUser();
+    if (sessionUser && sessionUser.role !== "SUPERUSER") {
+      const { recordAuditLog } = await import("@/lib/audit");
+      await recordAuditLog({
+        username: sessionUser.username,
+        role: sessionUser.role,
+        userId: sessionUser.id,
+        action: "MEMBER_CREATED",
+        category: "MEMBER",
+        title: `New Member Registered: ${fullName}`,
+        details: `${sessionUser.name} registered ${fullName} (ID #${finalMemberId}, Phone: ${input.phone.trim()}${input.planName ? `, Plan: ${input.planName}` : ""})`,
+        metadata: { memberId: member.id, customMemberId: finalMemberId, fullName },
+      });
+    }
+
     revalidatePath("/portal/members");
     revalidatePath("/portal/payments");
     revalidatePath("/portal/reports");
@@ -499,6 +515,21 @@ export async function updateMember(id: string, input: Partial<CreateMemberInput>
       data: updateData,
     });
 
+    // Audit Log & Owner Alert
+    if (session && session.role !== "SUPERUSER") {
+      const { recordAuditLog } = await import("@/lib/audit");
+      await recordAuditLog({
+        username: session.username,
+        role: session.role,
+        userId: session.id,
+        action: "MEMBER_UPDATED",
+        category: "MEMBER",
+        title: `Member Updated: ${updated.fullName}`,
+        details: `${session.name} updated profile details for ${updated.fullName} (ID #${updated.memberId})`,
+        metadata: { memberId: updated.id, customMemberId: updated.memberId },
+      });
+    }
+
     revalidatePath(`/portal/members/${id}`);
     revalidatePath("/portal/members");
     revalidatePath("/portal/payments");
@@ -518,9 +549,30 @@ export async function deleteMember(id: string) {
       return { success: false, error: "Front Desk staff are not authorized to delete member records." };
     }
 
+    const target = await prisma.member.findUnique({
+      where: { id },
+      select: { fullName: true, memberId: true },
+    });
+
     await prisma.member.delete({
       where: { id },
     });
+
+    // Audit Log & Owner Alert
+    if (session && session.role !== "SUPERUSER") {
+      const { recordAuditLog } = await import("@/lib/audit");
+      await recordAuditLog({
+        username: session.username,
+        role: session.role,
+        userId: session.id,
+        action: "MEMBER_DELETED",
+        category: "MEMBER",
+        title: `Member Deleted: ${target?.fullName || "Member"}`,
+        details: `${session.name} deleted member profile ${target?.fullName || ""} (ID #${target?.memberId || id})`,
+        metadata: { memberId: id, customMemberId: target?.memberId },
+      });
+    }
+
     revalidatePath("/portal/members");
     revalidatePath("/portal/payments");
     revalidatePath("/portal/reports");
@@ -581,6 +633,26 @@ export async function renewSubscription(data: {
           paymentType: "MEMBERSHIP_FEE",
           notes: data.notes || "Subscription renewal payment",
         },
+      });
+    }
+
+    // Audit Log & Owner Alert
+    const session = await getSessionUser();
+    if (session && session.role !== "SUPERUSER") {
+      const member = await prisma.member.findUnique({
+        where: { id: data.memberId },
+        select: { fullName: true, memberId: true },
+      });
+      const { recordAuditLog } = await import("@/lib/audit");
+      await recordAuditLog({
+        username: session.username,
+        role: session.role,
+        userId: session.id,
+        action: "SUBSCRIPTION_RENEWED",
+        category: "MEMBER",
+        title: `Membership Renewed: ${member?.fullName || "Member"}`,
+        details: `${session.name} renewed ${data.planName} (₹${total.toLocaleString()}) for ${member?.fullName || "Member"}`,
+        metadata: { memberId: data.memberId, planName: data.planName, totalAmount: total },
       });
     }
 

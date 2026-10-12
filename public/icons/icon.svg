@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e11d48"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bg)"/>
+  <rect x="12" y="12" width="488" height="488" rx="116" fill="none" stroke="#e11d48" stroke-width="4" stroke-opacity="0.3"/>
+  
+  <!-- Shield Icon -->
+  <g filter="url(#glow)">
+    <path d="M256 90 L390 150 V260 C390 350 330 420 256 450 C182 420 122 350 122 260 V150 Z" 
+          fill="url(#shield)" />
+  </g>
+  
+  <!-- Inner Bell / Check Symbol -->
+  <path d="M256 160 C236 160 220 176 220 196 V260 L200 280 H312 L292 260 V196 C292 176 276 160 256 160 Z" fill="#ffffff" />
+  <circle cx="256" cy="305" r="14" fill="#ffffff" />
+  <circle cx="330" cy="180" r="16" fill="#10b981" stroke="#ffffff" stroke-width="4"/>
+</svg>

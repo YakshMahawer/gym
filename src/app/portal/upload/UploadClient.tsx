@@ -12,8 +12,10 @@ import {
   RefreshCw,
   XCircle,
   ArrowRight,
+  Download,
 } from "lucide-react";
 import { isValidPhoneNumber, cleanPhoneNumber } from "@/lib/utils";
+import { exportToExcel, ExcelColumnMapping } from "@/lib/export-excel";
 import { useRouter } from "next/navigation";
 
 interface ParsedCustomer {
@@ -129,16 +131,29 @@ export function UploadClient() {
           return;
         }
 
-        const cleaned = cleanPhoneNumber(rawPhone);
-        if (!cleaned || cleaned === "NULL" || !isValidPhoneNumber(cleaned)) {
-          rejections.push({
-            rowNumber: rowNum,
-            custCode,
-            name,
-            phone: rawPhone || "EMPTY",
-            reason: "Invalid or missing phone number",
-          });
-          return;
+        // Phone check: Allow rows without phone number to pass through
+        const isPhoneEmpty =
+          !rawPhone ||
+          rawPhone === "NULL" ||
+          rawPhone.toLowerCase() === "null" ||
+          rawPhone.toLowerCase() === "n/a" ||
+          rawPhone.toLowerCase() === "none" ||
+          rawPhone.toLowerCase() === "nil" ||
+          rawPhone === "-" ||
+          rawPhone.trim() === "";
+
+        if (!isPhoneEmpty) {
+          const cleaned = cleanPhoneNumber(rawPhone);
+          if (!cleaned || !isValidPhoneNumber(cleaned)) {
+            rejections.push({
+              rowNumber: rowNum,
+              custCode,
+              name,
+              phone: rawPhone,
+              reason: "Invalid phone number format",
+            });
+            return;
+          }
         }
 
         if (!custCode || custCode === "NULL") {
@@ -146,7 +161,7 @@ export function UploadClient() {
             rowNumber: rowNum,
             custCode: "EMPTY",
             name,
-            phone: rawPhone,
+            phone: rawPhone || "-",
             reason: "Missing CustomerCode identifier",
           });
           return;
@@ -164,7 +179,19 @@ export function UploadClient() {
         const firstName = String(first.FirstName || "").trim();
         const lastName = first.LastName && first.LastName !== "NULL" ? String(first.LastName).trim() : "";
         const fullName = lastName ? `${firstName} ${lastName}` : firstName;
-        const phone = cleanPhoneNumber(first.PhoneNo);
+
+        // Use valid phone if present on any row of this customer, else fallback to "-"
+        let phone = "-";
+        const phoneRow = custRows.find((r) => {
+          const p = cleanPhoneNumber(r.PhoneNo);
+          return p && isValidPhoneNumber(p);
+        });
+        if (phoneRow) {
+          phone = cleanPhoneNumber(phoneRow.PhoneNo);
+        } else {
+          const firstClean = cleanPhoneNumber(first.PhoneNo);
+          phone = firstClean || "-";
+        }
         const email = first.Email && first.Email !== "NULL" ? String(first.Email).trim() : null;
         const gender = first.Gender && first.Gender !== "NULL" ? String(first.Gender).trim() : "Male";
         const address = first.Address && first.Address !== "NULL" ? String(first.Address).trim() : null;
@@ -288,6 +315,28 @@ export function UploadClient() {
     }
   };
 
+  const handleDownloadRejectedExcel = () => {
+    if (rejectedRows.length === 0) {
+      alert("No skipped or unverified records to download.");
+      return;
+    }
+
+    const columns: ExcelColumnMapping<RejectedRow>[] = [
+      { header: "Excel Row #", accessor: (r) => r.rowNumber, width: 14 },
+      { header: "Customer Code", accessor: (r) => r.custCode, width: 16 },
+      { header: "Customer Name", accessor: (r) => r.name, width: 25 },
+      { header: "Original Phone", accessor: (r) => r.phone, width: 20 },
+      { header: "Reason Skipped / Unverified", accessor: (r) => r.reason, width: 40 },
+    ];
+
+    exportToExcel({
+      data: rejectedRows,
+      columns,
+      sheetName: "Skipped Records",
+      fileName: "Unverified_Skipped_Records",
+    });
+  };
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-10">
       {/* Header Banner */}
@@ -364,12 +413,28 @@ export function UploadClient() {
               <span className="text-xs text-emerald-600/80">With verified mobile & plans</span>
             </div>
 
-            <div className="p-4 bg-amber-50/70 dark:bg-amber-950/30 rounded-2xl border border-amber-200/80 dark:border-amber-800/50 shadow-2xs">
-              <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 tracking-wider">Skipped / Filtered Entries</span>
-              <p className="text-2xl font-black text-amber-700 dark:text-amber-400 mt-1">
-                {rejectedRows.length.toLocaleString()}
-              </p>
-              <span className="text-xs text-amber-600/80">Deleted or invalid phones</span>
+            <div className="p-4 bg-amber-50/70 dark:bg-amber-950/30 rounded-2xl border border-amber-200/80 dark:border-amber-800/50 shadow-2xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 tracking-wider">
+                    Skipped / Filtered Entries
+                  </span>
+                  {rejectedRows.length > 0 && (
+                    <button
+                      onClick={handleDownloadRejectedExcel}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-[11px] font-bold shadow-xs transition active:scale-95"
+                      title="Download unverified records Excel"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>Download Excel</span>
+                    </button>
+                  )}
+                </div>
+                <p className="text-2xl font-black text-amber-700 dark:text-amber-400 mt-1">
+                  {rejectedRows.length.toLocaleString()}
+                </p>
+              </div>
+              <span className="text-xs text-amber-600/80 mt-1">Deleted or invalid records</span>
             </div>
           </div>
 
@@ -542,8 +607,28 @@ export function UploadClient() {
 
             {/* TAB 2: Skipped / Rejected Rows Table */}
             {activeTab === "rejected" && (
-              <div className="overflow-x-auto max-h-96">
-                <table className="w-full text-left text-xs">
+              <div className="space-y-0">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-3 bg-rose-50/60 dark:bg-rose-950/20 border-b border-rose-100 dark:border-rose-900/30">
+                  <div>
+                    <p className="text-xs font-bold text-rose-900 dark:text-rose-200">
+                      Unverified / Skipped Entries Audit ({rejectedRows.length})
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Entries marked deleted or missing required customer identifiers
+                    </p>
+                  </div>
+                  {rejectedRows.length > 0 && (
+                    <button
+                      onClick={handleDownloadRejectedExcel}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-sm transition active:scale-98 self-start sm:self-auto"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download All {rejectedRows.length} Failed Records (.xlsx)</span>
+                    </button>
+                  )}
+                </div>
+                <div className="overflow-x-auto max-h-96">
+                  <table className="w-full text-left text-xs">
                   <thead className="sticky top-0 z-10 bg-rose-50 dark:bg-rose-950">
                     <tr className="border-b border-slate-100 dark:border-slate-800 text-[11px] font-semibold text-rose-700 dark:text-rose-400 uppercase tracking-wider">
                       <th className="py-2.5 px-4">Excel Row</th>
@@ -570,10 +655,11 @@ export function UploadClient() {
                   </tbody>
                 </table>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-      )}
-    </div>
-  );
+      </div>
+    )}
+  </div>
+);
 }

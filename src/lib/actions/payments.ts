@@ -254,6 +254,26 @@ export async function addPayment(input: AddPaymentInput) {
       }
     }
 
+    // Audit Log & Owner Alert
+    const sessionUser = await getSessionUser();
+    if (sessionUser && sessionUser.role !== "SUPERUSER") {
+      const member = await prisma.member.findUnique({
+        where: { id: input.memberId },
+        select: { fullName: true, memberId: true },
+      });
+      const { recordAuditLog } = await import("@/lib/audit");
+      await recordAuditLog({
+        username: sessionUser.username,
+        role: sessionUser.role,
+        userId: sessionUser.id,
+        action: "PAYMENT_COLLECTED",
+        category: "PAYMENT",
+        title: `Payment Collected (₹${amount.toLocaleString()})`,
+        details: `${sessionUser.name} collected ₹${amount.toLocaleString()} for ${member?.fullName || "Member"} (Receipt #${receiptNo}, ${input.paymentMethod})`,
+        metadata: { paymentId: payment.id, receiptNo, amount, memberId: input.memberId },
+      });
+    }
+
     try {
       revalidatePath("/portal/payments");
       revalidatePath(`/portal/members/${input.memberId}`);
@@ -323,6 +343,21 @@ export async function deletePayment(paymentId: string) {
     await prisma.payment.delete({
       where: { id: paymentId },
     });
+
+    // Audit Log & Owner Alert
+    if (session && session.role !== "SUPERUSER") {
+      const { recordAuditLog } = await import("@/lib/audit");
+      await recordAuditLog({
+        username: session.username,
+        role: session.role,
+        userId: session.id,
+        action: "RECEIPT_DELETED",
+        category: "PAYMENT",
+        title: `Receipt #${payment.receiptNo} Deleted`,
+        details: `${session.name} deleted Payment Receipt #${payment.receiptNo} of ₹${amount.toLocaleString()}`,
+        metadata: { paymentId, receiptNo: payment.receiptNo, amount, memberId },
+      });
+    }
 
     try {
       revalidatePath("/portal/payments");
@@ -425,6 +460,21 @@ export async function updatePaymentDate(input: {
       where: { id: targetPayment.id },
       include: { member: true },
     });
+
+    // Audit Log & Owner Alert
+    if (session && session.role !== "SUPERUSER") {
+      const { recordAuditLog } = await import("@/lib/audit");
+      await recordAuditLog({
+        username: session.username,
+        role: session.role,
+        userId: session.id,
+        action: "PAYMENT_DATE_EDITED",
+        category: "PAYMENT",
+        title: `Payment Date Altered (Receipt #${updatedPayment?.receiptNo || targetPayment.receiptNo})`,
+        details: `${session.name} changed payment date for ${targetPayment.member?.fullName || "Member"} (Receipt #${updatedPayment?.receiptNo || targetPayment.receiptNo}) to ${newDate.toISOString().split("T")[0]}`,
+        metadata: { paymentId: targetPayment.id, newDate: newDate.toISOString() },
+      });
+    }
 
     try {
       revalidatePath("/portal/payments");

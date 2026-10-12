@@ -67,6 +67,26 @@ export async function addOrRenewMemberPT(input: AddMemberPTInput) {
       });
     }
 
+    // Audit Log & Owner Alert
+    const session = await getSessionUser();
+    if (session && session.role !== "SUPERUSER") {
+      const member = await prisma.member.findUnique({
+        where: { id: input.memberId },
+        select: { fullName: true, memberId: true },
+      });
+      const { recordAuditLog } = await import("@/lib/audit");
+      await recordAuditLog({
+        username: session.username,
+        role: session.role,
+        userId: session.id,
+        action: "PT_ASSIGNED",
+        category: "PT",
+        title: `PT Assigned: ${member?.fullName || "Member"}`,
+        details: `${session.name} assigned ${input.planName} (Trainer: ${input.trainerName || "-"}, ₹${total.toLocaleString()}) for ${member?.fullName || "Member"}`,
+        metadata: { memberId: input.memberId, ptId: pt.id, totalAmount: total },
+      });
+    }
+
     try {
       revalidatePath(`/portal/members/${input.memberId}`);
       revalidatePath("/portal/members");

@@ -223,3 +223,32 @@ model AppUser {
   updatedAt DateTime @updatedAt
 }
 
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  username  String
+  role      Role     @default(FRONTDESK)
+  action    String
+  category  String   @default("GENERAL")
+  title     String
+  details   String
+  metadata  String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([username])
+  @@index([action])
+  @@index([category])
+}
+
+model PushSubscriptionRecord {
+  id         String   @id @default(cuid())
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  userAgent  String?
+  deviceName String?
+  createdAt  DateTime @default(now())
+}
+

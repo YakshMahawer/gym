@@ -39,6 +39,20 @@ export async function loginUser(formData: {
       maxAge: 60 * 60 * 24 * 30, // 30 days
     });
 
+    // Record audit log and alert owner if anyone other than superuser logs in
+    if (user.role !== "SUPERUSER") {
+      const { recordAuditLog } = await import("@/lib/audit");
+      await recordAuditLog({
+        username: user.username,
+        role: user.role,
+        userId: user.id,
+        action: "STAFF_LOGIN",
+        category: "AUTH",
+        title: "Staff Logged In",
+        details: `${user.name} (${user.username}) logged in to Gym CRM portal.`,
+      });
+    }
+
     try {
       revalidatePath("/portal");
       revalidatePath("/login");

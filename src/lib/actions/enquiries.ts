@@ -68,6 +68,22 @@ export async function createEnquiry(input: CreateEnquiryInput) {
       },
     });
 
+    // Audit Log & Owner Alert
+    const session = await getSessionUser();
+    if (session && session.role !== "SUPERUSER") {
+      const { recordAuditLog } = await import("@/lib/audit");
+      await recordAuditLog({
+        username: session.username,
+        role: session.role,
+        userId: session.id,
+        action: "ENQUIRY_CREATED",
+        category: "ENQUIRY",
+        title: `New Enquiry: ${input.name.trim()}`,
+        details: `${session.name} added prospective enquiry for ${input.name.trim()} (${input.phone.trim()}${input.preferredPlan ? `, ${input.preferredPlan}` : ""})`,
+        metadata: { enquiryId: enquiry.id, name: input.name, phone: input.phone },
+      });
+    }
+
     revalidatePath("/portal/enquiries");
     revalidatePath("/portal");
     return { success: true, enquiry };
@@ -91,6 +107,21 @@ export async function updateEnquiryStatus(id: string, status: EnquiryStatus, not
         ...(notes !== undefined && { notes }),
       },
     });
+
+    // Audit Log & Owner Alert
+    if (session && session.role !== "SUPERUSER") {
+      const { recordAuditLog } = await import("@/lib/audit");
+      await recordAuditLog({
+        username: session.username,
+        role: session.role,
+        userId: session.id,
+        action: "ENQUIRY_UPDATED",
+        category: "ENQUIRY",
+        title: `Enquiry Status: ${enquiry.name} (${status})`,
+        details: `${session.name} updated enquiry status for ${enquiry.name} to "${status}"`,
+        metadata: { enquiryId: id, status },
+      });
+    }
 
     revalidatePath("/portal/enquiries");
     revalidatePath("/portal");
