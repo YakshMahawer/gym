@@ -7,7 +7,17 @@ export interface RecordAuditParams {
   role: Role | string;
   userId?: string;
   action: string;
-  category: "AUTH" | "PAYMENT" | "MEMBER" | "ENQUIRY" | "PT" | "SETTINGS" | "GENERAL";
+  category:
+    | "PROFILE_CHANGED"
+    | "RECEIPT_CHANGED"
+    | "MEMBERSHIP_DATES_CHANGED"
+    | "PAYMENT"
+    | "AUTH"
+    | "MEMBER"
+    | "PT"
+    | "ENQUIRY"
+    | "SETTINGS"
+    | "GENERAL";
   title: string;
   details: string;
   metadata?: Record<string, any>;
@@ -47,25 +57,46 @@ export async function recordAuditLog(params: RecordAuditParams) {
       },
     });
 
-    // 2. Trigger real-time mobile push notification to the owner's phone
+    // 2. Trigger real-time mobile push notification with clear bifurcation
     const roleLabel = roleEnum === Role.ADMIN ? "Admin" : "Front Desk";
-    const pushTitle = `🔔 ${roleLabel} (${params.username}): ${params.title}`;
+    let categoryPrefix = "🔔 Staff Alert";
+
+    if (params.category === "PROFILE_CHANGED") {
+      categoryPrefix = "👤 Profile Changed";
+    } else if (params.category === "RECEIPT_CHANGED") {
+      categoryPrefix = "🧾 Receipt Changed";
+    } else if (params.category === "MEMBERSHIP_DATES_CHANGED") {
+      categoryPrefix = "📅 Membership Dates Changed";
+    } else if (params.category === "PAYMENT") {
+      categoryPrefix = "💳 Payment Collected";
+    } else if (params.category === "AUTH") {
+      categoryPrefix = params.action.includes("LOGIN") ? "🔑 Staff Login" : "🚪 Staff Logout";
+    } else if (params.category === "PT") {
+      categoryPrefix = "🏋️ PT Add-on";
+    } else if (params.category === "MEMBER") {
+      categoryPrefix = params.action.includes("DELETE") ? "🗑️ Member Deleted" : "👤 New Member Enrolled";
+    } else if (params.category === "ENQUIRY") {
+      categoryPrefix = "💬 Enquiry Update";
+    }
+
+    const pushTitle = `${categoryPrefix} · ${roleLabel} (${params.username})`;
     const pushBody = params.details;
 
-    // Dispatch async without blocking
-    broadcastPushNotification({
-      title: pushTitle,
-      body: pushBody,
-      url: "/audit",
-      tag: params.action,
-      data: {
-        auditId: log.id,
-        category: params.category,
-        timestamp: log.createdAt.getTime(),
-      },
-    }).catch((err) => {
-      console.error("Failed to broadcast push notification:", err);
-    });
+    try {
+      await broadcastPushNotification({
+        title: pushTitle,
+        body: pushBody,
+        url: "/audit",
+        tag: params.action,
+        data: {
+          auditId: log.id,
+          category: params.category,
+          timestamp: log.createdAt.getTime(),
+        },
+      });
+    } catch (pushErr) {
+      console.error("Failed to broadcast push notification:", pushErr);
+    }
 
     return log;
   } catch (error) {

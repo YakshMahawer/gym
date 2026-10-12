@@ -67,6 +67,21 @@ export async function loginUser(formData: {
 
 export async function logoutUser(): Promise<{ success: boolean }> {
   try {
+    // Record audit log and alert owner before clearing session
+    const user = await getSessionUser();
+    if (user && user.role !== "SUPERUSER") {
+      const { recordAuditLog } = await import("@/lib/audit");
+      await recordAuditLog({
+        username: user.username,
+        role: user.role,
+        userId: user.id,
+        action: "STAFF_LOGOUT",
+        category: "AUTH",
+        title: "Staff Logged Out",
+        details: `${user.name} (${user.username}) logged out of Gym CRM portal.`,
+      });
+    }
+
     const cookieStore = cookies();
     cookieStore.set(SESSION_COOKIE_NAME, "", {
       path: "/",

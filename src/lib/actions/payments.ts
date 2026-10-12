@@ -344,7 +344,7 @@ export async function deletePayment(paymentId: string) {
       where: { id: paymentId },
     });
 
-    // Audit Log & Owner Alert
+    // Audit Log & Owner Alert: Receipt Changed
     if (session && session.role !== "SUPERUSER") {
       const { recordAuditLog } = await import("@/lib/audit");
       await recordAuditLog({
@@ -352,8 +352,8 @@ export async function deletePayment(paymentId: string) {
         role: session.role,
         userId: session.id,
         action: "RECEIPT_DELETED",
-        category: "PAYMENT",
-        title: `Receipt #${payment.receiptNo} Deleted`,
+        category: "RECEIPT_CHANGED",
+        title: `Receipt Changed: #${payment.receiptNo} Deleted`,
         details: `${session.name} deleted Payment Receipt #${payment.receiptNo} of ₹${amount.toLocaleString()}`,
         metadata: { paymentId, receiptNo: payment.receiptNo, amount, memberId },
       });
@@ -461,18 +461,19 @@ export async function updatePaymentDate(input: {
       include: { member: true },
     });
 
-    // Audit Log & Owner Alert
+    // Audit Log & Owner Alert: Receipt Changed
     if (session && session.role !== "SUPERUSER") {
       const { recordAuditLog } = await import("@/lib/audit");
+      const dateFormatted = newDate.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
       await recordAuditLog({
         username: session.username,
         role: session.role,
         userId: session.id,
-        action: "PAYMENT_DATE_EDITED",
-        category: "PAYMENT",
-        title: `Payment Date Altered (Receipt #${updatedPayment?.receiptNo || targetPayment.receiptNo})`,
-        details: `${session.name} changed payment date for ${targetPayment.member?.fullName || "Member"} (Receipt #${updatedPayment?.receiptNo || targetPayment.receiptNo}) to ${newDate.toISOString().split("T")[0]}`,
-        metadata: { paymentId: targetPayment.id, newDate: newDate.toISOString() },
+        action: "RECEIPT_DATE_ALTERED",
+        category: "RECEIPT_CHANGED",
+        title: `Receipt Changed: Date Altered (#${updatedPayment?.receiptNo || targetPayment.receiptNo})`,
+        details: `${session.name} changed payment date for ${targetPayment.member?.fullName || "Member"} (Receipt #${updatedPayment?.receiptNo || targetPayment.receiptNo}) to ${dateFormatted}`,
+        metadata: { paymentId: targetPayment.id, newDate: newDate.toISOString(), receiptNo: updatedPayment?.receiptNo },
       });
     }
 

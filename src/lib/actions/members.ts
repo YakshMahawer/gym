@@ -515,16 +515,16 @@ export async function updateMember(id: string, input: Partial<CreateMemberInput>
       data: updateData,
     });
 
-    // Audit Log & Owner Alert
+    // Audit Log & Owner Alert: Profile Details Changed
     if (session && session.role !== "SUPERUSER") {
       const { recordAuditLog } = await import("@/lib/audit");
       await recordAuditLog({
         username: session.username,
         role: session.role,
         userId: session.id,
-        action: "MEMBER_UPDATED",
-        category: "MEMBER",
-        title: `Member Updated: ${updated.fullName}`,
+        action: "PROFILE_DETAILS_UPDATED",
+        category: "PROFILE_CHANGED",
+        title: `Profile Details Changed: ${updated.fullName}`,
         details: `${session.name} updated profile details for ${updated.fullName} (ID #${updated.memberId})`,
         metadata: { memberId: updated.id, customMemberId: updated.memberId },
       });
@@ -636,23 +636,25 @@ export async function renewSubscription(data: {
       });
     }
 
-    // Audit Log & Owner Alert
+    // Audit Log & Owner Alert: Gym Membership Dates Changed
     const session = await getSessionUser();
     if (session && session.role !== "SUPERUSER") {
       const member = await prisma.member.findUnique({
         where: { id: data.memberId },
         select: { fullName: true, memberId: true },
       });
+      const sDateStr = new Date(data.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+      const eDateStr = new Date(data.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
       const { recordAuditLog } = await import("@/lib/audit");
       await recordAuditLog({
         username: session.username,
         role: session.role,
         userId: session.id,
-        action: "SUBSCRIPTION_RENEWED",
-        category: "MEMBER",
-        title: `Membership Renewed: ${member?.fullName || "Member"}`,
-        details: `${session.name} renewed ${data.planName} (₹${total.toLocaleString()}) for ${member?.fullName || "Member"}`,
-        metadata: { memberId: data.memberId, planName: data.planName, totalAmount: total },
+        action: "MEMBERSHIP_DATES_CHANGED",
+        category: "MEMBERSHIP_DATES_CHANGED",
+        title: `Gym Membership Dates Changed: ${member?.fullName || "Member"}`,
+        details: `${session.name} updated membership dates for ${member?.fullName || "Member"} (${data.planName}: ${sDateStr} to ${eDateStr}, ₹${total.toLocaleString()})`,
+        metadata: { memberId: data.memberId, planName: data.planName, startDate: data.startDate, endDate: data.endDate, totalAmount: total },
       });
     }
 

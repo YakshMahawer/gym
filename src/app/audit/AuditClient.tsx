@@ -4,25 +4,18 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Bell,
   BellRing,
-  BellOff,
-  ShieldAlert,
   ShieldCheck,
   RefreshCw,
   Search,
-  Filter,
-  Calendar,
   Lock,
   Unlock,
-  KeyRound,
   CheckCircle2,
-  AlertTriangle,
   Smartphone,
-  ExternalLink,
   ChevronDown,
   ChevronUp,
   CreditCard,
-  UserCheck,
   LogIn,
+  LogOut,
   UserPlus,
   Trash2,
   CalendarClock,
@@ -33,6 +26,10 @@ import {
   PlusSquare,
   Volume2,
   VolumeX,
+  ExternalLink,
+  Users,
+  Activity,
+  Check,
 } from "lucide-react";
 
 const VAPID_PUBLIC_KEY =
@@ -56,7 +53,7 @@ function formatRelativeTime(dateString: string | Date): string {
   const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000);
 
   if (diffSec < 45) return "Just now";
-  if (diffSec < 90) return "1 min ago";
+  if (diffSec < 90) return "1m ago";
   const diffMin = Math.floor(diffSec / 60);
   if (diffMin < 60) return `${diffMin}m ago`;
   const diffHours = Math.floor(diffMin / 60);
@@ -82,10 +79,10 @@ function formatDateHeader(dateString: string | Date): string {
   yesterday.setDate(yesterday.getDate() - 1);
 
   if (d.toDateString() === today.toDateString()) {
-    return `Today — ${d.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`;
+    return `Today · ${d.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`;
   }
   if (d.toDateString() === yesterday.toDateString()) {
-    return `Yesterday — ${d.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`;
+    return `Yesterday · ${d.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`;
   }
   return d.toLocaleDateString("en-IN", {
     weekday: "short",
@@ -172,7 +169,7 @@ export function AuditClient() {
       setPinError("");
       localStorage.setItem("concept1_owner_unlocked", "true");
     } else {
-      setPinError("Incorrect Owner Passcode. (Default PIN: 2026)");
+      setPinError("Incorrect Owner Passcode. (Default: 2026)");
     }
   };
 
@@ -214,33 +211,30 @@ export function AuditClient() {
   // Subscribe to Push Notifications
   const handleSubscribe = async () => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      alert("Push notifications are not supported on this browser.");
+      alert("Push notifications are not supported in this browser.");
       return;
     }
 
     try {
       setSubscribing(true);
 
-      // Register dedicated audit service worker
       const reg = await navigator.serviceWorker.register("/sw-audit.js", {
         scope: "/",
       });
       await navigator.serviceWorker.ready;
 
-      // Request notification permission
       const perm = await Notification.requestPermission();
       setPermission(perm);
 
       if (perm !== "granted") {
         alert(
           perm === "denied"
-            ? "Notifications are blocked. Please enable notifications in your phone's browser / app settings."
+            ? "Notifications are blocked. Please enable notifications in your phone's browser or app settings."
             : "Notification permission was not granted."
         );
         return;
       }
 
-      // Subscribe to PushManager
       const subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC_KEY),
@@ -248,7 +242,6 @@ export function AuditClient() {
 
       const subJson = subscription.toJSON();
 
-      // Send to server
       const res = await fetch("/api/audit/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -264,7 +257,7 @@ export function AuditClient() {
       }
 
       setIsSubscribed(true);
-      alert("🎉 Real-time alerts activated! Your device is now connected to live staff monitoring.");
+      alert("🎉 Real-time alerts activated! Your phone will now receive alerts whenever staff logs in or performs actions.");
     } catch (err: any) {
       console.error("Subscription error:", err);
       alert("Failed to activate notifications: " + err.message);
@@ -281,7 +274,7 @@ export function AuditClient() {
       const res = await fetch("/api/audit/test-notify", { method: "POST" });
       const data = await res.json();
       if (res.ok) {
-        setTestAlertMessage(data.message || "Test alert sent to connected phone(s)!");
+        setTestAlertMessage(data.message || "Test alert dispatched to registered phone(s)!");
       } else {
         setTestAlertMessage("Error: " + (data.error || "Failed to trigger test push."));
       }
@@ -289,7 +282,7 @@ export function AuditClient() {
       setTestAlertMessage("Failed: " + err.message);
     } finally {
       setTestAlertSending(false);
-      setTimeout(() => setTestAlertMessage(""), 6000);
+      setTimeout(() => setTestAlertMessage(""), 5000);
     }
   };
 
@@ -308,7 +301,6 @@ export function AuditClient() {
 
         const data = await res.json();
         if (data.success) {
-          // Play subtle beep if new logs appeared while app is open and sound is on
           if (
             soundEnabled &&
             prevLogCountRef.current > 0 &&
@@ -331,7 +323,6 @@ export function AuditClient() {
     [selectedCategory, selectedStaff, dateFilter, soundEnabled]
   );
 
-  // Initial load and polling every 8s
   useEffect(() => {
     fetchLogs();
     const interval = setInterval(() => {
@@ -346,9 +337,9 @@ export function AuditClient() {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = "sine";
-      osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
-      osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.15); // E6
-      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -357,7 +348,6 @@ export function AuditClient() {
     } catch {}
   };
 
-  // Filter logs by search query
   const filteredLogs = logs.filter((log) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
@@ -369,7 +359,6 @@ export function AuditClient() {
     );
   });
 
-  // Group logs by date
   const groupedLogs = filteredLogs.reduce((groups: Record<string, AuditLogItem[]>, item) => {
     const header = formatDateHeader(item.createdAt);
     if (!groups[header]) groups[header] = [];
@@ -377,178 +366,187 @@ export function AuditClient() {
     return groups;
   }, {});
 
-  // Category Pill Styler
-  const getCategoryTheme = (category: string, action: string) => {
+  // Clean, minimal pastel theme for bifurcated log types
+  const getEventBadge = (category: string, action: string) => {
+    if (category === "PROFILE_CHANGED" || action === "PROFILE_DETAILS_UPDATED") {
+      return {
+        bg: "bg-indigo-50 text-indigo-700 border-indigo-200",
+        icon: <UserPlus className="w-3.5 h-3.5 text-indigo-600" />,
+        tagLabel: "Profile Changed",
+      };
+    }
+    if (category === "RECEIPT_CHANGED" || action.includes("RECEIPT")) {
+      return {
+        bg: action.includes("DELETE") ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-amber-50 text-amber-800 border-amber-200",
+        icon: action.includes("DELETE") ? <Trash2 className="w-3.5 h-3.5 text-rose-600" /> : <CalendarClock className="w-3.5 h-3.5 text-amber-600" />,
+        tagLabel: action.includes("DELETE") ? "Receipt Deleted" : "Receipt Date Changed",
+      };
+    }
+    if (category === "MEMBERSHIP_DATES_CHANGED" || action.includes("MEMBERSHIP_DATES")) {
+      return {
+        bg: "bg-teal-50 text-teal-800 border-teal-200",
+        icon: <CalendarClock className="w-3.5 h-3.5 text-teal-600" />,
+        tagLabel: "Membership Dates Changed",
+      };
+    }
+    if (category === "PAYMENT" || action.includes("PAYMENT")) {
+      return {
+        bg: "bg-emerald-50 text-emerald-800 border-emerald-200",
+        icon: <CreditCard className="w-3.5 h-3.5 text-emerald-600" />,
+        tagLabel: "Fee Collected",
+      };
+    }
+    if (category === "AUTH") {
+      if (action.includes("LOGOUT")) {
+        return {
+          bg: "bg-slate-100 text-slate-700 border-slate-200",
+          icon: <LogOut className="w-3.5 h-3.5 text-slate-600" />,
+          tagLabel: "Staff Logout",
+        };
+      }
+      return {
+        bg: "bg-blue-50 text-blue-700 border-blue-200",
+        icon: <LogIn className="w-3.5 h-3.5 text-blue-600" />,
+        tagLabel: "Staff Login",
+      };
+    }
+    if (category === "PT") {
+      return {
+        bg: "bg-cyan-50 text-cyan-800 border-cyan-200",
+        icon: <Dumbbell className="w-3.5 h-3.5 text-cyan-600" />,
+        tagLabel: "PT Add-on",
+      };
+    }
+    if (category === "ENQUIRY") {
+      return {
+        bg: "bg-purple-50 text-purple-700 border-purple-200",
+        icon: <MessageSquare className="w-3.5 h-3.5 text-purple-600" />,
+        tagLabel: "Enquiry",
+      };
+    }
     if (action.includes("DELETE")) {
       return {
-        bg: "bg-rose-500/10 text-rose-400 border-rose-500/20",
-        icon: <Trash2 className="w-3.5 h-3.5 text-rose-400 shrink-0" />,
-        dot: "bg-rose-500",
+        bg: "bg-rose-50 text-rose-700 border-rose-200",
+        icon: <Trash2 className="w-3.5 h-3.5 text-rose-600" />,
+        tagLabel: "Record Deleted",
       };
     }
-    if (action.includes("DATE_EDITED") || action.includes("EDIT")) {
-      return {
-        bg: "bg-amber-500/10 text-amber-300 border-amber-500/20",
-        icon: <CalendarClock className="w-3.5 h-3.5 text-amber-400 shrink-0" />,
-        dot: "bg-amber-400",
-      };
-    }
-    switch (category) {
-      case "AUTH":
-        return {
-          bg: "bg-sky-500/10 text-sky-400 border-sky-500/20",
-          icon: <LogIn className="w-3.5 h-3.5 text-sky-400 shrink-0" />,
-          dot: "bg-sky-400",
-        };
-      case "PAYMENT":
-        return {
-          bg: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
-          icon: <CreditCard className="w-3.5 h-3.5 text-emerald-400 shrink-0" />,
-          dot: "bg-emerald-400",
-        };
-      case "MEMBER":
-        return {
-          bg: "bg-indigo-500/10 text-indigo-300 border-indigo-500/20",
-          icon: <UserPlus className="w-3.5 h-3.5 text-indigo-400 shrink-0" />,
-          dot: "bg-indigo-400",
-        };
-      case "PT":
-        return {
-          bg: "bg-cyan-500/10 text-cyan-300 border-cyan-500/20",
-          icon: <Dumbbell className="w-3.5 h-3.5 text-cyan-400 shrink-0" />,
-          dot: "bg-cyan-400",
-        };
-      case "ENQUIRY":
-        return {
-          bg: "bg-violet-500/10 text-violet-300 border-violet-500/20",
-          icon: <MessageSquare className="w-3.5 h-3.5 text-violet-400 shrink-0" />,
-          dot: "bg-violet-400",
-        };
-      default:
-        return {
-          bg: "bg-slate-500/10 text-slate-300 border-slate-500/20",
-          icon: <ShieldAlert className="w-3.5 h-3.5 text-slate-400 shrink-0" />,
-          dot: "bg-slate-400",
-        };
-    }
+    return {
+      bg: "bg-slate-100 text-slate-700 border-slate-200",
+      icon: <Activity className="w-3.5 h-3.5 text-slate-600" />,
+      tagLabel: "Staff Activity",
+    };
   };
 
-  // PASSCODE UNLOCK SCREEN
+  // PASSCODE UNLOCK SCREEN (MINIMAL CLEAN WHITE)
   if (!isUnlocked) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-[#0B0F19] to-slate-950 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-sm bg-slate-900/90 border border-slate-800 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-center">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500/20 to-amber-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 shadow-lg shadow-rose-950/50">
-            <ShieldCheck className="w-8 h-8" />
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-slate-900">
+        <div className="w-full max-w-sm space-y-8 text-center">
+          <div className="mx-auto w-16 h-16 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-900/10">
+            <ShieldCheck className="w-8 h-8 text-white" />
           </div>
 
           <div className="space-y-1.5">
-            <span className="text-[10px] uppercase font-black text-rose-400 tracking-widest">
-              Executive Companion App
-            </span>
-            <h1 className="text-xl font-black text-white tracking-tight">
-              Concept I Gym — Owner Monitor
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Owner Monitor
             </h1>
-            <p className="text-xs text-slate-400">
-              Enter Owner Passcode to access live staff activity feed & phone notification controls.
+            <p className="text-xs text-slate-500">
+              Enter passcode to view live staff activity and manage mobile alerts.
             </p>
           </div>
 
           <form onSubmit={handleUnlock} className="space-y-4">
-            <div className="relative">
+            <div>
               <input
                 type="password"
                 inputMode="numeric"
                 autoFocus
-                placeholder="Enter Passcode (Default: 2026)"
+                placeholder="Passcode (Default: 2026)"
                 value={pinInput}
                 onChange={(e) => {
                   setPinInput(e.target.value);
                   setPinError("");
                 }}
-                className="w-full bg-slate-950/70 border border-slate-700/80 focus:border-rose-500 rounded-2xl px-4 py-3.5 text-center text-lg font-mono text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 transition"
+                className="w-full bg-slate-50 border border-slate-300 focus:border-slate-900 rounded-2xl px-4 py-3.5 text-center text-lg font-mono text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-slate-900/5 transition"
               />
             </div>
 
             {pinError && (
-              <p className="text-xs text-rose-400 font-semibold animate-shake">
+              <p className="text-xs text-rose-600 font-medium">
                 {pinError}
               </p>
             )}
 
             <button
               type="submit"
-              className="w-full py-3.5 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-sm rounded-2xl shadow-lg shadow-rose-950/50 transition active:scale-98 flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm rounded-2xl shadow-sm transition active:scale-98 flex items-center justify-center gap-2"
             >
               <Unlock className="w-4 h-4" />
-              <span>Unlock Live Monitor</span>
+              <span>Unlock App</span>
             </button>
           </form>
 
-          <div className="pt-2 border-t border-slate-800/80">
-            <p className="text-[11px] text-slate-500">
-              Passcode: <code className="text-slate-400 font-bold">2026</code> or Root Password
-            </p>
-          </div>
+          <p className="text-[11px] text-slate-400">
+            Default Passcode: <span className="font-semibold text-slate-600">2026</span>
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-slate-100 flex flex-col pb-12 max-w-4xl mx-auto">
-      {/* Top Executive Header */}
-      <header className="sticky top-0 z-40 bg-[#0B0F19]/90 backdrop-blur-xl border-b border-slate-800/80 px-4 py-3.5 flex items-center justify-between gap-3 shadow-md">
+    <div className="min-h-screen bg-[#FAFAFA] text-slate-900 flex flex-col pb-16 max-w-2xl mx-auto">
+      {/* Top Mobile App Bar (Clean White) */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3.5 flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-600 to-amber-600 p-0.5 shadow-md shadow-rose-950/40 shrink-0">
-            <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-rose-400">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
+          <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
+            CI
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-sm sm:text-base font-black text-white tracking-tight">
-                Concept I — Owner Monitor
+              <h1 className="text-sm font-bold text-slate-900 tracking-tight">
+                Live Monitor
               </h1>
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-bold text-emerald-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-[10px] font-semibold text-emerald-700">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 Live
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 hidden sm:block">
-              Real-time audit log of non-superuser actions & logins
+            <p className="text-[11px] text-slate-400">
+              Real-time staff actions & logins
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Audio Chime Toggle */}
+        <div className="flex items-center gap-1.5">
+          {/* Audio Chime */}
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className={`p-2 rounded-xl border text-xs transition ${
+            className={`p-2 rounded-xl text-xs transition ${
               soundEnabled
-                ? "bg-slate-800/80 border-slate-700 text-slate-200"
-                : "bg-slate-900 border-slate-800 text-slate-500"
+                ? "bg-slate-100 text-slate-800 hover:bg-slate-200"
+                : "bg-transparent text-slate-400 hover:bg-slate-100"
             }`}
-            title={soundEnabled ? "Live sound chime ON" : "Sound MUTED"}
+            title={soundEnabled ? "Live chime enabled" : "Muted"}
           >
-            {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4" />}
+            {soundEnabled ? <Volume2 className="w-4 h-4 text-slate-800" /> : <VolumeX className="w-4 h-4" />}
           </button>
 
-          {/* Refresh Button */}
+          {/* Refresh */}
           <button
             onClick={() => fetchLogs()}
             disabled={refreshing}
-            className="p-2 rounded-xl bg-slate-800/80 border border-slate-700 hover:bg-slate-800 text-slate-200 transition active:scale-95 disabled:opacity-50"
+            className="p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition active:scale-95 disabled:opacity-50"
             title="Refresh logs"
           >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin text-rose-400" : ""}`} />
+            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin text-slate-900" : ""}`} />
           </button>
 
           {/* Lock App */}
           <button
             onClick={handleLockAgain}
-            className="p-2 rounded-xl bg-slate-800/80 border border-slate-700 hover:bg-rose-950/40 hover:border-rose-800 text-slate-300 hover:text-rose-400 transition"
+            className="p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition"
             title="Lock Monitor"
           >
             <Lock className="w-4 h-4" />
@@ -556,159 +554,152 @@ export function AuditClient() {
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Container */}
       <main className="flex-1 px-4 py-4 space-y-4">
-        {/* PWA Phone Alert Setup Banner */}
-        <div className="bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-900/40 rounded-3xl p-4 sm:p-5 shadow-xl space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Phone Alert Status Card (Clean Minimalist White) */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.02)] space-y-3">
+          <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
               <div
-                className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-md ${
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                   isSubscribed
-                    ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400"
-                    : "bg-rose-500/15 border border-rose-500/30 text-rose-400"
+                    ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                    : "bg-amber-50 text-amber-600 border border-amber-100"
                 }`}
               >
-                {isSubscribed ? <BellRing className="w-5 h-5 animate-bounce" /> : <Bell className="w-5 h-5" />}
+                {isSubscribed ? <BellRing className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
               </div>
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-bold text-white">
-                    {isSubscribed ? "Phone Notifications Active" : "Enable Phone Push Notifications"}
+                  <h2 className="text-sm font-semibold text-slate-900">
+                    {isSubscribed ? "Phone Notifications Active" : "Turn ON Phone Alerts"}
                   </h2>
                   <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                       isSubscribed
-                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                        : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        : "bg-amber-50 text-amber-700 border border-amber-200"
                     }`}
                   >
-                    {isSubscribed ? "Connected" : "Action Required"}
+                    {isSubscribed ? "Enabled" : "Tap to Setup"}
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 leading-relaxed">
+                <p className="text-xs text-slate-500 leading-relaxed">
                   {isSubscribed
-                    ? `This device receives real-time alerts whenever front desk or admin logs in, collects payments, or edits records.`
-                    : "Get instant vibration & sound alerts on your phone whenever staff logs in or alters gym data."}
+                    ? "Your phone receives instant push alerts whenever staff logs in, collects fees, or modifies data."
+                    : "Receive instant notifications on your phone lock screen whenever staff logs in or performs actions."}
                 </p>
               </div>
             </div>
+          </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              {!isSubscribed ? (
-                <button
-                  onClick={handleSubscribe}
-                  disabled={subscribing}
-                  className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white rounded-xl text-xs font-bold shadow-md shadow-rose-950/40 transition active:scale-98 disabled:opacity-50 flex items-center justify-center gap-1.5"
-                >
-                  <Bell className="w-3.5 h-3.5" />
-                  <span>{subscribing ? "Activating..." : "Enable Push on This Phone"}</span>
-                </button>
-              ) : (
-                <button
-                  onClick={handleSendTestAlert}
-                  disabled={testAlertSending}
-                  className="w-full sm:w-auto px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-xs font-bold shadow-xs transition active:scale-98 disabled:opacity-50 flex items-center justify-center gap-1.5"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  <span>{testAlertSending ? "Sending..." : "Send Test Notification"}</span>
-                </button>
-              )}
-            </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+            {!isSubscribed ? (
+              <button
+                onClick={handleSubscribe}
+                disabled={subscribing}
+                className="w-full sm:w-auto px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-xs transition active:scale-98 disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                <Bell className="w-3.5 h-3.5" />
+                <span>{subscribing ? "Connecting..." : "Enable Push Alerts on this Phone"}</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleSendTestAlert}
+                disabled={testAlertSending}
+                className="w-full sm:w-auto px-3.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-medium transition active:scale-98 disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>{testAlertSending ? "Sending Alert..." : "Send Test Alert to Phone"}</span>
+              </button>
+            )}
           </div>
 
           {testAlertMessage && (
-            <div className="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-800/60 text-emerald-300 text-xs font-medium flex items-center gap-2 animate-in fade-in">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-center gap-2 animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>{testAlertMessage}</span>
             </div>
           )}
 
-          {/* iOS Specific 1-Minute Guidance */}
+          {/* iOS Safari Tip */}
           {isIOS && !isStandalone && (
-            <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 space-y-2">
-              <div className="flex items-center gap-1.5 text-amber-400 font-bold text-[11px] uppercase tracking-wider">
-                <Smartphone className="w-3.5 h-3.5" />
-                <span>iPhone / iOS Setup (One-time)</span>
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-slate-900 font-semibold text-[11px]">
+                <Smartphone className="w-3.5 h-3.5 text-slate-700" />
+                <span>iPhone Notification Tip:</span>
               </div>
-              <p className="text-[11px] text-slate-400">
-                To receive native notifications on iOS 16.4+:
+              <p className="text-[11px] text-slate-500">
+                To receive push alerts when the screen is locked, tap Safari <strong>Share</strong> ⎋ $\rightarrow$ <strong>'Add to Home Screen'</strong> ➕, then open the app icon from your home screen.
               </p>
-              <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-slate-200 bg-slate-900/60 p-2 rounded-xl">
-                <span>1. Tap Safari Share</span>
-                <Share className="w-3 h-3 text-rose-400" />
-                <span>&rarr;</span>
-                <span>2. Tap <strong>'Add to Home Screen'</strong></span>
-                <PlusSquare className="w-3 h-3 text-emerald-400" />
-                <span>&rarr;</span>
-                <span>3. Open from home screen & tap <strong>Enable Push</strong></span>
-              </div>
             </div>
           )}
         </div>
 
-        {/* Executive Today Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          <div className="p-3.5 bg-slate-900/70 border border-slate-800/80 rounded-2xl shadow-xs space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+        {/* Minimal Metric Chips (4 Columns) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-[0_1px_4px_rgba(0,0,0,0.02)] space-y-0.5">
+            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
               Total Today
             </span>
-            <p className="text-xl sm:text-2xl font-black text-white">
+            <p className="text-xl font-bold text-slate-900">
               {stats.todayTotal}
             </p>
-            <span className="text-[10px] text-slate-500">Staff operations</span>
+            <span className="text-[10px] text-slate-400">Recorded events</span>
           </div>
 
-          <div className="p-3.5 bg-slate-900/70 border border-slate-800/80 rounded-2xl shadow-xs space-y-1">
-            <span className="text-[10px] font-bold text-sky-400 uppercase tracking-wider">
-              Logins Today
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-[0_1px_4px_rgba(0,0,0,0.02)] space-y-0.5">
+            <span className="text-[10px] font-semibold text-blue-600 uppercase tracking-wider">
+              Logins
             </span>
-            <p className="text-xl sm:text-2xl font-black text-sky-400">
+            <p className="text-xl font-bold text-blue-700">
               {stats.todayLogins}
             </p>
-            <span className="text-[10px] text-slate-500">Admin & Desk sessions</span>
+            <span className="text-[10px] text-slate-400">Staff logins</span>
           </div>
 
-          <div className="p-3.5 bg-slate-900/70 border border-slate-800/80 rounded-2xl shadow-xs space-y-1">
-            <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-[0_1px_4px_rgba(0,0,0,0.02)] space-y-0.5">
+            <span className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">
               Payments
             </span>
-            <p className="text-xl sm:text-2xl font-black text-emerald-400">
+            <p className="text-xl font-bold text-emerald-700">
               {stats.todayPayments}
             </p>
-            <span className="text-[10px] text-slate-500">Receipts issued</span>
+            <span className="text-[10px] text-slate-400">Fee collections</span>
           </div>
 
-          <div className="p-3.5 bg-slate-900/70 border border-slate-800/80 rounded-2xl shadow-xs space-y-1">
-            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-[0_1px_4px_rgba(0,0,0,0.02)] space-y-0.5">
+            <span className="text-[10px] font-semibold text-indigo-600 uppercase tracking-wider">
               Members
             </span>
-            <p className="text-xl sm:text-2xl font-black text-indigo-400">
+            <p className="text-xl font-bold text-indigo-700">
               {stats.todayMembers}
             </p>
-            <span className="text-[10px] text-slate-500">Created / Updated</span>
+            <span className="text-[10px] text-slate-400">Created / Updated</span>
           </div>
         </div>
 
-        {/* Filter Toolbar */}
-        <div className="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-3 space-y-2.5">
-          {/* Category Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 text-xs">
+        {/* Minimal Category Pills & Search */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-3 space-y-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.02)]">
+          {/* Horizontal Pill Bar */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
             {[
-              { id: "ALL", label: "All Activities" },
-              { id: "AUTH", label: "🔑 Staff Logins" },
-              { id: "PAYMENT", label: "💳 Payments & Receipts" },
-              { id: "MEMBER", label: "👤 Members" },
-              { id: "PT", label: "🏋️ PT Add-ons" },
+              { id: "ALL", label: "All Events" },
+              { id: "PROFILE_CHANGED", label: "👤 Profile Changed" },
+              { id: "RECEIPT_CHANGED", label: "🧾 Receipt Changed" },
+              { id: "MEMBERSHIP_DATES_CHANGED", label: "📅 Membership Dates" },
+              { id: "PAYMENT", label: "💳 Fee Collections" },
+              { id: "AUTH", label: "🔑 Staff Logins/Logouts" },
+              { id: "PT", label: "🏋️ PT" },
               { id: "ENQUIRY", label: "💬 Enquiries" },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setSelectedCategory(tab.id)}
-                className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition text-[11px] ${
+                className={`px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition text-xs ${
                   selectedCategory === tab.id
-                    ? "bg-rose-600 text-white shadow-sm shadow-rose-950/40"
-                    : "bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                    ? "bg-slate-900 text-white shadow-xs"
+                    : "bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/80"
                 }`}
               >
                 {tab.label}
@@ -717,41 +708,41 @@ export function AuditClient() {
           </div>
 
           {/* Search, Staff Filter, Date Filter Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-0.5 text-xs">
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search member, receipt, staff..."
+                placeholder="Search member, staff, receipt..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-950/70 border border-slate-800 focus:border-rose-500/80 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-slate-400 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none"
               />
             </div>
 
-            <div className="flex items-center gap-2">
+            <div>
               <select
                 value={selectedStaff}
                 onChange={(e) => setSelectedStaff(e.target.value)}
-                className="w-full bg-slate-950/70 border border-slate-800 focus:border-rose-500/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-slate-400 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none"
               >
-                <option value="ALL">All Staff Members</option>
+                <option value="ALL">All Staff</option>
                 <option value="admin">Administrator (admin)</option>
                 <option value="deskmanager">Front Desk (deskmanager)</option>
               </select>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <input
                 type="date"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="w-full bg-slate-950/70 border border-slate-800 focus:border-rose-500/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-slate-400 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none"
               />
               {dateFilter && (
                 <button
                   onClick={() => setDateFilter("")}
-                  className="px-2 py-1 text-[11px] text-slate-400 hover:text-white"
+                  className="px-2 py-1 text-[11px] text-slate-500 hover:text-slate-900 font-medium"
                 >
                   Clear
                 </button>
@@ -760,94 +751,98 @@ export function AuditClient() {
           </div>
         </div>
 
-        {/* Live Logs Feed */}
+        {/* Chronological Activity Feed */}
         <div className="space-y-4">
           {loading ? (
-            <div className="p-12 text-center text-slate-500 space-y-2">
-              <RefreshCw className="w-6 h-6 animate-spin mx-auto text-rose-500" />
-              <p className="text-xs">Loading live staff audit logs...</p>
+            <div className="p-12 text-center text-slate-400 space-y-2">
+              <RefreshCw className="w-5 h-5 animate-spin mx-auto text-slate-600" />
+              <p className="text-xs">Loading live activity feed...</p>
             </div>
           ) : Object.keys(groupedLogs).length === 0 ? (
-            <div className="p-12 text-center bg-slate-900/30 border border-slate-800/50 rounded-3xl space-y-2">
-              <ShieldCheck className="w-8 h-8 text-slate-600 mx-auto" />
-              <p className="text-sm font-bold text-slate-300">No staff activities found</p>
-              <p className="text-xs text-slate-500">
+            <div className="p-10 text-center bg-white border border-slate-200/80 rounded-2xl space-y-2">
+              <CheckCircle2 className="w-8 h-8 text-slate-300 mx-auto" />
+              <p className="text-sm font-semibold text-slate-800">No staff activities found</p>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
                 {searchQuery || selectedCategory !== "ALL" || selectedStaff !== "ALL"
-                  ? "Try clearing filters to see all events."
-                  : "Whenever non-superuser staff logs in or modifies records, events will appear here in real time."}
+                  ? "Try resetting filters to show all events."
+                  : "Whenever non-superuser staff logs in, creates receipts, or updates member records, they appear here instantly."}
               </p>
             </div>
           ) : (
             Object.entries(groupedLogs).map(([groupHeader, groupItems]) => (
               <div key={groupHeader} className="space-y-2">
-                {/* Date Header Separator */}
-                <div className="flex items-center gap-2 px-1 pt-2">
-                  <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+                {/* Date Header */}
+                <div className="flex items-center justify-between px-1 pt-1">
+                  <span className="text-xs font-bold text-slate-700">
                     {groupHeader}
                   </span>
-                  <div className="flex-1 h-px bg-slate-800/80" />
-                  <span className="text-[10px] font-bold text-slate-500">
+                  <span className="text-[10px] text-slate-400 font-medium">
                     {groupItems.length} {groupItems.length === 1 ? "event" : "events"}
                   </span>
                 </div>
 
-                {/* Log Event Cards */}
+                {/* Event Cards */}
                 <div className="space-y-2">
                   {groupItems.map((item) => {
-                    const theme = getCategoryTheme(item.category, item.action);
+                    const badge = getEventBadge(item.category, item.action);
                     const isExpanded = expandedLogId === item.id;
-                    const staffBadge =
+                    const staffTag =
                       item.role === "ADMIN"
-                        ? { label: "Admin", style: "bg-amber-500/20 text-amber-300 border-amber-500/30" }
-                        : { label: "Front Desk", style: "bg-purple-500/20 text-purple-300 border-purple-500/30" };
+                        ? { label: "Admin", style: "bg-amber-50 text-amber-800 border-amber-200" }
+                        : { label: "Front Desk", style: "bg-purple-50 text-purple-800 border-purple-200" };
 
                     return (
                       <div
                         key={item.id}
-                        className="bg-slate-900/70 hover:bg-slate-900 border border-slate-800/80 hover:border-slate-700/80 rounded-2xl p-3.5 transition shadow-xs space-y-2"
+                        className="bg-white border border-slate-200/80 rounded-2xl p-3.5 transition shadow-[0_1px_3px_rgba(0,0,0,0.02)] hover:border-slate-300 space-y-2"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-start gap-2.5">
-                            {/* Action Category Icon */}
-                            <div className={`p-2 rounded-xl border ${theme.bg} shrink-0 mt-0.5`}>
-                              {theme.icon}
+                            {/* Pastel Circle Icon */}
+                            <div className={`p-2 rounded-xl border ${badge.bg} shrink-0 mt-0.5`}>
+                              {badge.icon}
                             </div>
 
-                            {/* Title & Details */}
-                            <div className="space-y-0.5">
+                            {/* Content */}
+                            <div className="space-y-1">
                               <div className="flex flex-wrap items-center gap-1.5">
-                                <span className="text-xs font-bold text-white">
-                                  {item.title}
+                                <span
+                                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${badge.bg}`}
+                                >
+                                  {badge.tagLabel}
                                 </span>
                                 <span
-                                  className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${staffBadge.style}`}
+                                  className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${staffTag.style}`}
                                 >
-                                  {staffBadge.label}: {item.username}
+                                  {staffTag.label}: {item.username}
                                 </span>
                               </div>
-                              <p className="text-xs text-slate-300 leading-snug">
+                              <h3 className="text-xs font-bold text-slate-900 leading-snug">
+                                {item.title}
+                              </h3>
+                              <p className="text-xs text-slate-600 leading-snug">
                                 {item.details}
                               </p>
                             </div>
                           </div>
 
-                          {/* Time & Expand */}
-                          <div className="text-right shrink-0 space-y-1">
-                            <span className="text-[11px] font-bold text-slate-300 block">
+                          {/* Time */}
+                          <div className="text-right shrink-0">
+                            <span className="text-[11px] font-semibold text-slate-700 block">
                               {formatTime(item.createdAt)}
                             </span>
-                            <span className="text-[10px] text-slate-500 block">
+                            <span className="text-[10px] text-slate-400 block">
                               {formatRelativeTime(item.createdAt)}
                             </span>
                           </div>
                         </div>
 
-                        {/* Optional Metadata Details Toggle */}
+                        {/* Metadata Details Toggle */}
                         {item.metadata && (
-                          <div className="pt-1.5 border-t border-slate-800/60">
+                          <div className="pt-1.5 border-t border-slate-100">
                             <button
                               onClick={() => setExpandedLogId(isExpanded ? null : item.id)}
-                              className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-slate-200 transition"
+                              className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-400 hover:text-slate-700 transition"
                             >
                               <span>{isExpanded ? "Hide Metadata" : "Inspect Raw Details"}</span>
                               {isExpanded ? (
@@ -858,7 +853,7 @@ export function AuditClient() {
                             </button>
 
                             {isExpanded && (
-                              <pre className="mt-2 p-2.5 rounded-xl bg-slate-950 text-[10px] font-mono text-emerald-400 overflow-x-auto border border-slate-800">
+                              <pre className="mt-2 p-2.5 rounded-xl bg-slate-50 text-[10px] font-mono text-slate-700 overflow-x-auto border border-slate-200">
                                 {JSON.stringify(JSON.parse(item.metadata), null, 2)}
                               </pre>
                             )}
@@ -874,23 +869,23 @@ export function AuditClient() {
         </div>
       </main>
 
-      {/* Floating Bottom Live Monitor Status */}
-      <footer className="fixed bottom-0 left-0 right-0 max-w-4xl mx-auto px-4 py-2.5 bg-[#0B0F19]/95 backdrop-blur-lg border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+      {/* Floating Bottom Live Status Bar */}
+      <footer className="fixed bottom-0 left-0 right-0 max-w-2xl mx-auto px-4 py-2.5 bg-white/95 backdrop-blur-md border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500 shadow-sm">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
-          <span className="text-[11px] font-medium text-slate-300">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
+          <span className="text-[11px] text-slate-600 font-medium">
             Auto-Sync active (every 8s)
           </span>
         </div>
         <div className="flex items-center gap-3 text-[11px]">
-          <span className="text-slate-500">
-            {stats.subscribedDevices} phone(s) receiving push
+          <span className="text-slate-400">
+            {stats.subscribedDevices} phone(s) connected
           </span>
           <a
             href="/portal"
-            className="text-rose-400 hover:text-rose-300 font-bold transition flex items-center gap-0.5"
+            className="text-slate-900 font-semibold hover:underline flex items-center gap-0.5"
           >
-            <span>Open Staff CRM</span>
+            <span>Staff CRM</span>
             <ExternalLink className="w-3 h-3" />
           </a>
         </div>

@@ -41,6 +41,7 @@ interface RejectedRow {
   name: string;
   phone: string;
   reason: string;
+  rawRecord?: Record<string, any>;
 }
 
 function excelSerialToDate(serial: any): Date | null {
@@ -116,6 +117,7 @@ export function UploadClient() {
             name: name || "Unknown",
             phone: rawPhone,
             reason: "Marked as Deleted (IsDeleted = 1)",
+            rawRecord: row,
           });
           return;
         }
@@ -127,6 +129,7 @@ export function UploadClient() {
             name: "Missing Name",
             phone: rawPhone,
             reason: "Missing client first name",
+            rawRecord: row,
           });
           return;
         }
@@ -151,6 +154,7 @@ export function UploadClient() {
               name,
               phone: rawPhone,
               reason: "Invalid phone number format",
+              rawRecord: row,
             });
             return;
           }
@@ -163,6 +167,7 @@ export function UploadClient() {
             name,
             phone: rawPhone || "-",
             reason: "Missing CustomerCode identifier",
+            rawRecord: row,
           });
           return;
         }
@@ -321,20 +326,42 @@ export function UploadClient() {
       return;
     }
 
-    const columns: ExcelColumnMapping<RejectedRow>[] = [
-      { header: "Excel Row #", accessor: (r) => r.rowNumber, width: 14 },
-      { header: "Customer Code", accessor: (r) => r.custCode, width: 16 },
-      { header: "Customer Name", accessor: (r) => r.name, width: 25 },
-      { header: "Original Phone", accessor: (r) => r.phone, width: 20 },
-      { header: "Reason Skipped / Unverified", accessor: (r) => r.reason, width: 40 },
-    ];
-
-    exportToExcel({
-      data: rejectedRows,
-      columns,
-      sheetName: "Skipped Records",
-      fileName: "Unverified_Skipped_Records",
+    // Export the COMPLETE original row data with reason and row number prepended
+    const fullRows = rejectedRows.map((r) => {
+      return {
+        "Audit_Rejection_Reason": r.reason,
+        "Excel_Row_Number": r.rowNumber,
+        ...(r.rawRecord || {
+          CustomerCode: r.custCode,
+          Name: r.name,
+          PhoneNo: r.phone,
+        }),
+      };
     });
+
+    const worksheet = XLSX.utils.json_to_sheet(fullRows);
+    if (worksheet["!ref"]) {
+      worksheet["!autofilter"] = { ref: worksheet["!ref"] };
+    }
+
+    // Auto calculate column widths
+    const keys = Object.keys(fullRows[0] || {});
+    worksheet["!cols"] = keys.map((key) => {
+      let maxLen = key.length;
+      fullRows.forEach((row: any) => {
+        const valStr = String(row[key] ?? "");
+        if (valStr.length > maxLen) {
+          maxLen = Math.min(45, valStr.length);
+        }
+      });
+      return { wch: Math.max(14, maxLen + 3) };
+    });
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Skipped Records");
+
+    const dateStr = new Date().toISOString().split("T")[0];
+    XLSX.writeFile(workbook, `Skipped_Filtered_Entries_Full_Data_${dateStr}.xlsx`);
   };
 
   return (
