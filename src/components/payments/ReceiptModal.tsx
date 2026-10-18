@@ -1,8 +1,10 @@
 "use client";
 
-import React from "react";
-import { X, Printer, CheckCircle2, Edit } from "lucide-react";
+import React, { useState } from "react";
+import { X, Printer, CheckCircle2, Edit, MessageSquare, RefreshCw, AlertCircle } from "lucide-react";
 import { formatINR, formatDate, formatInvoiceNo } from "@/lib/utils";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { sendReceiptWhatsAppAction } from "@/lib/actions/whatsapp-automation";
 
 interface ReceiptModalProps {
   receipt: {
@@ -13,6 +15,7 @@ interface ReceiptModalProps {
     paymentMethod: string;
     paymentType?: string;
     notes?: string | null;
+    whatsappSentAt?: string | Date | null;
     subscription?: {
       planName?: string;
       startDate?: string | Date;
@@ -50,6 +53,17 @@ interface ReceiptModalProps {
 }
 
 export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptModalProps) {
+  const { isSuperUser, isAdmin } = useAuth();
+  const canSendWhatsApp = isSuperUser || isAdmin;
+
+  const [sendingWa, setSendingWa] = useState(false);
+  const [waSentAt, setWaSentAt] = useState<string | Date | null>(
+    receipt?.whatsappSentAt || null
+  );
+  const [waStatus, setWaStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   if (!receipt) return null;
 
@@ -98,6 +112,34 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleSendWhatsApp = async () => {
+    if (!receipt.id) return;
+    setSendingWa(true);
+    setWaStatus(null);
+    try {
+      const res = await sendReceiptWhatsAppAction(receipt.id);
+      if (res.success) {
+        setWaSentAt(res.sentAt || new Date());
+        setWaStatus({
+          type: "success",
+          message: res.message || "WhatsApp receipt sent successfully!",
+        });
+      } else {
+        setWaStatus({
+          type: "error",
+          message: res.error || "Failed to send WhatsApp receipt.",
+        });
+      }
+    } catch (err: any) {
+      setWaStatus({
+        type: "error",
+        message: err.message || "Network error while sending WhatsApp.",
+      });
+    } finally {
+      setSendingWa(false);
+    }
   };
 
   return (
@@ -298,23 +340,90 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
         </div>
 
         {/* Modal Actions (Hidden in Print) */}
-        <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 print:hidden flex-wrap">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 rounded-lg transition"
-          >
-            Close
-          </button>
+        <div className="p-4 bg-slate-50 border-t border-slate-200 space-y-3 print:hidden">
+          {waStatus && (
+            <div
+              className={`p-2.5 rounded-xl text-xs flex items-center justify-between gap-2 border ${
+                waStatus.type === "success"
+                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                  : "bg-rose-50 text-rose-800 border-rose-200"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                {waStatus.type === "success" ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                )}
+                <span>{waStatus.message}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWaStatus(null)}
+                className="text-slate-400 hover:text-slate-600 text-xs font-bold"
+              >
+                ×
+              </button>
+            </div>
+          )}
 
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow-sm transition active:scale-[0.98]"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span>Print Invoice</span>
-          </button>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 rounded-xl transition"
+            >
+              Close
+            </button>
+
+            <div className="flex items-center gap-2">
+              {/* WhatsApp Receipt Button: Strictly for Admin & SuperUser ONLY */}
+              {canSendWhatsApp && receipt.id && (
+                <button
+                  type="button"
+                  onClick={handleSendWhatsApp}
+                  disabled={sendingWa}
+                  className={`px-3.5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 transition active:scale-95 shadow-xs disabled:opacity-50 ${
+                    waSentAt
+                      ? "bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100"
+                      : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  }`}
+                  title={
+                    waSentAt
+                      ? `Receipt was already sent on ${formatDate(waSentAt)}. Click to send again.`
+                      : "Send official welcome & receipt template via WhatsApp"
+                  }
+                >
+                  {sendingWa ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <MessageSquare className="w-3.5 h-3.5" />
+                  )}
+                  <span>
+                    {sendingWa
+                      ? "Sending WhatsApp..."
+                      : waSentAt
+                      ? "Resend WhatsApp Receipt"
+                      : "Send WhatsApp Receipt"}
+                  </span>
+                  {waSentAt && (
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-200/80 text-emerald-900 font-mono font-normal ml-0.5">
+                      Sent ✓
+                    </span>
+                  )}
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm transition active:scale-[0.98]"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Print Invoice</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

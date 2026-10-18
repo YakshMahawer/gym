@@ -22,6 +22,7 @@ import {
   Filter,
   SlidersHorizontal,
   RotateCcw,
+  MessageSquare,
 } from "lucide-react";
 import { formatINR, formatDate, formatDateTime, formatInvoiceNo } from "@/lib/utils";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
@@ -31,6 +32,7 @@ import { DeleteReceiptModal } from "@/components/modals/DeleteReceiptModal";
 import { exportToExcel } from "@/lib/export-excel";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { Pagination } from "@/components/ui/Pagination";
+import { sendReceiptWhatsAppAction } from "@/lib/actions/whatsapp-automation";
 
 interface PaymentsClientProps {
   payments: any[];
@@ -40,7 +42,10 @@ interface PaymentsClientProps {
 
 export function PaymentsClient({ payments, dueSubscriptions, allMembers }: PaymentsClientProps) {
   const router = useRouter();
-  const { canEdit, canDelete } = useAuth();
+  const { canEdit, canDelete, isSuperUser, isAdmin } = useAuth();
+  const canSendWhatsApp = isSuperUser || isAdmin;
+
+  const [sendingWaId, setSendingWaId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"history" | "dues">("history");
   const [search, setSearch] = useState("");
   const [methodFilter, setMethodFilter] = useState("ALL");
@@ -56,6 +61,24 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
 
   // Receipt Modal
   const [selectedReceipt, setSelectedReceipt] = useState<any | null>(null);
+
+  const handleSendWhatsAppDirect = async (pm: any) => {
+    if (!pm.id) return;
+    setSendingWaId(pm.id);
+    try {
+      const res = await sendReceiptWhatsAppAction(pm.id);
+      if (res.success) {
+        alert(res.message || "WhatsApp receipt sent successfully!");
+        router.refresh();
+      } else {
+        alert(res.error || "Failed to send WhatsApp receipt.");
+      }
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
+      setSendingWaId(null);
+    }
+  };
 
   const totalCollected = payments.reduce((acc, p) => acc + p.amount, 0);
   const totalPendingDue = dueSubscriptions.reduce((acc, s) => acc + s.dueAmount, 0);
@@ -629,6 +652,36 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
                                 <Printer className="w-3 h-3 text-amber-400" />
                                 <span>Receipt</span>
                               </button>
+
+                              {/* WhatsApp Quick Send Button: Admin and SuperUser only */}
+                              {canSendWhatsApp && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSendWhatsAppDirect(pm)}
+                                  disabled={sendingWaId === pm.id}
+                                  className={`px-2 py-1 rounded text-xs font-semibold inline-flex items-center gap-1 transition active:scale-95 disabled:opacity-50 ${
+                                    pm.whatsappSentAt
+                                      ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100"
+                                      : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                                  }`}
+                                  title={
+                                    pm.whatsappSentAt
+                                      ? `Receipt already sent on ${formatDate(pm.whatsappSentAt)}. Click to Resend.`
+                                      : "Send welcome_and_receipt template on WhatsApp"
+                                  }
+                                >
+                                  {sendingWaId === pm.id ? (
+                                    <RefreshCw className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <MessageSquare className="w-3 h-3" />
+                                  )}
+                                  <span>{pm.whatsappSentAt ? "Resend WA" : "Send WA"}</span>
+                                  {pm.whatsappSentAt && (
+                                    <span className="text-[9px] font-normal opacity-80">✓</span>
+                                  )}
+                                </button>
+                              )}
+
                               {canDelete && (
                                 <button
                                   onClick={() => setDeletingPayment(pm)}

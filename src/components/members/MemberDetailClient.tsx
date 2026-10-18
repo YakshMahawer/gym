@@ -24,6 +24,7 @@ import {
   RefreshCw,
   Printer,
   Sparkles,
+  MessageSquare,
 } from "lucide-react";
 import { formatINR, formatDate, formatDateTime, calculateDaysRemaining } from "@/lib/utils";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
@@ -31,8 +32,10 @@ import { AddPTModal } from "@/components/modals/AddPTModal";
 import { ReceiptModal } from "@/components/payments/ReceiptModal";
 import { DeleteReceiptModal } from "@/components/modals/DeleteReceiptModal";
 import { EditPaymentDateModal } from "@/components/modals/EditPaymentDateModal";
+import { SendExpiryWhatsAppModal } from "@/components/modals/SendExpiryWhatsAppModal";
 import { renewSubscription, deleteMember } from "@/lib/actions/members";
 import { updatePTSessions } from "@/lib/actions/pt";
+import { sendReceiptWhatsAppAction } from "@/lib/actions/whatsapp-automation";
 import { PaymentMethod } from "@prisma/client";
 import { Dumbbell } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -49,10 +52,29 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [renewalModalOpen, setRenewalModalOpen] = useState(false);
   const [ptModalOpen, setPtModalOpen] = useState(false);
+  const [expiryModalOpen, setExpiryModalOpen] = useState(false);
+  const [sendingWaPaymentId, setSendingWaPaymentId] = useState<string | null>(null);
   const [selectedReceiptForPrint, setSelectedReceiptForPrint] = useState<any | null>(null);
   const [editingPayment, setEditingPayment] = useState<any | null>(null);
   const [deletingPayment, setDeletingPayment] = useState<any | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const handleSendWhatsAppReceipt = async (paymentId: string) => {
+    setSendingWaPaymentId(paymentId);
+    try {
+      const res = await sendReceiptWhatsAppAction(paymentId);
+      if (res.success) {
+        alert(res.message || "WhatsApp receipt sent successfully!");
+        router.refresh();
+      } else {
+        alert(res.error || "Failed to send WhatsApp receipt.");
+      }
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
+      setSendingWaPaymentId(null);
+    }
+  };
 
   const activeSub = member.subscriptions?.[0];
   const daysLeft = activeSub ? calculateDaysRemaining(activeSub.endDate) : 0;
@@ -214,6 +236,17 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
             <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
             <span>WhatsApp</span>
           </a>
+
+          {/* Send Expiry Message Button */}
+          <button
+            type="button"
+            onClick={() => setExpiryModalOpen(true)}
+            className="flex-1 sm:flex-none px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
+            title="Send Fast2SMS Expiry Message Template"
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-amber-700" />
+            <span>Send Expiry Alert</span>
+          </button>
 
           {/* PT Add-on / Renew PT Button */}
           <button
@@ -761,6 +794,36 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                                     <Printer className="w-3 h-3 text-amber-500" />
                                     <span>Receipt</span>
                                   </button>
+
+                                  {/* WhatsApp Quick Send Button: Admin and SuperUser only */}
+                                  {canEdit && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSendWhatsAppReceipt(pm.id)}
+                                      disabled={sendingWaPaymentId === pm.id}
+                                      className={`px-2 py-1 rounded text-xs font-semibold inline-flex items-center gap-1 transition active:scale-95 disabled:opacity-50 ${
+                                        pm.whatsappSentAt
+                                          ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100"
+                                          : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                                      }`}
+                                      title={
+                                        pm.whatsappSentAt
+                                          ? `Receipt already sent on ${formatDate(pm.whatsappSentAt)}. Click to Resend.`
+                                          : "Send welcome_and_receipt template on WhatsApp"
+                                      }
+                                    >
+                                      {sendingWaPaymentId === pm.id ? (
+                                        <RefreshCw className="w-3 h-3 animate-spin" />
+                                      ) : (
+                                        <MessageSquare className="w-3 h-3" />
+                                      )}
+                                      <span>{pm.whatsappSentAt ? "Resend WA" : "Send WA"}</span>
+                                      {pm.whatsappSentAt && (
+                                        <span className="text-[9px] font-normal opacity-80">✓</span>
+                                      )}
+                                    </button>
+                                  )}
+
                                   {canDelete && (
                                     <button
                                       onClick={() =>
@@ -1043,6 +1106,23 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
             setDeletingPayment(null);
             router.refresh();
           }}
+        />
+      )}
+
+      {/* Send Expiry WhatsApp Modal */}
+      {expiryModalOpen && (
+        <SendExpiryWhatsAppModal
+          isOpen={expiryModalOpen}
+          onClose={() => setExpiryModalOpen(false)}
+          member={{
+            id: member.id,
+            fullName: member.fullName,
+            phone: member.phone,
+            memberId: member.memberId,
+            expiryDate: activeSub?.endDate,
+            planName: activeSub?.planName,
+          }}
+          onSuccess={() => router.refresh()}
         />
       )}
     </div>

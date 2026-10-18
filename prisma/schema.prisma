@@ -175,6 +175,8 @@ model Payment {
   paymentMethod  PaymentMethod       @default(UPI)
   paymentType    String              @default("MEMBERSHIP_FEE")
   notes          String?
+  whatsappSentAt DateTime?
+  whatsappMessageId String?
 
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
@@ -250,5 +252,33 @@ model PushSubscriptionRecord {
   userAgent  String?
   deviceName String?
   createdAt  DateTime @default(now())
+}
+
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+}
+
+model WhatsAppMessageLog {
+  id           String   @id @default(cuid())
+  memberId     String?
+  phone        String
+  templateName String
+  variables    String?
+  status       String   // "SUCCESS" | "FAILED" | "SKIPPED"
+  response     String?
+  triggerType  String   // "AUTOMATED_7_DAYS" | "AUTOMATED_TODAY" | "MANUAL_EXPIRY" | "MANUAL_RECEIPT"
+  sentBy       String?  // username or "SYSTEM_AUTOMATION"
+  createdAt    DateTime @default(now())
+
+  @@index([memberId])
+  @@index([phone])
+  @@index([templateName])
+  @@index([createdAt])
 }
 

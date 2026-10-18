@@ -8,12 +8,18 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
+  MessageSquare,
+  Shield,
 } from "lucide-react";
 import { changeUserPassword } from "@/lib/actions/auth";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { WhatsAppSettingsTab } from "@/components/settings/WhatsAppSettingsTab";
 
 export default function SettingsPage() {
   const { user, isSuperUser, isAdmin } = useAuth();
+  const canManageWhatsApp = isSuperUser || isAdmin;
+
+  const [activeTab, setActiveTab] = useState<"security" | "whatsapp">("security");
 
   const [targetUser, setTargetUser] = useState<"admin" | "deskmanager">("admin");
   const [oldPassword, setOldPassword] = useState("");
@@ -76,20 +82,54 @@ export default function SettingsPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-              Security & Staff Credentials
+              Settings & Configuration
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
               {isSuperUser ? "Superuser Access" : "Admin Access"}
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Update passwords for Admin and Front Desk staff accounts.
+            Manage staff credentials and Fast2SMS WhatsApp automation controls.
           </p>
         </div>
       </div>
 
-      {/* Password Management Form Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs p-6 sm:p-8 space-y-6">
+      {/* Settings Navigation Tabs */}
+      {canManageWhatsApp && (
+        <div className="flex items-center gap-2 border-b border-slate-200 pb-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab("security")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+              activeTab === "security"
+                ? "bg-slate-900 text-white shadow-xs"
+                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+            }`}
+          >
+            <KeyRound className="w-4 h-4" />
+            <span>Staff Credentials</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("whatsapp")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+              activeTab === "whatsapp"
+                ? "bg-slate-900 text-white shadow-xs"
+                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+            }`}
+          >
+            <MessageSquare className="w-4 h-4 text-emerald-500" />
+            <span>WhatsApp Automation (Fast2SMS)</span>
+          </button>
+        </div>
+      )}
+
+      {activeTab === "whatsapp" && canManageWhatsApp ? (
+        <WhatsAppSettingsTab />
+      ) : (
+        /* Password Management Form Card */
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs p-6 sm:p-8 space-y-6">
         <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
           <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
             <KeyRound className="w-5 h-5" />
@@ -284,6 +324,7 @@ export default function SettingsPage() {
           </div>
         </form>
       </div>
+      )}
     </div>
   );
 }

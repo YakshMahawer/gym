@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, CreditCard, User, IndianRupee, FileText, CheckCircle2 } from "lucide-react";
+import { X, CreditCard, User, IndianRupee, FileText, CheckCircle2, MessageSquare, RefreshCw } from "lucide-react";
 import { addPayment, AddPaymentInput } from "@/lib/actions/payments";
 import { PaymentMethod } from "@prisma/client";
 import { formatINR } from "@/lib/utils";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { sendReceiptWhatsAppAction } from "@/lib/actions/whatsapp-automation";
 
 interface AddPaymentModalProps {
   isOpen: boolean;
@@ -25,9 +27,15 @@ export function AddPaymentModal({
   prefillDueAmount,
   membersList = [],
 }: AddPaymentModalProps) {
+  const { isSuperUser, isAdmin } = useAuth();
+  const canSendWhatsApp = isSuperUser || isAdmin;
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successReceipt, setSuccessReceipt] = useState<string | null>(null);
+  const [createdPayment, setCreatedPayment] = useState<any | null>(null);
+  const [sendingWa, setSendingWa] = useState(false);
+  const [waSentSuccess, setWaSentSuccess] = useState(false);
 
   const [formData, setFormData] = useState<AddPaymentInput>({
     memberId: prefillMemberId || "",
@@ -69,14 +77,34 @@ export function AddPaymentModal({
 
     if (res.success && res.payment) {
       setSuccessReceipt(res.payment.receiptNo);
+      setCreatedPayment(res.payment);
       if (onSuccess) onSuccess();
     } else {
       setError(res.error || "Failed to record payment");
     }
   };
 
+  const handleSendWhatsAppReceipt = async () => {
+    if (!createdPayment?.id) return;
+    setSendingWa(true);
+    try {
+      const res = await sendReceiptWhatsAppAction(createdPayment.id);
+      if (res.success) {
+        setWaSentSuccess(true);
+      } else {
+        alert(res.error || "Failed to send WhatsApp receipt.");
+      }
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
+      setSendingWa(false);
+    }
+  };
+
   const handleClose = () => {
     setSuccessReceipt(null);
+    setCreatedPayment(null);
+    setWaSentSuccess(false);
     setError(null);
     onClose();
   };
@@ -110,6 +138,32 @@ export function AddPaymentModal({
               <p className="text-slate-400 pt-1">Amount: <span className="font-semibold text-slate-900">{formatINR(formData.amount)}</span></p>
               <p className="text-slate-400">Payment Mode: <span className="font-medium text-slate-700">{formData.paymentMethod}</span></p>
             </div>
+
+            {/* Direct WhatsApp Receipt Button: Admin & SuperUser only */}
+            {canSendWhatsApp && createdPayment && (
+              <button
+                type="button"
+                onClick={handleSendWhatsAppReceipt}
+                disabled={sendingWa || waSentSuccess}
+                className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-xs ${
+                  waSentSuccess
+                    ? "bg-emerald-50 text-emerald-800 border border-emerald-300"
+                    : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                }`}
+              >
+                {sendingWa ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <MessageSquare className="w-3.5 h-3.5" />
+                )}
+                <span>
+                  {waSentSuccess
+                    ? "Receipt Sent on WhatsApp ✓"
+                    : "Send WhatsApp Receipt to Member"}
+                </span>
+              </button>
+            )}
+
             <button
               onClick={handleClose}
               className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg text-xs transition"

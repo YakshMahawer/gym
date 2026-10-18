@@ -21,9 +21,11 @@ import {
   Filter,
   SlidersHorizontal,
   RotateCcw,
+  MessageSquare,
 } from "lucide-react";
 import { formatINR, formatDate, calculateDaysRemaining } from "@/lib/utils";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
+import { SendExpiryWhatsAppModal } from "@/components/modals/SendExpiryWhatsAppModal";
 import { exportToExcel } from "@/lib/export-excel";
 import { Pagination } from "@/components/ui/Pagination";
 
@@ -33,6 +35,7 @@ interface MemberListClientProps {
 
 export function MemberListClient({ members }: MemberListClientProps) {
   const router = useRouter();
+  const [expiryTargetMember, setExpiryTargetMember] = useState<any | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [ptFilter, setPtFilter] = useState<"ALL" | "ACTIVE_PT" | "EXPIRED_PT" | "NO_PT">("ALL");
@@ -643,6 +646,25 @@ export function MemberListClient({ members }: MemberListClientProps) {
                         <span>WhatsApp</span>
                       </a>
 
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpiryTargetMember({
+                            id: member.id,
+                            fullName: member.fullName,
+                            phone: member.phone,
+                            memberId: member.memberId,
+                            expiryDate: activeSub?.endDate,
+                            planName: activeSub?.planName,
+                          })
+                        }
+                        className="py-1.5 px-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 active:bg-amber-200"
+                        title="Send Fast2SMS Expiry Template"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 text-amber-700" />
+                        <span>Expiry</span>
+                      </button>
+
                       {totalDue > 0 && (
                         <button
                           onClick={() => handleOpenPayment(member.id, member.fullName, totalDue)}
@@ -815,6 +837,24 @@ export function MemberListClient({ members }: MemberListClientProps) {
                               <MessageCircle className="w-4 h-4" />
                             </a>
 
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpiryTargetMember({
+                                  id: member.id,
+                                  fullName: member.fullName,
+                                  phone: member.phone,
+                                  memberId: member.memberId,
+                                  expiryDate: activeSub?.endDate,
+                                  planName: activeSub?.planName,
+                                })
+                              }
+                              className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-md transition"
+                              title="Send Fast2SMS Expiry Template"
+                            >
+                              <MessageSquare className="w-4 h-4 text-amber-600" />
+                            </button>
+
                             <Link
                               href={`/portal/members/${member.id}`}
                               className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition"
@@ -861,6 +901,15 @@ export function MemberListClient({ members }: MemberListClientProps) {
         />
       )}
 
+      {/* Send Expiry WhatsApp Modal */}
+      {expiryTargetMember && (
+        <SendExpiryWhatsAppModal
+          isOpen={Boolean(expiryTargetMember)}
+          onClose={() => setExpiryTargetMember(null)}
+          member={expiryTargetMember}
+          onSuccess={() => router.refresh()}
+        />
+      )}
     </div>
   );
 }
