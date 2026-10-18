@@ -150,7 +150,10 @@ export async function sendReceiptWhatsAppAction(paymentId: string) {
   // Fast2SMS template: welcome_and_receipt
   // Approved template takes 1 variable: {{1}} = Member Name
   // And requires the official PDF document URL in mediaUrl
-  const origin = process.env.NEXT_PUBLIC_APP_URL || "https://concept1gym.vercel.app";
+  const origin =
+    process.env.APP_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "https://www.concept1gym.com";
   const pdfUrl = `${origin}/api/receipt/${encodeURIComponent(payment.receiptNo)}/pdf`;
   const variables = [member.fullName];
 
