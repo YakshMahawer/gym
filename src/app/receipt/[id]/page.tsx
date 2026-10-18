@@ -75,7 +75,7 @@ export default async function PublicReceiptPage({ params }: ReceiptPageProps) {
           </div>
         </div>
 
-        <PrintButton />
+        <PrintButton receiptId={payment.receiptNo} />
       </div>
 
       {/* Main Printable Tax Invoice Card */}
