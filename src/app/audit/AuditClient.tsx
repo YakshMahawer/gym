@@ -47,8 +47,26 @@ function urlB64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
-function formatRelativeTime(dateString: string | Date): string {
-  const date = new Date(dateString);
+function parseSafeDate(dateInput: string | Date | number | null | undefined): Date | null {
+  if (!dateInput) return null;
+  if (dateInput instanceof Date) return isNaN(dateInput.getTime()) ? null : dateInput;
+  let s = String(dateInput).trim();
+  if (!s) return null;
+  if (/^\d+$/.test(s)) {
+    const d = new Date(Number(s));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  // Replace space with T for iOS Safari compatibility: "2026-10-19 01:45:00" -> "2026-10-19T01:45:00"
+  if (/^\d{4}-\d{2}-\d{2}\s/.test(s)) {
+    s = s.replace(" ", "T");
+  }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatRelativeTime(dateString: string | Date | number): string {
+  const date = parseSafeDate(dateString);
+  if (!date) return "";
   const now = new Date();
   const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000);
 
@@ -63,26 +81,84 @@ function formatRelativeTime(dateString: string | Date): string {
   return `${diffDays}d ago`;
 }
 
-function formatTime(dateString: string | Date): string {
-  const d = new Date(dateString);
-  return d.toLocaleTimeString("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+function formatTime(dateString: string | Date | number): string {
+  const d = parseSafeDate(dateString);
+  if (!d) return "";
+  try {
+    return d.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return d.toTimeString().slice(0, 5);
+  }
 }
 
-function formatDateHeader(dateString: string | Date): string {
-  const d = new Date(dateString);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
+function formatDateTimeShort(dateString: string | Date | number): string {
+  const d = parseSafeDate(dateString);
+  if (!d) return "Today";
+  const now = new Date();
+  const isToday =
+    d.getDate() === now.getDate() &&
+    d.getMonth() === now.getMonth() &&
+    d.getFullYear() === now.getFullYear();
 
-  if (d.toDateString() === today.toDateString()) {
-    return `Today · ${d.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`;
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday =
+    d.getDate() === yesterday.getDate() &&
+    d.getMonth() === yesterday.getMonth() &&
+    d.getFullYear() === yesterday.getFullYear();
+
+  let timeStr = "";
+  try {
+    timeStr = d.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    timeStr = d.toTimeString().slice(0, 5);
   }
-  if (d.toDateString() === yesterday.toDateString()) {
-    return `Yesterday · ${d.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`;
+
+  if (isToday) {
+    return `Today at ${timeStr}`;
+  }
+  if (isYesterday) {
+    return `Yesterday at ${timeStr}`;
+  }
+  return `${d.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}, ${timeStr}`;
+}
+
+function formatDateHeader(dateString: string | Date | number): string {
+  const d = parseSafeDate(dateString);
+  if (!d) return "Recent Activity";
+  const now = new Date();
+
+  const isToday =
+    d.getDate() === now.getDate() &&
+    d.getMonth() === now.getMonth() &&
+    d.getFullYear() === now.getFullYear();
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday =
+    d.getDate() === yesterday.getDate() &&
+    d.getMonth() === yesterday.getMonth() &&
+    d.getFullYear() === yesterday.getFullYear();
+
+  const dateStr = d.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+  if (isToday) {
+    return `Today · ${dateStr}`;
+  }
+  if (isYesterday) {
+    return `Yesterday · ${dateStr}`;
   }
   return d.toLocaleDateString("en-IN", {
     weekday: "short",
@@ -119,8 +195,6 @@ export function AuditClient() {
   const [subscribing, setSubscribing] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
-  const [testAlertSending, setTestAlertSending] = useState(false);
-  const [testAlertMessage, setTestAlertMessage] = useState("");
 
   // Data & Filtering State
   const [logs, setLogs] = useState<AuditLogItem[]>([]);
@@ -159,17 +233,16 @@ export function AuditClient() {
     }
   }, []);
 
-  // Handle Passcode Unlock
+  // Handle Passcode Unlock - Configured to 4321
   const handleUnlock = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const clean = pinInput.trim();
-    // Default Owner PIN 2026 or superuser password
-    if (clean === "2026" || clean === "YakshIsGod" || clean === "admin") {
+    if (clean === "4321" || clean === "YakshIsGod") {
       setIsUnlocked(true);
       setPinError("");
       localStorage.setItem("concept1_owner_unlocked", "true");
     } else {
-      setPinError("Incorrect Owner Passcode. (Default: 2026)");
+      setPinError("Incorrect Passcode. Please try again.");
     }
   };
 
@@ -263,26 +336,6 @@ export function AuditClient() {
       alert("Failed to activate notifications: " + err.message);
     } finally {
       setSubscribing(false);
-    }
-  };
-
-  // Test Notification Trigger
-  const handleSendTestAlert = async () => {
-    try {
-      setTestAlertSending(true);
-      setTestAlertMessage("");
-      const res = await fetch("/api/audit/test-notify", { method: "POST" });
-      const data = await res.json();
-      if (res.ok) {
-        setTestAlertMessage(data.message || "Test alert dispatched to registered phone(s)!");
-      } else {
-        setTestAlertMessage("Error: " + (data.error || "Failed to trigger test push."));
-      }
-    } catch (err: any) {
-      setTestAlertMessage("Failed: " + err.message);
-    } finally {
-      setTestAlertSending(false);
-      setTimeout(() => setTestAlertMessage(""), 5000);
     }
   };
 
@@ -438,21 +491,25 @@ export function AuditClient() {
     };
   };
 
-  // PASSCODE UNLOCK SCREEN (MINIMAL CLEAN WHITE)
+  // PASSCODE UNLOCK SCREEN (CLEAN, NO LEAKED PASSWORDS)
   if (!isUnlocked) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-slate-900">
         <div className="w-full max-w-sm space-y-8 text-center">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-900/10">
-            <ShieldCheck className="w-8 h-8 text-white" />
+          <div className="mx-auto w-24 h-24 rounded-3xl bg-white border border-slate-200/90 p-2 flex items-center justify-center shadow-lg shadow-slate-900/5">
+            <img
+              src="/icons/logo.png"
+              alt="Concept 1 Gym"
+              className="w-full h-full object-contain"
+            />
           </div>
 
           <div className="space-y-1.5">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Owner Monitor
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">
+              Concept 1 Gym
             </h1>
-            <p className="text-xs text-slate-500">
-              Enter passcode to view live staff activity and manage mobile alerts.
+            <p className="text-xs text-slate-500 font-medium">
+              Owner Live Activity & Notifications Monitor
             </p>
           </div>
 
@@ -462,34 +519,30 @@ export function AuditClient() {
                 type="password"
                 inputMode="numeric"
                 autoFocus
-                placeholder="Passcode (Default: 2026)"
+                placeholder="Enter Passcode"
                 value={pinInput}
                 onChange={(e) => {
                   setPinInput(e.target.value);
                   setPinError("");
                 }}
-                className="w-full bg-slate-50 border border-slate-300 focus:border-slate-900 rounded-2xl px-4 py-3.5 text-center text-lg font-mono text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-slate-900/5 transition"
+                className="w-full bg-slate-50 border border-slate-300 focus:border-slate-900 rounded-2xl px-4 py-3.5 text-center text-lg font-mono text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-slate-900/5 transition tracking-widest"
               />
             </div>
 
             {pinError && (
-              <p className="text-xs text-rose-600 font-medium">
+              <p className="text-xs text-rose-600 font-semibold animate-shake">
                 {pinError}
               </p>
             )}
 
             <button
               type="submit"
-              className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm rounded-2xl shadow-sm transition active:scale-98 flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-2xl shadow-sm transition active:scale-98 flex items-center justify-center gap-2"
             >
               <Unlock className="w-4 h-4" />
               <span>Unlock App</span>
             </button>
           </form>
-
-          <p className="text-[11px] text-slate-400">
-            Default Passcode: <span className="font-semibold text-slate-600">2026</span>
-          </p>
         </div>
       </div>
     );
@@ -497,24 +550,28 @@ export function AuditClient() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-slate-900 flex flex-col pb-16 max-w-2xl mx-auto">
-      {/* Top Mobile App Bar (Clean White) */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3.5 flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+      {/* Top Mobile App Bar (Clean White with Concept 1 Logo) */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
-            CI
+          <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200 p-1 flex items-center justify-center shadow-2xs shrink-0 overflow-hidden">
+            <img
+              src="/icons/logo.png"
+              alt="Concept 1"
+              className="w-full h-full object-contain"
+            />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-sm font-bold text-slate-900 tracking-tight">
-                Live Monitor
+              <h1 className="text-sm font-black text-slate-900 tracking-tight uppercase">
+                Concept 1 Gym
               </h1>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-[10px] font-semibold text-emerald-700">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 Live
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">
-              Real-time staff actions & logins
+            <p className="text-[11px] text-slate-500 font-medium">
+              Today: {new Date().toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
             </p>
           </div>
         </div>
@@ -604,23 +661,12 @@ export function AuditClient() {
                 <span>{subscribing ? "Connecting..." : "Enable Push Alerts on this Phone"}</span>
               </button>
             ) : (
-              <button
-                onClick={handleSendTestAlert}
-                disabled={testAlertSending}
-                className="w-full sm:w-auto px-3.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-medium transition active:scale-98 disabled:opacity-50 flex items-center justify-center gap-1.5"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>{testAlertSending ? "Sending Alert..." : "Send Test Alert to Phone"}</span>
-              </button>
+              <div className="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-50 border border-emerald-200/90 rounded-xl text-xs text-emerald-800 font-semibold shadow-2xs">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Real-Time Push Alerts Active</span>
+              </div>
             )}
           </div>
-
-          {testAlertMessage && (
-            <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-center gap-2 animate-in fade-in">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>{testAlertMessage}</span>
-            </div>
-          )}
 
           {/* iOS Safari Tip */}
           {isIOS && !isStandalone && (
@@ -733,6 +779,24 @@ export function AuditClient() {
             </div>
 
             <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  const now = new Date();
+                  const yyyy = now.getFullYear();
+                  const mm = String(now.getMonth() + 1).padStart(2, "0");
+                  const dd = String(now.getDate()).padStart(2, "0");
+                  const todayStr = `${yyyy}-${mm}-${dd}`;
+                  setDateFilter(dateFilter === todayStr ? "" : todayStr);
+                }}
+                className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition border ${
+                  dateFilter
+                    ? "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
+                    : "bg-slate-900 text-white border-slate-900 shadow-2xs"
+                }`}
+              >
+                {dateFilter ? "Show All" : "Filter: All"}
+              </button>
               <input
                 type="date"
                 value={dateFilter}
@@ -742,7 +806,7 @@ export function AuditClient() {
               {dateFilter && (
                 <button
                   onClick={() => setDateFilter("")}
-                  className="px-2 py-1 text-[11px] text-slate-500 hover:text-slate-900 font-medium"
+                  className="px-2 py-1 text-[11px] text-slate-500 hover:text-slate-900 font-medium shrink-0"
                 >
                   Clear
                 </button>
@@ -753,6 +817,44 @@ export function AuditClient() {
 
         {/* Chronological Activity Feed */}
         <div className="space-y-4">
+          {/* Always display Today's Date Status at the top of the feed */}
+          {(() => {
+            const now = new Date();
+            const todayDateStr = now.toLocaleDateString("en-IN", {
+              weekday: "long",
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            });
+            const todayHeaderKey = Object.keys(groupedLogs).find((k) => k.startsWith("Today"));
+            const hasTodayEvents = todayHeaderKey && groupedLogs[todayHeaderKey]?.length > 0;
+
+            return (
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-3.5 flex items-center justify-between shadow-2xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex flex-col items-center justify-center font-bold text-xs shrink-0 leading-tight">
+                    <span>{now.getDate()}</span>
+                    <span className="text-[9px] font-normal uppercase opacity-75">{now.toLocaleDateString("en-IN", { month: "short" })}</span>
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <span>Today · {todayDateStr}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      {hasTodayEvents
+                        ? `${groupedLogs[todayHeaderKey].length} live staff action(s) recorded today`
+                        : "Live monitoring connected · 0 staff events recorded today so far"}
+                    </div>
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-semibold shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live Feed
+                </span>
+              </div>
+            );
+          })()}
+
           {loading ? (
             <div className="p-12 text-center text-slate-400 space-y-2">
               <RefreshCw className="w-5 h-5 animate-spin mx-auto text-slate-600" />
@@ -826,13 +928,13 @@ export function AuditClient() {
                             </div>
                           </div>
 
-                          {/* Time */}
+                          {/* Time & Date Display (Never Blank) */}
                           <div className="text-right shrink-0">
-                            <span className="text-[11px] font-semibold text-slate-700 block">
-                              {formatTime(item.createdAt)}
+                            <span className="text-[11px] font-semibold text-slate-800 block whitespace-nowrap">
+                              {formatDateTimeShort(item.createdAt)}
                             </span>
-                            <span className="text-[10px] text-slate-400 block">
-                              {formatRelativeTime(item.createdAt)}
+                            <span className="text-[10px] text-slate-400 block whitespace-nowrap">
+                              {formatRelativeTime(item.createdAt) || "Recorded"}
                             </span>
                           </div>
                         </div>

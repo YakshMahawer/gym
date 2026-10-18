@@ -132,8 +132,8 @@ export async function getAuditLogs({
   }
 
   if (date) {
-    const start = new Date(`${date}T00:00:00.000Z`);
-    const end = new Date(`${date}T23:59:59.999Z`);
+    const start = new Date(`${date}T00:00:00+05:30`);
+    const end = new Date(`${date}T23:59:59.999+05:30`);
     where.createdAt = {
       gte: start,
       lte: end,
@@ -154,11 +154,16 @@ export async function getAuditLogs({
 }
 
 /**
- * Get summary stats for today's logs
+ * Get summary stats for today's logs (using Indian Standard Time UTC+5:30)
  */
 export async function getAuditSummaryStats() {
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const istNow = new Date(now.getTime() + istOffset);
+  const yyyy = istNow.getUTCFullYear();
+  const mm = String(istNow.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(istNow.getUTCDate()).padStart(2, "0");
+  const startOfToday = new Date(`${yyyy}-${mm}-${dd}T00:00:00+05:30`);
 
   const [todayTotal, todayLogins, todayPayments, todayMembers, recentSubscribersCount] =
     await Promise.all([

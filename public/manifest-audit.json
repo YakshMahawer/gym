@@ -1,6 +1,6 @@
 {
-  "name": "Concept I Gym — Owner Monitor",
-  "short_name": "Gym Monitor",
+  "name": "Concept 1 Gym — Owner Monitor",
+  "short_name": "Concept 1",
   "description": "Real-time staff audit alerts and activity log monitoring for Gym Owner",
   "start_url": "/audit",
   "display": "standalone",

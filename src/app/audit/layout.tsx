@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "Concept I — Owner Live Monitor",
-  description: "Executive staff activity and audit feed with live push alerts for Concept I Gym",
+  title: "Concept 1 — Owner Live Monitor",
+  description: "Executive staff activity and audit feed with live push alerts for Concept 1 Gym",
   manifest: "/manifest-audit.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Owner Monitor",
+    title: "Concept 1",
   },
   icons: {
     icon: "/icons/icon-192.png",
