@@ -25,8 +25,11 @@ import {
   saveWhatsAppApiSettingsAction,
 } from "@/lib/actions/whatsapp-automation";
 import { formatDateTime } from "@/lib/utils";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 export function WhatsAppSettingsTab() {
+  const { isSuperUser } = useAuth();
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toggling, setToggling] = useState(false);
@@ -175,296 +178,361 @@ export function WhatsAppSettingsTab() {
         </div>
       )}
 
-      {/* MASTER TOGGLE CARD (Clean White) */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-          <div className="flex items-start gap-3">
-            <div
-              className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
-                isAutomationEnabled
-                  ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
-                  : "bg-slate-100 text-slate-500 border border-slate-200"
-              }`}
-            >
-              <Power className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-slate-900">
-                  Master WhatsApp Automation Switch
-                </h2>
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                    isAutomationEnabled
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-200 animate-pulse"
-                      : "bg-slate-100 text-slate-600 border-slate-200"
-                  }`}
-                >
-                  {isAutomationEnabled ? "ACTIVE (ON)" : "DISABLED (OFF)"}
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Controls daily afternoon expiry reminders for 7-day and today-expiring members.
-              </p>
-            </div>
-          </div>
-
-          <div>
-            {isAutomationEnabled ? (
-              <button
-                type="button"
-                onClick={() => handleToggle(false)}
-                disabled={toggling}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center gap-1.5"
+      {/* ADMIN VIEW: Simple, clean On/Off Switch without technical overload */}
+      {!isSuperUser ? (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div
+                className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
+                  isAutomationEnabled
+                    ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                    : "bg-slate-100 text-slate-500 border border-slate-200"
+                }`}
               >
-                <Power className="w-3.5 h-3.5" />
-                <span>Turn OFF Automation</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => handleToggle(true)}
-                disabled={toggling}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center gap-1.5"
-              >
-                <Power className="w-3.5 h-3.5" />
-                <span>Turn ON Automation</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Safety Reassurance Notice */}
-        <div
-          className={`p-3.5 rounded-xl border text-xs flex items-start gap-2.5 ${
-            isAutomationEnabled
-              ? "bg-amber-50/70 border-amber-200 text-amber-900"
-              : "bg-slate-50 border-slate-200 text-slate-600"
-          }`}
-        >
-          <ShieldCheck
-            className={`w-4 h-4 shrink-0 mt-0.5 ${
-              isAutomationEnabled ? "text-amber-600" : "text-emerald-600"
-            }`}
-          />
-          <div className="space-y-0.5 leading-relaxed">
-            <p className="font-semibold text-slate-800">
-              {isAutomationEnabled
-                ? "Automation is currently LIVE"
-                : "Safe Mode: Automation is currently OFF (Default)"}
-            </p>
-            <p className="text-[11px] text-slate-500">
-              {isAutomationEnabled
-                ? "The system automatically dispatches expiry_message and today_expiry every afternoon ONLY to members who have NOT renewed. If a member renews, the message is automatically suppressed."
-                : "While turned OFF, no automated background messages will be dispatched to any member numbers in your database. Manual triggers (receipts and individual member reminders) remain accessible to authorized admins."}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* VERIFIED WHATSAPP SENDER BANNER */}
-      <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50/50 border border-emerald-200/80 rounded-2xl p-5 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
-              <Smartphone className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm font-bold text-slate-900 font-mono">
-                  {senderNumber || "+1555-382-0648"}
-                </h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                  Connected · GREEN
-                </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200 font-mono">
-                  Meta Cloud API
-                </span>
+                <Power className="w-5 h-5" />
               </div>
-              <p className="text-xs text-slate-600 mt-0.5">
-                Verified Business Profile: <strong className="text-slate-900">{verifiedName}</strong> • Messaging Tier: <span className="font-semibold text-slate-800">TIER_250</span>
-              </p>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-bold text-slate-900">
+                    WhatsApp Expiry Automation
+                  </h2>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                      isAutomationEnabled
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-slate-100 text-slate-600 border-slate-200"
+                    }`}
+                  >
+                    {isAutomationEnabled ? "Active (ON)" : "OFF"}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Sends expiry reminders to non-renewed members every afternoon (7 days before and on expiry date).
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="text-right sm:border-l sm:border-emerald-200 sm:pl-4">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              Phone Number ID
-            </span>
-            <span className="font-mono text-xs font-bold text-slate-800">
-              {phoneNumberId || "1291098734095226"}
-            </span>
-          </div>
-        </div>
-      </div>
 
-      {/* 4 WHATSAPP TEMPLATES SUMMARY */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Template 1 */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-              Case 1 · Automated
-            </span>
-            <span className="text-[10px] font-mono text-slate-400">ID: 36849</span>
-          </div>
-          <h3 className="text-xs font-bold text-slate-900">expiry_message</h3>
-          <p className="text-[11px] text-slate-500 leading-snug">
-            Sent <strong>7 days before</strong> membership expiry around afternoon.
-          </p>
-          <div className="p-2 bg-slate-50 rounded-lg text-[10px] text-slate-600 font-mono space-y-0.5">
-            <div>&#123;&#123;1&#125;&#125;: Member Name</div>
-            <div>&#123;&#123;2&#125;&#125;: Last Gym Date (e.g. 29 Nov 2026)</div>
-          </div>
-          <p className="text-[10px] text-emerald-700 font-medium">✓ Auto-skips if member renewed</p>
-        </div>
-
-        {/* Template 2 */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-              Case 2 · Automated
-            </span>
-            <span className="text-[10px] font-mono text-slate-400">ID: 37428</span>
-          </div>
-          <h3 className="text-xs font-bold text-slate-900">today_expiry</h3>
-          <p className="text-[11px] text-slate-500 leading-snug">
-            Sent on the <strong>last gym date</strong> around afternoon.
-          </p>
-          <div className="p-2 bg-slate-50 rounded-lg text-[10px] text-slate-600 font-mono space-y-0.5">
-            <div>&#123;&#123;1&#125;&#125;: Member Name</div>
-          </div>
-          <p className="text-[10px] text-emerald-700 font-medium">✓ Auto-skips if member renewed</p>
-        </div>
-
-        {/* Template 3 */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-              Case 3 · Manual
-            </span>
-            <span className="text-[10px] font-mono text-slate-400">ID: 36850</span>
-          </div>
-          <h3 className="text-xs font-bold text-slate-900">welcome_and_receipt</h3>
-          <p className="text-[11px] text-slate-500 leading-snug">
-            Triggered by <strong>Admin & Superuser only</strong> next to Print and Delete.
-          </p>
-          <div className="p-2 bg-slate-50 rounded-lg text-[10px] text-slate-600 font-mono space-y-0.5">
-            <div>&#123;&#123;1&#125;&#125;: Member Name</div>
-            <div className="text-purple-700 font-semibold">+ PDF Receipt Header Document</div>
-          </div>
-          <p className="text-[10px] text-indigo-700 font-medium">✓ Button changes to &quot;Resend&quot; once sent</p>
-        </div>
-      </div>
-
-      {/* FAST2SMS CREDENTIALS FORM */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <Key className="w-4 h-4" />
-            </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900">
-                Fast2SMS API Configuration
-              </h3>
-              <p className="text-[11px] text-slate-400">
-                Found in your Fast2SMS Developer Dashboard & WhatsApp Business Manager.
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={loadStatus}
-            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition"
-            title="Refresh Status"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSaveCredentials} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* API Key */}
-            <div className="space-y-1.5 md:col-span-3">
-              <label className="text-xs font-semibold text-slate-700 flex items-center justify-between">
-                <span>Fast2SMS API Key</span>
-                <span className="text-[10px] text-slate-400 font-normal">
-                  Current: {apiKeyMasked || "None"}
-                </span>
-              </label>
-              <div className="relative">
-                <input
-                  type={showApiKey ? "text" : "password"}
-                  value={apiKeyInput}
-                  onChange={(e) => setApiKeyInput(e.target.value)}
-                  placeholder="Enter new Fast2SMS API Key (leave empty to keep current)"
-                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800 pr-9"
-                />
+              {isAutomationEnabled ? (
                 <button
                   type="button"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  onClick={() => handleToggle(false)}
+                  disabled={toggling}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center gap-1.5"
                 >
-                  {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  <Power className="w-3.5 h-3.5" />
+                  <span>Turn OFF</span>
                 </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleToggle(true)}
+                  disabled={toggling}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center gap-1.5"
+                >
+                  <Power className="w-3.5 h-3.5" />
+                  <span>Turn ON</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* SUPERUSER VIEW: Full Technical Dashboard */
+        <>
+          {/* MASTER TOGGLE CARD (Clean White) */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
+                    isAutomationEnabled
+                      ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                      : "bg-slate-100 text-slate-500 border border-slate-200"
+                  }`}
+                >
+                  <Power className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-slate-900">
+                      Master WhatsApp Automation Switch
+                    </h2>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                        isAutomationEnabled
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200 animate-pulse"
+                          : "bg-slate-100 text-slate-600 border-slate-200"
+                      }`}
+                    >
+                      {isAutomationEnabled ? "ACTIVE (ON)" : "DISABLED (OFF)"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Controls daily afternoon expiry reminders for 7-day and today-expiring members.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                {isAutomationEnabled ? (
+                  <button
+                    type="button"
+                    onClick={() => handleToggle(false)}
+                    disabled={toggling}
+                    className="px-4 py-2 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center gap-1.5"
+                  >
+                    <Power className="w-3.5 h-3.5" />
+                    <span>Turn OFF Automation</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleToggle(true)}
+                    disabled={toggling}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center gap-1.5"
+                  >
+                    <Power className="w-3.5 h-3.5" />
+                    <span>Turn ON Automation</span>
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Sender Phone Number */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">
-                Sender Phone Number
-              </label>
-              <input
-                type="text"
-                value={senderNumber}
-                onChange={(e) => setSenderNumber(e.target.value)}
-                placeholder="+1555-382-0648"
-                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800"
-              />
-            </div>
-
-            {/* Phone Number ID */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">
-                WhatsApp Phone Number ID
-              </label>
-              <input
-                type="text"
-                value={phoneNumberId}
-                onChange={(e) => setPhoneNumberId(e.target.value)}
-                placeholder="1291098734095226"
-                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800"
-              />
-            </div>
-
-            {/* WABA ID */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">
-                WABA ID
-              </label>
-              <input
-                type="text"
-                value={wabaId}
-                onChange={(e) => setWabaId(e.target.value)}
-                placeholder="1114633681106778"
-                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-2">
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold rounded-xl transition shadow-xs disabled:opacity-50"
+            {/* Safety Reassurance Notice */}
+            <div
+              className={`p-3.5 rounded-xl border text-xs flex items-start gap-2.5 ${
+                isAutomationEnabled
+                  ? "bg-amber-50/70 border-amber-200 text-amber-900"
+                  : "bg-slate-50 border-slate-200 text-slate-600"
+              }`}
             >
-              {saving ? "Saving..." : "Save Fast2SMS Credentials"}
-            </button>
+              <ShieldCheck
+                className={`w-4 h-4 shrink-0 mt-0.5 ${
+                  isAutomationEnabled ? "text-amber-600" : "text-emerald-600"
+                }`}
+              />
+              <div className="space-y-0.5 leading-relaxed">
+                <p className="font-semibold text-slate-800">
+                  {isAutomationEnabled
+                    ? "Automation is currently LIVE"
+                    : "Safe Mode: Automation is currently OFF (Default)"}
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  {isAutomationEnabled
+                    ? "The system automatically dispatches expiry_message and today_expiry every afternoon ONLY to members who have NOT renewed. If a member renews, the message is automatically suppressed."
+                    : "While turned OFF, no automated background messages will be dispatched to any member numbers in your database. Manual triggers (receipts and individual member reminders) remain accessible to authorized admins."}
+                </p>
+              </div>
+            </div>
           </div>
-        </form>
-      </div>
+
+          {/* VERIFIED WHATSAPP SENDER BANNER */}
+          <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50/50 border border-emerald-200/80 rounded-2xl p-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm font-bold text-slate-900 font-mono">
+                      {senderNumber || "+1555-382-0648"}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      Connected · GREEN
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200 font-mono">
+                      Meta Cloud API
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    Verified Business Profile: <strong className="text-slate-900">{verifiedName}</strong> • Messaging Tier: <span className="font-semibold text-slate-800">TIER_250</span>
+                  </p>
+                </div>
+              </div>
+              <div className="text-right sm:border-l sm:border-emerald-200 sm:pl-4">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Phone Number ID
+                </span>
+                <span className="font-mono text-xs font-bold text-slate-800">
+                  {phoneNumberId || "1291098734095226"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 4 WHATSAPP TEMPLATES SUMMARY */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Template 1 */}
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                  Case 1 · Automated
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">ID: 36849</span>
+              </div>
+              <h3 className="text-xs font-bold text-slate-900">expiry_message</h3>
+              <p className="text-[11px] text-slate-500 leading-snug">
+                Sent <strong>7 days before</strong> membership expiry around afternoon.
+              </p>
+              <div className="p-2 bg-slate-50 rounded-lg text-[10px] text-slate-600 font-mono space-y-0.5">
+                <div>&#123;&#123;1&#125;&#125;: Member Name</div>
+                <div>&#123;&#123;2&#125;&#125;: Last Gym Date (e.g. 29 Nov 2026)</div>
+              </div>
+              <p className="text-[10px] text-emerald-700 font-medium">✓ Auto-skips if member renewed</p>
+            </div>
+
+            {/* Template 2 */}
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                  Case 2 · Automated
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">ID: 37428</span>
+              </div>
+              <h3 className="text-xs font-bold text-slate-900">today_expiry</h3>
+              <p className="text-[11px] text-slate-500 leading-snug">
+                Sent on the <strong>last gym date</strong> around afternoon.
+              </p>
+              <div className="p-2 bg-slate-50 rounded-lg text-[10px] text-slate-600 font-mono space-y-0.5">
+                <div>&#123;&#123;1&#125;&#125;: Member Name</div>
+              </div>
+              <p className="text-[10px] text-emerald-700 font-medium">✓ Auto-skips if member renewed</p>
+            </div>
+
+            {/* Template 3 */}
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                  Case 3 · Manual
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">ID: 36850</span>
+              </div>
+              <h3 className="text-xs font-bold text-slate-900">welcome_and_receipt</h3>
+              <p className="text-[11px] text-slate-500 leading-snug">
+                Triggered by <strong>Admin & Superuser only</strong> next to Print and Delete.
+              </p>
+              <div className="p-2 bg-slate-50 rounded-lg text-[10px] text-slate-600 font-mono space-y-0.5">
+                <div>&#123;&#123;1&#125;&#125;: Member Name</div>
+                <div className="text-purple-700 font-semibold">+ PDF Receipt Header Document</div>
+              </div>
+              <p className="text-[10px] text-indigo-700 font-medium">✓ Button changes to &quot;Resend&quot; once sent</p>
+            </div>
+          </div>
+
+          {/* FAST2SMS CREDENTIALS FORM */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <Key className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Fast2SMS API Configuration
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Found in your Fast2SMS Developer Dashboard & WhatsApp Business Manager.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={loadStatus}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition"
+                title="Refresh Status"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCredentials} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* API Key */}
+                <div className="space-y-1.5 md:col-span-3">
+                  <label className="text-xs font-semibold text-slate-700 flex items-center justify-between">
+                    <span>Fast2SMS API Key</span>
+                    <span className="text-[10px] text-slate-400 font-normal">
+                      Current: {apiKeyMasked || "None"}
+                    </span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showApiKey ? "text" : "password"}
+                      value={apiKeyInput}
+                      onChange={(e) => setApiKeyInput(e.target.value)}
+                      placeholder="Enter new Fast2SMS API Key (leave empty to keep current)"
+                      className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800 pr-9"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Sender Phone Number */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">
+                    Sender Phone Number
+                  </label>
+                  <input
+                    type="text"
+                    value={senderNumber}
+                    onChange={(e) => setSenderNumber(e.target.value)}
+                    placeholder="+1555-382-0648"
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800"
+                  />
+                </div>
+
+                {/* Phone Number ID */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">
+                    WhatsApp Phone Number ID
+                  </label>
+                  <input
+                    type="text"
+                    value={phoneNumberId}
+                    onChange={(e) => setPhoneNumberId(e.target.value)}
+                    placeholder="1291098734095226"
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800"
+                  />
+                </div>
+
+                {/* WABA ID */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">
+                    WABA ID
+                  </label>
+                  <input
+                    type="text"
+                    value={wabaId}
+                    onChange={(e) => setWabaId(e.target.value)}
+                    placeholder="1114633681106778"
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold rounded-xl transition shadow-xs disabled:opacity-50"
+                >
+                  {saving ? "Saving..." : "Save Fast2SMS Credentials"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </>
+      )}
 
       {/* RECENT WHATSAPP MESSAGE LOGS */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
