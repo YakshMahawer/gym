@@ -16,7 +16,7 @@ import { formatDate, formatINR, formatInvoiceNo } from "@/lib/utils";
  * Helper to check if a date's Month & Day match Today in Indian Standard Time (Asia/Kolkata).
  * Also gracefully handles leap year birthdays (Feb 29 on non-leap years celebrated Feb 28).
  */
-export function isSameDayAndMonth(
+function isSameDayAndMonth(
   targetDate?: Date | string | null,
   referenceDate: Date = new Date()
 ): boolean {
