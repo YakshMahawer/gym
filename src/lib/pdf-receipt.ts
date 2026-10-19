@@ -40,11 +40,10 @@ export function buildReceiptPdfDocument(data: ReceiptPdfData): Uint8Array {
   doc.setFont("helvetica", "bold");
   doc.text("CONCEPT 1 GYM", 15, 17);
 
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(203, 213, 225);
-  doc.text("Sector 12, Main Central Road, Near City Plaza", 15, 23.5);
-  doc.text("GSTIN: 07AAACA1234F1Z8 | CIN: U92412DL2026PTC10452", 15, 29);
+  doc.text("1st floor, Dream Iconia, near Hans Party Plot, Manjalpur, Vadodara, Gujarat 390011", 15, 26);
 
   // 2. Invoice Meta Banner
   doc.setFillColor(248, 250, 252); // slate-50
@@ -129,17 +128,7 @@ export function buildReceiptPdfDocument(data: ReceiptPdfData): Uint8Array {
   doc.setDrawColor(226, 232, 240);
   doc.line(15, 133, 195, 133);
 
-  // 5. PAID IN FULL Seal / Badge
-  doc.setFillColor(236, 253, 245); // emerald-50
-  doc.setDrawColor(16, 185, 129); // emerald-500
-  doc.setLineWidth(0.6);
-  doc.roundedRect(20, 142, 48, 17, 2, 2, "FD");
-  doc.setTextColor(5, 150, 105);
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.text("✓ PAID IN FULL", 24, 153);
-
-  // 6. Tax Breakdown & Totals (Right Column)
+  // 5. Tax Breakdown & Totals (Right Column)
   let y = 143;
   doc.setFontSize(8.5);
   doc.setTextColor(100, 116, 139);
@@ -167,7 +156,7 @@ export function buildReceiptPdfDocument(data: ReceiptPdfData): Uint8Array {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(15, 23, 42);
-  doc.text("Total Paid:", 120, y);
+  doc.text("Total Amount:", 120, y);
   doc.text(formatINR(data.totalAmount), 168, y);
 
   // 7. Footer & Legal Disclaimer

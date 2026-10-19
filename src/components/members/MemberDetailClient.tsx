@@ -817,7 +817,7 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                                       ) : (
                                         <MessageSquare className="w-3 h-3" />
                                       )}
-                                      <span>{pm.whatsappSentAt ? "Resend WA" : "Send WA"}</span>
+                                      <span>{pm.whatsappSentAt ? "Resend Rec" : "Send Rec"}</span>
                                       {pm.whatsappSentAt && (
                                         <span className="text-[9px] font-normal opacity-80">✓</span>
                                       )}

@@ -85,7 +85,7 @@ export function formatWhatsAppReceiptText(receipt: ReceiptData): string {
   const receiptUrl = `${origin}/receipt/${encodeURIComponent(receipt.receiptNo)}`;
 
   return (
-    `*CONCEPT I GYM - PAYMENT RECEIPT* 🏋️‍♂️\n\n` +
+    `*CONCEPT 1 GYM - PAYMENT RECEIPT* 🏋️‍♂️\n\n` +
     `Dear *${memberName}* (ID: #${memberId}),\n` +
     `Thank you for your payment! Here are your official payment details:\n\n` +
     `🧾 *Invoice No:* ${invoiceNo} (Receipt #${receiptSeqNo})\n` +
@@ -95,8 +95,8 @@ export function formatWhatsAppReceiptText(receipt: ReceiptData): string {
     `💳 *Payment Mode:* ${mode}\n` +
     `⚖️ *Pending Balance:* ${due}\n\n` +
     `📄 *Official Digital Invoice Link:*\n${receiptUrl}\n\n` +
-    `Thank you for choosing Concept I Gym! Stay fit & strong! 💪\n` +
-    `_Sector 12, Main Central Road, Concept I Gym_`
+    `Thank you for choosing Concept 1 Gym! Stay fit & strong! 💪\n` +
+    `_1st floor, Dream Iconia, near Hans Party Plot, Manjalpur, Vadodara, Gujarat 390011_`
   );
 }
 

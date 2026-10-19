@@ -156,13 +156,10 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
           <div className="flex items-start justify-between pb-4 border-b border-slate-300">
             <div>
               <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 uppercase">
-                Concept I Gym
+                Concept 1 Gym
               </h1>
               <p className="text-xs text-slate-600 mt-0.5">
-                Sector 12, Main Central Road, Near City Plaza
-              </p>
-              <p className="text-[11px] font-mono text-slate-500 mt-0.5">
-                GSTIN: <span className="font-semibold text-slate-700">07AAACA1234F1Z8</span> • CIN: U92412DL2026PTC10452
+                1st floor, Dream Iconia, near Hans Party Plot, Manjalpur, Vadodara, Gujarat 390011
               </p>
             </div>
 
@@ -294,7 +291,7 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
                   <td className="py-1.5 px-4 text-right font-mono">{formatINR(sgst)}</td>
                 </tr>
                 <tr className="bg-slate-100/80 font-bold text-slate-900 text-xs border-t-2 border-slate-300">
-                  <td className="py-3 px-4">Total Amount Paid</td>
+                  <td className="py-3 px-4">Total Amount</td>
                   <td className="py-3 px-4 text-right text-base text-emerald-800 font-black">
                     {formatINR(totalAmount)}
                   </td>
@@ -322,7 +319,7 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
           {/* Verification & Stamp */}
           <div className="pt-4 border-t border-slate-200 flex items-end justify-between text-[10px] text-slate-400">
             <div>
-              <p className="font-semibold text-slate-600">Concept I Gym Management</p>
+              <p className="font-semibold text-slate-600">Concept 1 Gym Management</p>
               <p>This is a computer-generated tax invoice.</p>
               <p className="mt-0.5 text-emerald-600 font-medium flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3" />
@@ -401,10 +398,10 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
                   )}
                   <span>
                     {sendingWa
-                      ? "Sending WhatsApp..."
+                      ? "Sending Receipt..."
                       : waSentAt
-                      ? "Resend WhatsApp Receipt"
-                      : "Send WhatsApp Receipt"}
+                      ? "Resend Rec"
+                      : "Send Rec"}
                   </span>
                   {waSentAt && (
                     <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-200/80 text-emerald-900 font-mono font-normal ml-0.5">
