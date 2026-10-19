@@ -18,6 +18,8 @@ import {
   FileText,
   UserCheck,
   XCircle,
+  Cake,
+  HeartHandshake,
 } from "lucide-react";
 import {
   getWhatsAppStatusAction,
@@ -43,6 +45,13 @@ export function WhatsAppSettingsTab() {
   const [verifiedName, setVerifiedName] = useState("Concept Gym");
   const [showApiKey, setShowApiKey] = useState(false);
 
+  // Template Message IDs
+  const [tplBirthdayWish, setTplBirthdayWish] = useState("");
+  const [tplAnniversaryWish, setTplAnniversaryWish] = useState("");
+  const [tplExpiryMessage, setTplExpiryMessage] = useState("36849");
+  const [tplTodayExpiry, setTplTodayExpiry] = useState("37428");
+  const [tplWelcomeReceipt, setTplWelcomeReceipt] = useState("36850");
+
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
   const [statusMessage, setStatusMessage] = useState<{
     type: "success" | "error";
@@ -62,6 +71,14 @@ export function WhatsAppSettingsTab() {
       setWabaId(res.config.wabaId !== "Not configured" ? res.config.wabaId : "");
       setSenderNumber(res.config.senderNumber || "+1555-382-0648");
       setVerifiedName(res.config.verifiedName || "Concept Gym");
+      if ((res.config as any).templates) {
+        const t = (res.config as any).templates;
+        setTplBirthdayWish(t.birthdayWish || "");
+        setTplAnniversaryWish(t.anniversaryWish || "");
+        setTplExpiryMessage(t.expiryMessage || "36849");
+        setTplTodayExpiry(t.todayExpiry || "37428");
+        setTplWelcomeReceipt(t.welcomeAndReceipt || "36850");
+      }
       setRecentLogs(res.recentLogs || []);
     } catch (err: any) {
       console.error("Failed to load WhatsApp status:", err);
@@ -125,6 +142,11 @@ export function WhatsAppSettingsTab() {
         phoneNumberId: phoneNumberId,
         wabaId: wabaId,
         senderNumber: senderNumber,
+        tplBirthdayWish: tplBirthdayWish,
+        tplAnniversaryWish: tplAnniversaryWish,
+        tplExpiryMessage: tplExpiryMessage,
+        tplTodayExpiry: tplTodayExpiry,
+        tplWelcomeReceipt: tplWelcomeReceipt,
       });
 
       if (res.success) {
@@ -195,7 +217,7 @@ export function WhatsAppSettingsTab() {
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-sm font-bold text-slate-900">
-                    WhatsApp Expiry Automation
+                    WhatsApp Automation
                   </h2>
                   <span
                     className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
@@ -208,7 +230,7 @@ export function WhatsAppSettingsTab() {
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  Sends expiry reminders to non-renewed members every afternoon (7 days before and on expiry date).
+                  Sends automated expiry reminders (7 days before & on expiry date), birthday greetings, and anniversary wishes to active members every afternoon.
                 </p>
               </div>
             </div>
@@ -270,7 +292,7 @@ export function WhatsAppSettingsTab() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
-                    Controls daily afternoon expiry reminders for 7-day and today-expiring members.
+                    Controls daily afternoon automated dispatches: expiry reminders (7-day & today), birthday wishes, and anniversary greetings for active members.
                   </p>
                 </div>
               </div>
@@ -321,7 +343,7 @@ export function WhatsAppSettingsTab() {
                 </p>
                 <p className="text-[11px] text-slate-500">
                   {isAutomationEnabled
-                    ? "The system automatically dispatches expiry_message and today_expiry every afternoon ONLY to members who have NOT renewed. If a member renews, the message is automatically suppressed."
+                    ? "The system automatically dispatches expiry reminders, birthday greetings, and anniversary wishes every afternoon. Expiry messages are ONLY sent to non-renewed members. Birthday and anniversary wishes are STRICTLY sent ONLY to members with an active membership."
                     : "While turned OFF, no automated background messages will be dispatched to any member numbers in your database. Manual triggers (receipts and individual member reminders) remain accessible to authorized admins."}
                 </p>
               </div>
@@ -364,15 +386,15 @@ export function WhatsAppSettingsTab() {
             </div>
           </div>
 
-          {/* 4 WHATSAPP TEMPLATES SUMMARY */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* 5 WHATSAPP TEMPLATES SUMMARY */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Template 1 */}
             <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                   Case 1 · Automated
                 </span>
-                <span className="text-[10px] font-mono text-slate-400">ID: 36849</span>
+                <span className="text-[10px] font-mono text-slate-400">ID: {tplExpiryMessage || "36849"}</span>
               </div>
               <h3 className="text-xs font-bold text-slate-900">expiry_message</h3>
               <p className="text-[11px] text-slate-500 leading-snug">
@@ -391,7 +413,7 @@ export function WhatsAppSettingsTab() {
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
                   Case 2 · Automated
                 </span>
-                <span className="text-[10px] font-mono text-slate-400">ID: 37428</span>
+                <span className="text-[10px] font-mono text-slate-400">ID: {tplTodayExpiry || "37428"}</span>
               </div>
               <h3 className="text-xs font-bold text-slate-900">today_expiry</h3>
               <p className="text-[11px] text-slate-500 leading-snug">
@@ -403,21 +425,67 @@ export function WhatsAppSettingsTab() {
               <p className="text-[10px] text-emerald-700 font-medium">✓ Auto-skips if member renewed</p>
             </div>
 
-            {/* Template 3 */}
+            {/* Template 3: Birthday Wish */}
             <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                  Case 3 · Manual
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
+                  <Cake className="w-2.5 h-2.5" />
+                  Case 3 · Automated
                 </span>
-                <span className="text-[10px] font-mono text-slate-400">ID: 36850</span>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {tplBirthdayWish ? `ID: ${tplBirthdayWish}` : "ID: Meta / Not Set"}
+                </span>
               </div>
-              <h3 className="text-xs font-bold text-slate-900">welcome_and_receipt</h3>
+              <h3 className="text-xs font-bold text-slate-900">birthday_wish</h3>
               <p className="text-[11px] text-slate-500 leading-snug">
-                Triggered by <strong>Admin & Superuser only</strong> next to Print and Delete.
+                Sent on member&apos;s <strong>birthday</strong> around afternoon.
               </p>
               <div className="p-2 bg-slate-50 rounded-lg text-[10px] text-slate-600 font-mono space-y-0.5">
                 <div>&#123;&#123;1&#125;&#125;: Member Name</div>
-                <div className="text-purple-700 font-semibold">+ PDF Receipt Header Document</div>
+              </div>
+              <p className="text-[10px] text-emerald-700 font-medium">
+                ✓ STRICT: Only active members with valid membership
+              </p>
+            </div>
+
+            {/* Template 4: Anniversary Wish */}
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-50 text-pink-700 border border-pink-200 flex items-center gap-1">
+                  <HeartHandshake className="w-2.5 h-2.5" />
+                  Case 4 · Automated
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {tplAnniversaryWish ? `ID: ${tplAnniversaryWish}` : "ID: Meta / Not Set"}
+                </span>
+              </div>
+              <h3 className="text-xs font-bold text-slate-900">anniversary_wish</h3>
+              <p className="text-[11px] text-slate-500 leading-snug">
+                Sent on member&apos;s <strong>wedding anniversary</strong> around afternoon.
+              </p>
+              <div className="p-2 bg-slate-50 rounded-lg text-[10px] text-slate-600 font-mono space-y-0.5">
+                <div>&#123;&#123;1&#125;&#125;: Member Name</div>
+              </div>
+              <p className="text-[10px] text-emerald-700 font-medium">
+                ✓ STRICT: Only married active members with valid membership
+              </p>
+            </div>
+
+            {/* Template 5: Welcome & Receipt */}
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  Manual Trigger
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">ID: {tplWelcomeReceipt || "36850"}</span>
+              </div>
+              <h3 className="text-xs font-bold text-slate-900">welcome_and_receipt</h3>
+              <p className="text-[11px] text-slate-500 leading-snug">
+                Triggered by <strong>Admin & Superuser</strong> next to Print and Delete.
+              </p>
+              <div className="p-2 bg-slate-50 rounded-lg text-[10px] text-slate-600 font-mono space-y-0.5">
+                <div>&#123;&#123;1&#125;&#125;: Member Name</div>
+                <div className="text-indigo-700 font-semibold">+ PDF Receipt Document Header</div>
               </div>
               <p className="text-[10px] text-indigo-700 font-medium">✓ Button changes to &quot;Resend&quot; once sent</p>
             </div>
@@ -517,6 +585,88 @@ export function WhatsAppSettingsTab() {
                     placeholder="1114633681106778"
                     className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800"
                   />
+                </div>
+              </div>
+
+              {/* Template Message IDs Configuration */}
+              <div className="pt-4 border-t border-slate-100 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-slate-900">Fast2SMS Template Message IDs</h4>
+                  <span className="text-[10px] text-slate-400">Simple format message_id from Fast2SMS dashboard</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {/* Birthday Wish Template ID */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-700 flex items-center gap-1">
+                      <Cake className="w-3 h-3 text-purple-600" />
+                      <span>Birthday Wish Message ID</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={tplBirthdayWish}
+                      onChange={(e) => setTplBirthdayWish(e.target.value)}
+                      placeholder="e.g. 38100"
+                      className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800"
+                    />
+                  </div>
+
+                  {/* Anniversary Wish Template ID */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-700 flex items-center gap-1">
+                      <HeartHandshake className="w-3 h-3 text-pink-600" />
+                      <span>Anniversary Wish Message ID</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={tplAnniversaryWish}
+                      onChange={(e) => setTplAnniversaryWish(e.target.value)}
+                      placeholder="e.g. 38101"
+                      className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800"
+                    />
+                  </div>
+
+                  {/* Expiry Message 7 Days */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-700">
+                      7-Day Expiry Message ID
+                    </label>
+                    <input
+                      type="text"
+                      value={tplExpiryMessage}
+                      onChange={(e) => setTplExpiryMessage(e.target.value)}
+                      placeholder="36849"
+                      className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800"
+                    />
+                  </div>
+
+                  {/* Today Expiry Message */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-700">
+                      Today Expiry Message ID
+                    </label>
+                    <input
+                      type="text"
+                      value={tplTodayExpiry}
+                      onChange={(e) => setTplTodayExpiry(e.target.value)}
+                      placeholder="37428"
+                      className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800"
+                    />
+                  </div>
+
+                  {/* Welcome & Receipt Message */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-700">
+                      Welcome & Receipt Message ID
+                    </label>
+                    <input
+                      type="text"
+                      value={tplWelcomeReceipt}
+                      onChange={(e) => setTplWelcomeReceipt(e.target.value)}
+                      placeholder="36850"
+                      className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -628,7 +778,7 @@ export function WhatsAppSettingsTab() {
                 Confirm Turning ON WhatsApp Automation
               </h3>
               <p className="text-xs text-slate-500 leading-relaxed">
-                Turning this ON will cause automated reminders (<strong>expiry_message</strong> and <strong>today_expiry</strong>) to be dispatched daily in the afternoon to non-renewed members.
+                Turning this ON will cause automated reminders (<strong>expiry_message</strong> and <strong>today_expiry</strong>) to be dispatched daily in the afternoon to non-renewed members, as well as birthday wishes (<strong>birthday_wish</strong>) and anniversary greetings (<strong>anniversary_wish</strong>) strictly to members who currently have an active membership.
               </p>
             </div>
 

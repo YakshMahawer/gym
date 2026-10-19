@@ -13,6 +13,52 @@ import {
 import { formatDate, formatINR, formatInvoiceNo } from "@/lib/utils";
 
 /**
+ * Helper to check if a date's Month & Day match Today in Indian Standard Time (Asia/Kolkata).
+ * Also gracefully handles leap year birthdays (Feb 29 on non-leap years celebrated Feb 28).
+ */
+export function isSameDayAndMonth(
+  targetDate?: Date | string | null,
+  referenceDate: Date = new Date()
+): boolean {
+  if (!targetDate) return false;
+  const d = new Date(targetDate);
+  if (isNaN(d.getTime())) return false;
+
+  // Comparison in Asia/Kolkata
+  const formatter = new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    month: "numeric",
+    day: "numeric",
+  });
+  const partsTarget = formatter.formatToParts(d);
+  const partsRef = formatter.formatToParts(referenceDate);
+
+  const tMonth = partsTarget.find((p) => p.type === "month")?.value;
+  const tDay = partsTarget.find((p) => p.type === "day")?.value;
+  const rMonth = partsRef.find((p) => p.type === "month")?.value;
+  const rDay = partsRef.find((p) => p.type === "day")?.value;
+
+  if (tMonth === rMonth && tDay === rDay) return true;
+
+  // Handle Feb 29 leap birthdays in non-leap years
+  if (tMonth === "2" && tDay === "29") {
+    const refYear = referenceDate.getFullYear();
+    const isLeap = (refYear % 4 === 0 && refYear % 100 !== 0) || refYear % 400 === 0;
+    if (!isLeap && rMonth === "2" && rDay === "28") {
+      return true;
+    }
+  }
+
+  // Fallback check against UTC day & month in case date was stored as UTC calendar date
+  const tUtcMonth = d.getUTCMonth();
+  const tUtcDay = d.getUTCDate();
+  const rUtcMonth = referenceDate.getUTCMonth();
+  const rUtcDay = referenceDate.getUTCDate();
+
+  return tUtcMonth === rUtcMonth && tUtcDay === rUtcDay;
+}
+
+/**
  * 1. Toggle master WhatsApp automation switch
  * Restricted to ADMIN and SUPERUSER only.
  */
@@ -47,7 +93,7 @@ export async function toggleWhatsAppAutomationAction(enabled: boolean) {
 }
 
 /**
- * 2. Save Fast2SMS API Configuration (API Key, Phone ID, WABA ID)
+ * 2. Save Fast2SMS API Configuration and Template IDs
  * Restricted to ADMIN and SUPERUSER only.
  */
 export async function saveWhatsAppApiSettingsAction(data: {
@@ -55,6 +101,13 @@ export async function saveWhatsAppApiSettingsAction(data: {
   phoneNumberId?: string;
   wabaId?: string;
   senderNumber?: string;
+  tplBirthdayWish?: string;
+  tplAnniversaryWish?: string;
+  tplExpiryMessage?: string;
+  tplTodayExpiry?: string;
+  tplWelcomeReceipt?: string;
+  tplNameBirthday?: string;
+  tplNameAnniversary?: string;
 }) {
   const session = await getSessionUser();
   if (!session || (session.role !== "ADMIN" && session.role !== "SUPERUSER")) {
@@ -93,7 +146,64 @@ export async function saveWhatsAppApiSettingsAction(data: {
     });
   }
 
-  return { success: true, message: "Fast2SMS WhatsApp credentials updated successfully." };
+  // Template message IDs
+  if (data.tplBirthdayWish !== undefined) {
+    await prisma.systemSetting.upsert({
+      where: { key: "fast2sms_tpl_birthday_wish" },
+      update: { value: data.tplBirthdayWish.trim() },
+      create: { key: "fast2sms_tpl_birthday_wish", value: data.tplBirthdayWish.trim() },
+    });
+  }
+
+  if (data.tplAnniversaryWish !== undefined) {
+    await prisma.systemSetting.upsert({
+      where: { key: "fast2sms_tpl_anniversary_wish" },
+      update: { value: data.tplAnniversaryWish.trim() },
+      create: { key: "fast2sms_tpl_anniversary_wish", value: data.tplAnniversaryWish.trim() },
+    });
+  }
+
+  if (data.tplExpiryMessage !== undefined) {
+    await prisma.systemSetting.upsert({
+      where: { key: "fast2sms_tpl_expiry_message" },
+      update: { value: data.tplExpiryMessage.trim() },
+      create: { key: "fast2sms_tpl_expiry_message", value: data.tplExpiryMessage.trim() },
+    });
+  }
+
+  if (data.tplTodayExpiry !== undefined) {
+    await prisma.systemSetting.upsert({
+      where: { key: "fast2sms_tpl_today_expiry" },
+      update: { value: data.tplTodayExpiry.trim() },
+      create: { key: "fast2sms_tpl_today_expiry", value: data.tplTodayExpiry.trim() },
+    });
+  }
+
+  if (data.tplWelcomeReceipt !== undefined) {
+    await prisma.systemSetting.upsert({
+      where: { key: "fast2sms_tpl_welcome_and_receipt" },
+      update: { value: data.tplWelcomeReceipt.trim() },
+      create: { key: "fast2sms_tpl_welcome_and_receipt", value: data.tplWelcomeReceipt.trim() },
+    });
+  }
+
+  if (data.tplNameBirthday !== undefined) {
+    await prisma.systemSetting.upsert({
+      where: { key: "fast2sms_tpl_name_birthday_wish" },
+      update: { value: data.tplNameBirthday.trim() },
+      create: { key: "fast2sms_tpl_name_birthday_wish", value: data.tplNameBirthday.trim() },
+    });
+  }
+
+  if (data.tplNameAnniversary !== undefined) {
+    await prisma.systemSetting.upsert({
+      where: { key: "fast2sms_tpl_name_anniversary_wish" },
+      update: { value: data.tplNameAnniversary.trim() },
+      create: { key: "fast2sms_tpl_name_anniversary_wish", value: data.tplNameAnniversary.trim() },
+    });
+  }
+
+  return { success: true, message: "Fast2SMS WhatsApp settings and template configurations saved successfully." };
 }
 
 /**
@@ -267,14 +377,15 @@ export async function sendManualExpiryWhatsAppAction(data: {
 }
 
 /**
- * 6. AUTOMATED JOB: Daily Expiry WhatsApp Automation (Run in afternoon)
+ * 6. AUTOMATED JOB: Daily Expiry, Birthday & Anniversary Automation (Run in afternoon)
  *
  * CRITICAL CONDITIONS:
  * A) Check master automation toggle: If OFF, abort immediately!
- * B) Case 1: 7 days before expiry -> 'expiry_message' template
- * C) Case 2: Today of expiry -> 'today_expiry' template
- * D) For both: ONLY SEND IF THE USER HAS NOT RENEWED YET!
- * E) Avoid sending duplicate reminders on the same calendar day.
+ * B) Case 1: 7 days before expiry -> 'expiry_message' template (only if not renewed)
+ * C) Case 2: Today of expiry -> 'today_expiry' template (only if not renewed)
+ * D) Case 3: Birthday wish -> 'birthday_wish' (STRICT: ONLY for users who have active membership on their birthday!)
+ * E) Case 4: Anniversary wish -> 'anniversary_wish' (STRICT: ONLY for users who have active membership on their anniversary!)
+ * F) Avoid sending duplicate reminders on the same calendar day.
  */
 export async function runDailyExpiryWhatsAppAutomation() {
   // CRITICAL SAFETY CHECK #1: Master toggle in Settings
@@ -301,9 +412,13 @@ export async function runDailyExpiryWhatsAppAutomation() {
   const day7Start = new Date(in7Days.getFullYear(), in7Days.getMonth(), in7Days.getDate(), 0, 0, 0);
   const day7End = new Date(in7Days.getFullYear(), in7Days.getMonth(), in7Days.getDate(), 23, 59, 59);
 
-  let sentCount = 0;
+  let sentExpiry7Count = 0;
+  let sentExpiryTodayCount = 0;
+  let sentBirthdayCount = 0;
+  let sentAnniversaryCount = 0;
   let skippedRenewed = 0;
   let skippedDuplicate = 0;
+  let skippedInactiveCount = 0;
 
   // ==========================================
   // CASE 1: 7-DAY EXPIRY REMINDER (expiry_message)
@@ -367,7 +482,7 @@ export async function runDailyExpiryWhatsAppAutomation() {
       sentBy: "SYSTEM_AUTOMATION",
       memberId: member.id,
     });
-    sentCount++;
+    sentExpiry7Count++;
   }
 
   // ==========================================
@@ -430,14 +545,154 @@ export async function runDailyExpiryWhatsAppAutomation() {
       sentBy: "SYSTEM_AUTOMATION",
       memberId: member.id,
     });
-    sentCount++;
+    sentExpiryTodayCount++;
   }
+
+  // ==========================================
+  // CASE 3: BIRTHDAY WISHES (birthday_wish)
+  // STRICT RULE: ONLY wish to ACTIVE users who have an ACTIVE membership at their birthday!
+  // ==========================================
+  const activeMembersWithDob = await prisma.member.findMany({
+    where: {
+      membershipStatus: "ACTIVE",
+      dob: { not: null },
+      subscriptions: {
+        some: {
+          status: "ACTIVE",
+          endDate: { gte: todayStart },
+        },
+      },
+    },
+    include: {
+      subscriptions: {
+        where: {
+          status: "ACTIVE",
+          endDate: { gte: todayStart },
+        },
+        orderBy: { endDate: "desc" },
+      },
+    },
+  });
+
+  for (const member of activeMembersWithDob) {
+    if (!member.phone || !member.dob) continue;
+
+    // 1. Must match today's Month & Day (in IST & UTC)
+    if (!isSameDayAndMonth(member.dob, now)) continue;
+
+    // 2. STRICT CHECK: Must have active membership status AND at least one active subscription valid today
+    const hasActiveSubscription = member.subscriptions.length > 0;
+    if (member.membershipStatus !== "ACTIVE" || !hasActiveSubscription) {
+      skippedInactiveCount++;
+      continue;
+    }
+
+    // 3. Avoid duplicate birthday wishes on the same calendar day
+    const alreadySentToday = await prisma.whatsAppMessageLog.findFirst({
+      where: {
+        memberId: member.id,
+        templateName: "birthday_wish",
+        createdAt: { gte: todayStart },
+      },
+    });
+    if (alreadySentToday) {
+      skippedDuplicate++;
+      continue;
+    }
+
+    // 4. Dispatch birthday_wish template (1 var: member.fullName)
+    const variables = [member.fullName];
+
+    await sendWhatsAppTemplate({
+      to: member.phone,
+      templateName: "birthday_wish",
+      variables,
+      triggerType: "AUTOMATED_BIRTHDAY",
+      sentBy: "SYSTEM_AUTOMATION",
+      memberId: member.id,
+    });
+    sentBirthdayCount++;
+  }
+
+  // ==========================================
+  // CASE 4: ANNIVERSARY WISHES (anniversary_wish)
+  // STRICT RULE: ONLY wish to ACTIVE users who have an ACTIVE membership at their anniversary!
+  // ==========================================
+  const activeMembersWithAnniversary = await prisma.member.findMany({
+    where: {
+      membershipStatus: "ACTIVE",
+      isMarried: true,
+      anniversaryDate: { not: null },
+      subscriptions: {
+        some: {
+          status: "ACTIVE",
+          endDate: { gte: todayStart },
+        },
+      },
+    },
+    include: {
+      subscriptions: {
+        where: {
+          status: "ACTIVE",
+          endDate: { gte: todayStart },
+        },
+        orderBy: { endDate: "desc" },
+      },
+    },
+  });
+
+  for (const member of activeMembersWithAnniversary) {
+    if (!member.phone || !member.anniversaryDate) continue;
+
+    // 1. Must match today's Month & Day (in IST & UTC)
+    if (!isSameDayAndMonth(member.anniversaryDate, now)) continue;
+
+    // 2. STRICT CHECK: Must have active membership status AND at least one active subscription valid today
+    const hasActiveSubscription = member.subscriptions.length > 0;
+    if (member.membershipStatus !== "ACTIVE" || !hasActiveSubscription) {
+      skippedInactiveCount++;
+      continue;
+    }
+
+    // 3. Avoid duplicate anniversary wishes on the same calendar day
+    const alreadySentToday = await prisma.whatsAppMessageLog.findFirst({
+      where: {
+        memberId: member.id,
+        templateName: "anniversary_wish",
+        createdAt: { gte: todayStart },
+      },
+    });
+    if (alreadySentToday) {
+      skippedDuplicate++;
+      continue;
+    }
+
+    // 4. Dispatch anniversary_wish template (1 var: member.fullName)
+    const variables = [member.fullName];
+
+    await sendWhatsAppTemplate({
+      to: member.phone,
+      templateName: "anniversary_wish",
+      variables,
+      triggerType: "AUTOMATED_ANNIVERSARY",
+      sentBy: "SYSTEM_AUTOMATION",
+      memberId: member.id,
+    });
+    sentAnniversaryCount++;
+  }
+
+  const totalSent = sentExpiry7Count + sentExpiryTodayCount + sentBirthdayCount + sentAnniversaryCount;
 
   return {
     success: true,
-    sentCount,
+    sentCount: totalSent,
+    sentExpiry7Count,
+    sentExpiryTodayCount,
+    sentBirthdayCount,
+    sentAnniversaryCount,
     skippedRenewed,
     skippedDuplicate,
-    message: `Automated run finished. Sent: ${sentCount}, Skipped (Renewed): ${skippedRenewed}, Skipped (Already sent today): ${skippedDuplicate}.`,
+    skippedInactiveCount,
+    message: `Automated run finished. Sent: ${totalSent} (7-Day Expiry: ${sentExpiry7Count}, Today Expiry: ${sentExpiryTodayCount}, Birthdays: ${sentBirthdayCount}, Anniversaries: ${sentAnniversaryCount}). Skipped (Renewed): ${skippedRenewed}, Skipped (Already sent): ${skippedDuplicate}, Skipped (Inactive/Expired): ${skippedInactiveCount}.`,
   };
 }

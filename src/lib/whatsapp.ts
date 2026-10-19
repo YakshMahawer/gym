@@ -2,11 +2,25 @@ import { prisma } from "@/lib/prisma";
 
 export interface SendWhatsAppTemplateOptions {
   to: string; // Recipient phone number (e.g. "9876543210" or "919876543210")
-  templateName: "expiry_message" | "today_expiry" | "welcome_and_receipt" | string;
+  templateName:
+    | "expiry_message"
+    | "today_expiry"
+    | "welcome_and_receipt"
+    | "birthday_wish"
+    | "anniversary_wish"
+    | string;
   variables?: (string | number)[]; // [var1, var2, ...]
   mediaUrl?: string | null;
   messageId?: string | number | null; // Fast2SMS simple template message_id if available
-  triggerType: "AUTOMATED_7_DAYS" | "AUTOMATED_TODAY" | "MANUAL_EXPIRY" | "MANUAL_RECEIPT";
+  triggerType:
+    | "AUTOMATED_7_DAYS"
+    | "AUTOMATED_TODAY"
+    | "AUTOMATED_BIRTHDAY"
+    | "AUTOMATED_ANNIVERSARY"
+    | "MANUAL_EXPIRY"
+    | "MANUAL_RECEIPT"
+    | "MANUAL_BIRTHDAY"
+    | "MANUAL_ANNIVERSARY";
   sentBy?: string; // username e.g. "admin", "superuser", or "SYSTEM_AUTOMATION"
   memberId?: string | null;
   paymentId?: string | null;
@@ -47,6 +61,24 @@ export const FAST2SMS_TEMPLATES = {
     hasHeaderMedia: true,
     exampleVars: ["Member Name"],
     description: "Manual receipt share triggered by Admin/Superuser with PDF receipt",
+  },
+  birthday_wish: {
+    messageId: null as number | null,
+    templateId: "",
+    name: "birthday_wish",
+    varCount: 1,
+    hasHeaderMedia: false,
+    exampleVars: ["Member Name"],
+    description: "Automated birthday greeting sent to active members",
+  },
+  anniversary_wish: {
+    messageId: null as number | null,
+    templateId: "",
+    name: "anniversary_wish",
+    varCount: 1,
+    hasHeaderMedia: false,
+    exampleVars: ["Member Name"],
+    description: "Automated wedding anniversary greeting sent to active members",
   },
   weekly_report: {
     messageId: 37430,
@@ -119,6 +151,25 @@ export async function getWhatsAppConfig() {
   const dbWabaId = await prisma.systemSetting.findUnique({ where: { key: "fast2sms_waba_id" } });
   const dbSenderNumber = await prisma.systemSetting.findUnique({ where: { key: "fast2sms_sender_number" } });
 
+  // Template message_id / name settings from DB
+  const [
+    dbTplBirthday,
+    dbTplAnniversary,
+    dbTplExpiry7,
+    dbTplExpiryToday,
+    dbTplReceipt,
+    dbTplNameBirthday,
+    dbTplNameAnniversary,
+  ] = await Promise.all([
+    prisma.systemSetting.findUnique({ where: { key: "fast2sms_tpl_birthday_wish" } }),
+    prisma.systemSetting.findUnique({ where: { key: "fast2sms_tpl_anniversary_wish" } }),
+    prisma.systemSetting.findUnique({ where: { key: "fast2sms_tpl_expiry_message" } }),
+    prisma.systemSetting.findUnique({ where: { key: "fast2sms_tpl_today_expiry" } }),
+    prisma.systemSetting.findUnique({ where: { key: "fast2sms_tpl_welcome_and_receipt" } }),
+    prisma.systemSetting.findUnique({ where: { key: "fast2sms_tpl_name_birthday_wish" } }),
+    prisma.systemSetting.findUnique({ where: { key: "fast2sms_tpl_name_anniversary_wish" } }),
+  ]);
+
   const apiKey = dbApiKey?.value || process.env.FAST2SMS_API_KEY || "";
   const phoneNumberId = dbPhoneId?.value || process.env.FAST2SMS_PHONE_NUMBER_ID || "1291098734095226";
   const wabaId = dbWabaId?.value || process.env.FAST2SMS_WABA_ID || "1114633681106778";
@@ -136,6 +187,15 @@ export async function getWhatsAppConfig() {
     qualityRating: "GREEN",
     connectionStatus: "CONNECTED",
     apiKey,
+    templates: {
+      birthdayWish: dbTplBirthday?.value || "",
+      anniversaryWish: dbTplAnniversary?.value || "",
+      expiryMessage: dbTplExpiry7?.value || "36849",
+      todayExpiry: dbTplExpiryToday?.value || "37428",
+      welcomeAndReceipt: dbTplReceipt?.value || "36850",
+      nameBirthday: dbTplNameBirthday?.value || "birthday_wish",
+      nameAnniversary: dbTplNameAnniversary?.value || "anniversary_wish",
+    },
   };
 }
 
@@ -221,9 +281,36 @@ export async function sendWhatsAppTemplate(
   try {
     let resultPayload: any = null;
 
-    const mapped = FAST2SMS_TEMPLATES[templateName as keyof typeof FAST2SMS_TEMPLATES];
-    const effectiveMessageId = messageId || mapped?.messageId;
-    const effectiveVars = mapped ? variables.slice(0, mapped.varCount) : variables;
+    const mapped = FAST2SMS_TEMPLATES[templateName as keyof typeof FAST2SMS_TEMPLATES] as
+      | {
+          messageId?: number | string | null;
+          templateId?: string;
+          name: string;
+          varCount: number;
+          hasHeaderMedia: boolean;
+        }
+      | undefined;
+
+    // Check DB for template message_id and custom template name overrides
+    let dbMessageId: string | number | null = null;
+    let customTemplateName: string | null = null;
+    try {
+      const [dbTpl, dbTplName] = await Promise.all([
+        prisma.systemSetting.findUnique({ where: { key: `fast2sms_tpl_${templateName}` } }),
+        prisma.systemSetting.findUnique({ where: { key: `fast2sms_tpl_name_${templateName}` } }),
+      ]);
+      if (dbTpl?.value) {
+        dbMessageId = dbTpl.value;
+      }
+      if (dbTplName?.value) {
+        customTemplateName = dbTplName.value;
+      }
+    } catch (e) {
+      // safe fallback if db lookup fails
+    }
+
+    const effectiveMessageId = messageId || dbMessageId || mapped?.messageId;
+    const effectiveVars = mapped && mapped.varCount ? variables.slice(0, mapped.varCount) : variables;
 
     // Fast2SMS provides 2 main modes for sending templates:
     // Mode A: Simple Format endpoint (if message_id is provided)
@@ -288,7 +375,7 @@ export async function sendWhatsAppTemplate(
         to: phone,
         type: "template",
         template: {
-          name: templateName,
+          name: customTemplateName || (mapped as any)?.name || templateName,
           language: {
             code: "en",
           },
