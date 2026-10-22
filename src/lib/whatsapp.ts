@@ -59,7 +59,7 @@ export const FAST2SMS_TEMPLATES = {
     name: "welcome_and_receipt",
     varCount: 1,
     hasHeaderMedia: true,
-    exampleVars: ["Member Name"],
+    exampleVars: ["First Name"],
     description: "Manual receipt share triggered by Admin/Superuser with PDF receipt",
   },
   birthday_wish: {
@@ -68,7 +68,7 @@ export const FAST2SMS_TEMPLATES = {
     name: "birthday_wish",
     varCount: 1,
     hasHeaderMedia: false,
-    exampleVars: ["Member Name"],
+    exampleVars: ["First Name"],
     description: "Automated birthday greeting sent to active members",
   },
   anniversary_wish: {
@@ -77,7 +77,7 @@ export const FAST2SMS_TEMPLATES = {
     name: "anniversary_wish",
     varCount: 1,
     hasHeaderMedia: false,
-    exampleVars: ["Member Name"],
+    exampleVars: ["First Name"],
     description: "Automated wedding anniversary greeting sent to active members",
   },
   weekly_report: {

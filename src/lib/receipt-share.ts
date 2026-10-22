@@ -1,4 +1,4 @@
-import { formatINR, formatDate, formatInvoiceNo } from "@/lib/utils";
+import { formatINR, formatDate, formatInvoiceNo, getFirstName } from "@/lib/utils";
 
 export interface ReceiptData {
   receiptNo: string;
@@ -48,7 +48,7 @@ export function sanitizePhone(phone?: string | number | null): string {
 }
 
 export function formatWhatsAppReceiptText(receipt: ReceiptData): string {
-  const memberName = receipt.member?.fullName || "Valued Member";
+  const memberName = getFirstName(receipt.member) || "Valued Member";
   const memberId = receipt.member?.memberId || "N/A";
   const amount = formatINR(receipt.amount);
   const paymentDate = formatDate(receipt.paymentDate);

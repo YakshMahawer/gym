@@ -10,7 +10,7 @@ import {
   sendWhatsAppTemplate,
   sanitizeWhatsAppPhone,
 } from "@/lib/whatsapp";
-import { formatDate, formatINR, formatInvoiceNo } from "@/lib/utils";
+import { formatDate, formatINR, formatInvoiceNo, getFirstName } from "@/lib/utils";
 
 /**
  * Helper to check if a date's Month & Day match Today in Indian Standard Time (Asia/Kolkata).
@@ -258,14 +258,15 @@ export async function sendReceiptWhatsAppAction(paymentId: string) {
   }
 
   // Fast2SMS template: welcome_and_receipt
-  // Approved template takes 1 variable: {{1}} = Member Name
+  // Approved template takes 1 variable: {{1}} = Member First Name
   // And requires the official PDF document URL in mediaUrl
   const origin =
     process.env.APP_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
     "https://www.concept1gym.com";
   const pdfUrl = `${origin}/api/receipt/${encodeURIComponent(payment.receiptNo)}/pdf`;
-  const variables = [member.fullName];
+  const memberFirstName = getFirstName(member);
+  const variables = [memberFirstName];
 
   const result = await sendWhatsAppTemplate({
     to: member.phone,
@@ -600,8 +601,9 @@ export async function runDailyExpiryWhatsAppAutomation() {
       continue;
     }
 
-    // 4. Dispatch birthday_wish template (1 var: member.fullName)
-    const variables = [member.fullName];
+    // 4. Dispatch birthday_wish template (1 var: member first name only)
+    const memberFirstName = getFirstName(member);
+    const variables = [memberFirstName];
 
     await sendWhatsAppTemplate({
       to: member.phone,
@@ -667,8 +669,9 @@ export async function runDailyExpiryWhatsAppAutomation() {
       continue;
     }
 
-    // 4. Dispatch anniversary_wish template (1 var: member.fullName)
-    const variables = [member.fullName];
+    // 4. Dispatch anniversary_wish template (1 var: member first name only)
+    const memberFirstName = getFirstName(member);
+    const variables = [memberFirstName];
 
     await sendWhatsAppTemplate({
       to: member.phone,

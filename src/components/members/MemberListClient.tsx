@@ -22,6 +22,7 @@ import {
   SlidersHorizontal,
   RotateCcw,
   MessageSquare,
+  Hash,
 } from "lucide-react";
 import { formatINR, formatDate, calculateDaysRemaining } from "@/lib/utils";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
@@ -37,6 +38,7 @@ export function MemberListClient({ members }: MemberListClientProps) {
   const router = useRouter();
   const [expiryTargetMember, setExpiryTargetMember] = useState<any | null>(null);
   const [search, setSearch] = useState("");
+  const [idSearch, setIdSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [ptFilter, setPtFilter] = useState<"ALL" | "ACTIVE_PT" | "EXPIRED_PT" | "NO_PT">("ALL");
   const [planFilter, setPlanFilter] = useState("ALL");
@@ -67,12 +69,18 @@ export function MemberListClient({ members }: MemberListClientProps) {
 
   const filteredMembers = members.filter((m) => {
     const q = search.toLowerCase().trim();
+    // General search matches full name, phone number, and email (ID is now handled by dedicated ID search)
     const matchesSearch =
       !q ||
       m.fullName.toLowerCase().includes(q) ||
       m.phone.includes(q) ||
-      m.memberId.toLowerCase().includes(q) ||
       (m.email && m.email.toLowerCase().includes(q));
+
+    // Dedicated search by Member ID only
+    const idQ = idSearch.toLowerCase().trim().replace(/^#/, "");
+    const matchesId =
+      !idQ ||
+      Boolean(m.memberId && m.memberId.toLowerCase().includes(idQ));
 
     const latestSub = m.subscriptions?.[0];
     const latestPT = m.ptSubscriptions?.[0];
@@ -131,7 +139,7 @@ export function MemberListClient({ members }: MemberListClientProps) {
         ? true
         : (m.gender || "").toLowerCase() === genderFilter.toLowerCase();
 
-    return matchesSearch && matchesStatus && matchesPT && matchesPlan && matchesDue && matchesGender;
+    return matchesSearch && matchesId && matchesStatus && matchesPT && matchesPlan && matchesDue && matchesGender;
   });
 
   // Sorting
@@ -176,16 +184,19 @@ export function MemberListClient({ members }: MemberListClientProps) {
     (planFilter !== "ALL" ? 1 : 0) +
     (dueFilter !== "ALL" ? 1 : 0) +
     (genderFilter !== "ALL" ? 1 : 0) +
-    (search.trim() !== "" ? 1 : 0);
+    (search.trim() !== "" ? 1 : 0) +
+    (idSearch.trim() !== "" ? 1 : 0);
 
   const resetAllFilters = () => {
     setSearch("");
+    setIdSearch("");
     setStatusFilter("ALL");
     setPtFilter("ALL");
     setPlanFilter("ALL");
     setDueFilter("ALL");
     setGenderFilter("ALL");
     setSortBy("ID_DESC");
+    setCurrentPage(1);
   };
 
   const handleOpenPayment = (memberId: string, fullName: string, due: number) => {
@@ -297,23 +308,63 @@ export function MemberListClient({ members }: MemberListClientProps) {
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-sm space-y-4">
         {/* Search Bar & Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="relative flex-1 max-w-lg">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search by member name, phone number, ID, email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-9 py-2 text-xs sm:text-sm bg-slate-50/70 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 rounded-full"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 max-w-2xl">
+            {/* Primary General Search (Name, Phone, Email - ID excluded) */}
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search by member name, phone, email..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full pl-10 pr-9 py-2 text-xs sm:text-sm bg-slate-50/70 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch("");
+                    setCurrentPage(1);
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 rounded-full"
+                  title="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Dedicated Small Search Bar for ID only */}
+            <div className="relative w-full sm:w-36 md:w-40 shrink-0">
+              <Hash className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search ID..."
+                value={idSearch}
+                onChange={(e) => {
+                  setIdSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full pl-8 pr-7 py-2 text-xs sm:text-sm font-mono bg-slate-50/70 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition placeholder:font-sans"
+                title="Search by ID only"
+              />
+              {idSearch && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIdSearch("");
+                    setCurrentPage(1);
+                  }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 rounded-full"
+                  title="Clear ID search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-2 self-end sm:self-auto">
@@ -496,7 +547,16 @@ export function MemberListClient({ members }: MemberListClientProps) {
             {search.trim() && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-800 rounded-md text-[11px] font-medium border border-slate-200">
                 Search: &quot;{search}&quot;
-                <button onClick={() => setSearch("")} className="hover:text-rose-600">
+                <button onClick={() => { setSearch(""); setCurrentPage(1); }} className="hover:text-rose-600">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {idSearch.trim() && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-800 rounded-md text-[11px] font-medium border border-indigo-200">
+                ID: &quot;{idSearch}&quot;
+                <button onClick={() => { setIdSearch(""); setCurrentPage(1); }} className="hover:text-rose-600">
                   <X className="w-3 h-3" />
                 </button>
               </span>

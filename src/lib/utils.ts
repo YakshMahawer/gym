@@ -87,6 +87,24 @@ export function normalizeMemberId(id: string | number | null | undefined): strin
   return trimmed;
 }
 
+/**
+ * Extracts only the first name from a member record or full name string.
+ * Used for WhatsApp automation (receipts, birthday wishes, anniversary greetings)
+ * so messages address members warmly by first name only (e.g. 'Rahul' instead of 'Rahul Sharma').
+ */
+export function getFirstName(
+  member?: { firstName?: string | null; fullName?: string | null } | string | null
+): string {
+  if (!member) return "Member";
+  if (typeof member === "string") {
+    const clean = member.trim().split(/\s+/)[0];
+    return clean || "Member";
+  }
+  const raw = member.firstName?.trim() || member.fullName?.trim() || "";
+  const first = raw.split(/\s+/)[0];
+  return first || member.fullName?.trim() || "Member";
+}
+
 export function generateReceiptNo(): string {
   const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, "");
   const randomSuffix = Math.floor(100 + Math.random() * 900);

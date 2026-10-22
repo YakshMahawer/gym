@@ -20,7 +20,7 @@ import {
   ChevronRight,
   ShieldAlert,
 } from "lucide-react";
-import { formatINR, formatDate } from "@/lib/utils";
+import { formatINR, formatDate, getFirstName } from "@/lib/utils";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
 
 interface DashboardDataProps {
@@ -570,7 +570,7 @@ export function DashboardClient({ data }: DashboardDataProps) {
                       </span>
                       <a
                         href={`https://wa.me/91${evt.phone}?text=Dear%20${encodeURIComponent(
-                          evt.fullName
+                          getFirstName(evt.fullName)
                         )},%20Wishing%20you%20a%20very%20Happy%20${
                           evt.type
                         }%20from%20Concept%20I%20Gym!%20Stay%20fit%20and%20healthy!%20🎂💪`}

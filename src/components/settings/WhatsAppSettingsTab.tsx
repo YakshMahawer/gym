@@ -441,7 +441,7 @@ export function WhatsAppSettingsTab() {
                 Sent on member&apos;s <strong>birthday</strong> around afternoon.
               </p>
               <div className="p-2 bg-slate-50 rounded-lg text-[10px] text-slate-600 font-mono space-y-0.5">
-                <div>&#123;&#123;1&#125;&#125;: Member Name</div>
+                <div>&#123;&#123;1&#125;&#125;: Member First Name</div>
               </div>
               <p className="text-[10px] text-emerald-700 font-medium">
                 ✓ STRICT: Only active members with valid membership
@@ -464,7 +464,7 @@ export function WhatsAppSettingsTab() {
                 Sent on member&apos;s <strong>wedding anniversary</strong> around afternoon.
               </p>
               <div className="p-2 bg-slate-50 rounded-lg text-[10px] text-slate-600 font-mono space-y-0.5">
-                <div>&#123;&#123;1&#125;&#125;: Member Name</div>
+                <div>&#123;&#123;1&#125;&#125;: Member First Name</div>
               </div>
               <p className="text-[10px] text-emerald-700 font-medium">
                 ✓ STRICT: Only married active members with valid membership
@@ -484,7 +484,7 @@ export function WhatsAppSettingsTab() {
                 Triggered by <strong>Admin & Superuser</strong> next to Print and Delete.
               </p>
               <div className="p-2 bg-slate-50 rounded-lg text-[10px] text-slate-600 font-mono space-y-0.5">
-                <div>&#123;&#123;1&#125;&#125;: Member Name</div>
+                <div>&#123;&#123;1&#125;&#125;: Member First Name</div>
                 <div className="text-indigo-700 font-semibold">+ PDF Receipt Document Header</div>
               </div>
               <p className="text-[10px] text-indigo-700 font-medium">✓ Button changes to &quot;Resend&quot; once sent</p>
