@@ -12,6 +12,17 @@ export function formatINR(amount: number | null | undefined): string {
   }).format(amount);
 }
 
+/**
+ * Formats a currency amount with "Rs." prefix (e.g. "Rs. 5,000")
+ * Specifically used for PDF receipts and plain text messages to prevent
+ * the unicode Rupee symbol (₹) from corrupting into '¹' (superscript 1) in PDF viewers.
+ */
+export function formatRS(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined || isNaN(amount)) return "Rs. 0";
+  const num = formatINR(amount).replace(/₹/g, "").trim();
+  return `Rs. ${num}`;
+}
+
 export function formatDate(date: Date | string | null | undefined): string {
   if (!date) return "-";
   const d = typeof date === "string" ? new Date(date) : date;

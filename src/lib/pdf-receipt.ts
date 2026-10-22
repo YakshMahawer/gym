@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 import { prisma } from "@/lib/prisma";
-import { formatINR, formatDate, formatInvoiceNo } from "@/lib/utils";
+import { formatINR, formatRS, formatDate, formatInvoiceNo } from "@/lib/utils";
 
 export interface ReceiptPdfData {
   invoiceNo: string;
@@ -134,19 +134,19 @@ export function buildReceiptPdfDocument(data: ReceiptPdfData): Uint8Array {
   doc.setTextColor(100, 116, 139);
   doc.text("Taxable Value:", 120, y);
   doc.setTextColor(15, 23, 42);
-  doc.text(formatINR(data.taxableAmount), 168, y);
+  doc.text(formatRS(data.taxableAmount), 168, y);
 
   y += 6.5;
   doc.setTextColor(100, 116, 139);
   doc.text("CGST (9%):", 120, y);
   doc.setTextColor(15, 23, 42);
-  doc.text(formatINR(data.cgst), 168, y);
+  doc.text(formatRS(data.cgst), 168, y);
 
   y += 6.5;
   doc.setTextColor(100, 116, 139);
   doc.text("SGST (9%):", 120, y);
   doc.setTextColor(15, 23, 42);
-  doc.text(formatINR(data.sgst), 168, y);
+  doc.text(formatRS(data.sgst), 168, y);
 
   y += 5;
   doc.setDrawColor(203, 213, 225);
@@ -157,7 +157,7 @@ export function buildReceiptPdfDocument(data: ReceiptPdfData): Uint8Array {
   doc.setFontSize(11);
   doc.setTextColor(15, 23, 42);
   doc.text("Total Amount:", 120, y);
-  doc.text(formatINR(data.totalAmount), 168, y);
+  doc.text(formatRS(data.totalAmount), 168, y);
 
   // 7. Footer & Legal Disclaimer
   doc.setFont("helvetica", "normal");
