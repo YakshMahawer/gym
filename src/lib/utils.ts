@@ -19,7 +19,7 @@ export function formatINR(amount: number | null | undefined): string {
  */
 export function formatRS(amount: number | null | undefined): string {
   if (amount === null || amount === undefined || isNaN(amount)) return "Rs. 0";
-  const num = formatINR(amount).replace(/₹/g, "").trim();
+  const num = Math.round(amount).toLocaleString("en-IN");
   return `Rs. ${num}`;
 }
 

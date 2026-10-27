@@ -672,8 +672,8 @@ export function AppShell({ children }: AppShellProps) {
                   <BarChart3 className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="font-bold text-sm text-slate-900 dark:text-white">Tax Invoices & Reports</p>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500">View GST sales report & package performance</p>
+                  <p className="font-bold text-sm text-slate-900 dark:text-white">Reports & Collections</p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">View collections, packages & fee reports</p>
                 </div>
               </Link>
             </div>

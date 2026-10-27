@@ -3,7 +3,6 @@
 import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Dumbbell,
   Lock,
   User,
   Eye,
@@ -57,95 +56,51 @@ function LoginForm() {
 
         {/* Top Header */}
         <div className="space-y-3 relative z-10">
-          <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-white shadow-xs">
-            <Dumbbell className="w-5 h-5 text-sky-400" />
-          </div>
-
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-sky-400">
-              Management CRM
-            </span>
-            <h1 className="text-2xl font-black tracking-tight text-white">
-              Concept I <span className="text-rose-500">Gym</span>
-            </h1>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-white p-1.5 shadow-lg border border-white/40 flex items-center justify-center shrink-0 overflow-hidden">
+              <img
+                src="/icons/logo.png"
+                alt="Concept 1 Gym Logo"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-sky-400 block">
+                Official CRM Portal
+              </span>
+              <h1 className="text-2xl font-black tracking-tight text-white leading-none">
+                Concept 1 <span className="text-rose-500">Gym</span>
+              </h1>
+            </div>
           </div>
         </div>
 
-        {/* Center: Stylized Vector Gym / Fitness Art */}
-        <div className="my-auto py-6 flex items-center justify-center relative z-10">
-          <div className="relative w-full max-w-[260px] aspect-square flex items-center justify-center">
+        {/* Center: Aesthetic Glassmorphism Emblem Showcase with Concept 1 Logo */}
+        <div className="my-auto py-8 flex flex-col items-center justify-center relative z-10">
+          <div className="relative flex flex-col items-center justify-center">
             
-            {/* Background Geometric Rings */}
-            <div className="absolute inset-0 rounded-full border border-sky-500/20 border-dashed animate-[spin_60s_linear_infinite]" />
-            <div className="absolute inset-4 rounded-full border border-white/10" />
-            <div className="absolute inset-10 rounded-full bg-gradient-to-tr from-sky-500/10 to-transparent blur-md" />
+            {/* Outer Ambient Rotating Rings & Glow */}
+            <div className="absolute -inset-6 rounded-full border border-sky-400/25 border-dashed animate-[spin_80s_linear_infinite] pointer-events-none" />
+            <div className="absolute -inset-12 rounded-full bg-sky-500/10 blur-2xl pointer-events-none" />
+            <div className="absolute -inset-2 rounded-full border border-white/10 pointer-events-none" />
 
-            {/* Custom High-Quality Gym Vector Illustration */}
-            <svg
-              viewBox="0 0 240 240"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-full h-full relative z-10 drop-shadow-xl"
-            >
-              {/* Central Power Shield */}
-              <path
-                d="M120 28L180 52V112C180 152 154 188 120 200C86 188 60 152 60 112V52L120 28Z"
-                fill="url(#shield-grad)"
-                fillOpacity="0.35"
-                stroke="url(#stroke-grad)"
-                strokeWidth="2.5"
-                strokeLinejoin="round"
-              />
+            {/* Glowing Glassmorphic Circular Disc containing Official Logo */}
+            <div className="relative w-44 h-44 sm:w-52 sm:h-52 rounded-full p-2.5 bg-gradient-to-tr from-white/20 via-sky-400/20 to-white/10 backdrop-blur-xl border border-white/30 shadow-[0_0_50px_rgba(56,189,248,0.35)] flex items-center justify-center transition-transform hover:scale-105 duration-500">
+              <div className="w-full h-full rounded-full bg-white flex items-center justify-center p-3.5 shadow-2xl overflow-hidden relative">
+                <img
+                  src="/icons/logo.png"
+                  alt="Concept 1 Gym"
+                  className="w-full h-full object-contain filter drop-shadow-md select-none"
+                />
+              </div>
+            </div>
 
-              {/* Barbell Across Center */}
-              {/* Left Weight Plates */}
-              <rect x="74" y="98" width="6" height="44" rx="3" fill="#38bdf8" />
-              <rect x="83" y="104" width="5" height="32" rx="2.5" fill="#0284c7" />
-              <rect x="91" y="110" width="4" height="20" rx="2" fill="#bae6fd" />
-
-              {/* Main Bar */}
-              <rect x="91" y="117" width="58" height="6" rx="3" fill="#f8fafc" />
-
-              {/* Right Weight Plates */}
-              <rect x="145" y="110" width="4" height="20" rx="2" fill="#bae6fd" />
-              <rect x="152" y="104" width="5" height="32" rx="2.5" fill="#0284c7" />
-              <rect x="160" y="98" width="6" height="44" rx="3" fill="#38bdf8" />
-
-              {/* Stylized Silhouette Athlete Figure (Torso & Head) */}
-              <circle cx="120" cy="74" r="10" fill="#f1f5f9" />
-              <path
-                d="M102 108C102 96 109 90 120 90C131 90 138 96 138 108L140 134H100L102 108Z"
-                fill="#cbd5e1"
-                fillOpacity="0.9"
-              />
-
-              {/* Energy Pulse Line */}
-              <path
-                d="M72 152H96L106 138L116 164L126 142L134 156L142 152H168"
-                stroke="#f43f5e"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-
-              {/* Accent Sparkles */}
-              <circle cx="92" cy="68" r="2" fill="#38bdf8" />
-              <circle cx="154" cy="78" r="2" fill="#38bdf8" />
-              <circle cx="120" cy="182" r="3" fill="#38bdf8" />
-
-              {/* Gradients */}
-              <defs>
-                <linearGradient id="shield-grad" x1="60" y1="28" x2="180" y2="200" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#0284c7" />
-                  <stop offset="1" stopColor="#0f172a" />
-                </linearGradient>
-                <linearGradient id="stroke-grad" x1="60" y1="28" x2="180" y2="200" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#38bdf8" />
-                  <stop offset="0.5" stopColor="#818cf8" />
-                  <stop offset="1" stopColor="#f43f5e" />
-                </linearGradient>
-              </defs>
-            </svg>
+            {/* Floating Motto Pill */}
+            <div className="mt-6 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-center shadow-lg">
+              <span className="text-[11px] font-bold tracking-widest uppercase text-sky-300">
+                Precision • Strength • Dedication
+              </span>
+            </div>
           </div>
         </div>
 
@@ -153,9 +108,9 @@ function LoginForm() {
         <div className="pt-4 border-t border-white/10 text-[11px] text-slate-400 flex items-center justify-between relative z-10">
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
-            <span>Staff Portal Access</span>
+            <span>Authorized Staff Only</span>
           </div>
-          <span className="font-mono text-[10px] text-slate-500">v2.0</span>
+          <span className="font-mono text-[10px] text-slate-400">Concept 1 • Vadodara</span>
         </div>
       </div>
 

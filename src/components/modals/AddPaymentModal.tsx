@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { X, CreditCard, User, IndianRupee, FileText, CheckCircle2, MessageSquare, RefreshCw } from "lucide-react";
 import { addPayment, AddPaymentInput } from "@/lib/actions/payments";
 import { PaymentMethod } from "@prisma/client";
-import { formatINR } from "@/lib/utils";
+import { formatINR, formatRS } from "@/lib/utils";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { sendReceiptWhatsAppAction } from "@/lib/actions/whatsapp-automation";
 
@@ -65,7 +65,11 @@ export function AddPaymentModal({
       return;
     }
     if (!formData.amount || formData.amount <= 0) {
-      setError("Please enter an amount greater than ₹0");
+      setError("Please enter an amount greater than Rs. 0");
+      return;
+    }
+    if (formData.paymentType === "OTHER" && !formData.notes?.trim()) {
+      setError("Please specify the item or reason for Other payment (e.g. Diet Plan, Locker)");
       return;
     }
 
@@ -116,7 +120,7 @@ export function AddPaymentModal({
         <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100">
           <div>
             <h3 className="font-bold text-base text-slate-900">Record Payment</h3>
-            <p className="text-xs text-slate-400">Collect fee or clear pending balance</p>
+            <p className="text-xs text-slate-400">Collect fee, PT charge, or miscellaneous payment</p>
           </div>
           <button
             onClick={handleClose}
@@ -135,8 +139,11 @@ export function AddPaymentModal({
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-left text-xs space-y-1">
               <p className="text-slate-400">Receipt Number:</p>
               <p className="font-mono font-bold text-slate-900">{successReceipt}</p>
-              <p className="text-slate-400 pt-1">Amount: <span className="font-semibold text-slate-900">{formatINR(formData.amount)}</span></p>
+              <p className="text-slate-400 pt-1">Amount: <span className="font-semibold text-slate-900">{formatRS(formData.amount)}</span></p>
               <p className="text-slate-400">Payment Mode: <span className="font-medium text-slate-700">{formData.paymentMethod}</span></p>
+              {formData.paymentType === "OTHER" && formData.notes && (
+                <p className="text-slate-400">Item / Note: <span className="font-semibold text-slate-900">{formData.notes}</span></p>
+              )}
             </div>
 
             {/* Direct WhatsApp Receipt Button: Admin & SuperUser only */}
@@ -188,7 +195,7 @@ export function AddPaymentModal({
                   <span>{prefillMemberName}</span>
                   {prefillDueAmount !== undefined && (
                     <span className="text-xs text-rose-600 font-bold">
-                      Pending: {formatINR(prefillDueAmount)}
+                      Pending: {formatRS(prefillDueAmount)}
                     </span>
                   )}
                 </div>
@@ -208,7 +215,7 @@ export function AddPaymentModal({
                   <option value="">-- Choose Member --</option>
                   {membersList.map((m) => (
                     <option key={m.id} value={m.id}>
-                      {m.fullName} ({m.memberId}) {m.dueAmount ? `- Due: ₹${m.dueAmount}` : ""}
+                      {m.fullName} ({m.memberId}) {m.dueAmount ? `- Due: Rs. ${m.dueAmount}` : ""}
                     </option>
                   ))}
                 </select>
@@ -217,7 +224,7 @@ export function AddPaymentModal({
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Amount (₹) <span className="text-red-500">*</span>
+                Amount (Rs.) <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -255,15 +262,34 @@ export function AddPaymentModal({
                 <select
                   value={formData.paymentType}
                   onChange={(e) => setFormData({ ...formData, paymentType: e.target.value })}
-                  className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 bg-white"
+                  className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 bg-white font-medium"
                 >
                   <option value="DUE_CLEARANCE">Due Clearance</option>
-                  <option value="MEMBERSHIP_FEE">Membership Fee</option>
-                  <option value="PERSONAL_TRAINING">Personal Training</option>
-                  <option value="OTHER">Other</option>
+                  <option value="MEMBERSHIP_FEE">Gym Membership</option>
+                  <option value="PERSONAL_TRAINING">Personal Training (PT)</option>
+                  <option value="OTHER">Others (Diet / Locker / Misc)</option>
                 </select>
               </div>
             </div>
+
+            {formData.paymentType === "OTHER" && (
+              <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl space-y-1">
+                <label className="block text-xs font-bold text-amber-900">
+                  Item Description / Reason <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Dietitian Plan, Locker Rental, Supplement, etc."
+                  value={formData.notes || ""}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="w-full px-3 py-2 text-xs sm:text-sm border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 bg-white font-medium text-slate-900"
+                />
+                <p className="text-[10px] text-amber-700">
+                  This description will appear as the line item on the customer receipt.
+                </p>
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">Payment Date</label>
@@ -275,16 +301,18 @@ export function AddPaymentModal({
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Remarks</label>
-              <input
-                type="text"
-                placeholder="e.g. Paid via UPI Txn ID..."
-                value={formData.notes || ""}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900"
-              />
-            </div>
+            {formData.paymentType !== "OTHER" && (
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Remarks (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Paid via UPI Txn ID..."
+                  value={formData.notes || ""}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900"
+                />
+              </div>
+            )}
 
             {/* Actions */}
             <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">

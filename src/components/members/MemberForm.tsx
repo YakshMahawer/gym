@@ -917,7 +917,7 @@ export function MemberForm({
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Plan Fee (₹)</label>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Plan Fee (Rs.)</label>
                     <input
                       type="number"
                       placeholder="0"
@@ -933,7 +933,7 @@ export function MemberForm({
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Amount Paid (₹)</label>
+                      <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Amount Paid (Rs.)</label>
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
@@ -949,7 +949,7 @@ export function MemberForm({
                           className="text-[10px] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-2 py-0.5 rounded transition"
                           title="Mark full fee as pending due"
                         >
-                          Full Due (₹0)
+                          Full Due (Rs. 0)
                         </button>
                       </div>
                     </div>
@@ -967,9 +967,9 @@ export function MemberForm({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Balance Due (₹)</label>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Balance Due (Rs.)</label>
                     <div className="px-3 py-1.5 text-xs sm:text-sm border border-slate-200 rounded-lg bg-white font-bold text-rose-600">
-                      ₹{calculatedDue.toLocaleString("en-IN")}
+                      Rs. {calculatedDue.toLocaleString("en-IN")}
                     </div>
                   </div>
                 </div>

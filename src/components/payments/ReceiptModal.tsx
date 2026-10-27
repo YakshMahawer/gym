@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { X, Printer, CheckCircle2, Edit, MessageSquare, RefreshCw, AlertCircle } from "lucide-react";
-import { formatINR, formatDate, formatInvoiceNo } from "@/lib/utils";
+import { formatINR, formatRS, formatDate, formatInvoiceNo } from "@/lib/utils";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { sendReceiptWhatsAppAction } from "@/lib/actions/whatsapp-automation";
 
@@ -86,7 +86,9 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
       ? `Personal Training - ${receipt.ptSubscription.planName}${ptTrainer ? ` (Trainer: ${ptTrainer})` : ""}`
       : receipt.subscription?.planName ||
         receipt.member?.subscriptions?.[0]?.planName ||
-        (receipt.paymentType ? receipt.paymentType.replace(/_/g, " ") : "Gym Membership"));
+        (receipt.paymentType === "OTHER" && receipt.notes
+          ? `Other: ${receipt.notes}`
+          : receipt.paymentType ? receipt.paymentType.replace(/_/g, " ") : "Gym Membership"));
 
   const startDate =
     receipt.startDate ||
@@ -100,14 +102,7 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
     receipt.subscription?.endDate ||
     receipt.member?.subscriptions?.[0]?.endDate;
 
-  // Single transaction tax calculations (18% GST Breakdown: 9% CGST + 9% SGST)
   const totalAmount = Number(receipt.amount) || 0;
-  const taxableValue = Math.round((totalAmount / 1.18) * 100) / 100;
-  const totalGst = Math.round((totalAmount - taxableValue) * 100) / 100;
-  const cgst = Math.round((totalGst / 2) * 100) / 100;
-  const sgst = Math.round((totalGst - cgst) * 100) / 100;
-
-  // Tax Invoice Number with Fiscal Year (e.g. 26-27/00001)
   const invoiceNo = formatInvoiceNo(receipt.receiptNo, receipt.paymentDate);
 
   const handlePrint = () => {
@@ -178,7 +173,7 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
           <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs">
             <div>
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                {isPT ? "Personal Training (PT) Tax Invoice" : "Membership Tax Invoice"}
+                {isPT ? "Personal Training (PT) Receipt" : "Payment Receipt"}
               </span>
               <span className="font-mono font-bold text-slate-900 text-sm">
                 {invoiceNo}
@@ -191,7 +186,7 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
             </div>
             <div className="text-right">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                Invoice Date
+                Receipt Date
               </span>
               <div className="flex items-center justify-end gap-1.5">
                 <span className="font-semibold text-slate-800">
@@ -266,34 +261,22 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
               <thead>
                 <tr className="bg-slate-100 text-slate-600 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
                   <th className="py-2.5 px-4">Description</th>
-                  <th className="py-2.5 px-4 text-right">Amount (₹)</th>
+                  <th className="py-2.5 px-4 text-right">Amount (Rs.)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-800">
                 <tr>
-                  <td className="py-2.5 px-4 font-semibold text-slate-900">
+                  <td className="py-3 px-4 font-semibold text-slate-900">
                     {planName}
                   </td>
-                  <td className="py-2.5 px-4 text-right font-medium">
-                    {formatINR(totalAmount)}
+                  <td className="py-3 px-4 text-right font-medium">
+                    {formatRS(totalAmount)}
                   </td>
                 </tr>
-                <tr className="bg-slate-50/50 text-slate-600 text-[11px]">
-                  <td className="py-2 px-4">Taxable Value (Base)</td>
-                  <td className="py-2 px-4 text-right font-mono">{formatINR(taxableValue)}</td>
-                </tr>
-                <tr className="bg-slate-50/50 text-slate-600 text-[11px]">
-                  <td className="py-1.5 px-4">CGST @ 9%</td>
-                  <td className="py-1.5 px-4 text-right font-mono">{formatINR(cgst)}</td>
-                </tr>
-                <tr className="bg-slate-50/50 text-slate-600 text-[11px]">
-                  <td className="py-1.5 px-4">SGST @ 9%</td>
-                  <td className="py-1.5 px-4 text-right font-mono">{formatINR(sgst)}</td>
-                </tr>
                 <tr className="bg-slate-100/80 font-bold text-slate-900 text-xs border-t-2 border-slate-300">
-                  <td className="py-3 px-4">Total Amount</td>
+                  <td className="py-3 px-4">Total Amount Paid</td>
                   <td className="py-3 px-4 text-right text-base text-emerald-800 font-black">
-                    {formatINR(totalAmount)}
+                    {formatRS(totalAmount)}
                   </td>
                 </tr>
               </tbody>
@@ -320,7 +303,7 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
           <div className="pt-4 border-t border-slate-200 flex items-end justify-between text-[10px] text-slate-400">
             <div>
               <p className="font-semibold text-slate-600">Concept 1 Gym Management</p>
-              <p>This is a computer-generated tax invoice.</p>
+              <p>This is a computer-generated digital payment receipt.</p>
               <p className="mt-0.5 text-emerald-600 font-medium flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3" />
                 <span>Payment Verified & Accounted</span>

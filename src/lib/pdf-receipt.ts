@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 import { prisma } from "@/lib/prisma";
-import { formatINR, formatRS, formatDate, formatInvoiceNo } from "@/lib/utils";
+import { formatDate, formatInvoiceNo } from "@/lib/utils";
 
 export interface ReceiptPdfData {
   invoiceNo: string;
@@ -15,13 +15,22 @@ export interface ReceiptPdfData {
   endDate?: string;
   paymentMethod: string;
   totalAmount: number;
-  taxableAmount: number;
-  cgst: number;
-  sgst: number;
 }
 
 /**
- * Generates a clean, professional vector PDF invoice for Concept 1 Gym
+ * Pure ASCII currency formatter for jsPDF
+ * Strictly avoids any Unicode Rupee symbol (₹ / \u20B9) or non-breaking spaces
+ * that corrupt into superscript '1' (¹) in Latin-1 / WinAnsi PDF engines.
+ */
+function toRs(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined || isNaN(amount)) return "Rs. 0";
+  const formatted = Math.round(amount).toLocaleString("en-IN");
+  return `Rs. ${formatted}`;
+}
+
+/**
+ * Generates a clean, professional vector PDF receipt for Concept 1 Gym
+ * With pure Rs. currency formatting and zero tax breakdown.
  */
 export function buildReceiptPdfDocument(data: ReceiptPdfData): Uint8Array {
   const doc = new jsPDF({
@@ -45,7 +54,7 @@ export function buildReceiptPdfDocument(data: ReceiptPdfData): Uint8Array {
   doc.setTextColor(203, 213, 225);
   doc.text("1st floor, Dream Iconia, near Hans Party Plot, Manjalpur, Vadodara, Gujarat 390011", 15, 26);
 
-  // 2. Invoice Meta Banner
+  // 2. Receipt Meta Banner
   doc.setFillColor(248, 250, 252); // slate-50
   doc.setDrawColor(226, 232, 240); // slate-200
   doc.setLineWidth(0.3);
@@ -54,15 +63,15 @@ export function buildReceiptPdfDocument(data: ReceiptPdfData): Uint8Array {
   doc.setTextColor(100, 116, 139);
   doc.setFontSize(7.5);
   doc.setFont("helvetica", "bold");
-  doc.text("OFFICIAL TAX INVOICE", 20, 48);
-  doc.text("INVOICE DATE", 145, 48);
+  doc.text("PAYMENT RECEIPT", 20, 48);
+  doc.text("RECEIPT DATE", 145, 48);
 
   doc.setTextColor(15, 23, 42);
   doc.setFontSize(11);
   doc.text(data.invoiceNo, 20, 55);
   doc.text(data.invoiceDate, 145, 55);
 
-  // 3. Member & Subscription Details Box
+  // 3. Member & Plan Details Box
   doc.setDrawColor(226, 232, 240);
   doc.setLineWidth(0.4);
   doc.roundedRect(15, 65, 180, 42, 2, 2, "S");
@@ -71,7 +80,7 @@ export function buildReceiptPdfDocument(data: ReceiptPdfData): Uint8Array {
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
   doc.setFont("helvetica", "bold");
-  doc.text("BILLED TO (MEMBER):", 20, 72);
+  doc.text("RECEIVED FROM (MEMBER):", 20, 72);
 
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
@@ -96,82 +105,70 @@ export function buildReceiptPdfDocument(data: ReceiptPdfData): Uint8Array {
   doc.setFontSize(10.5);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(15, 23, 42);
-  doc.text(data.planName.slice(0, 36), 110, 79);
+  doc.text(data.planName.slice(0, 38), 110, 79);
 
   doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(71, 85, 105);
-  doc.text(`Validity: ${data.startDate || "N/A"} to ${data.endDate || "N/A"}`, 110, 85.5);
+  if (data.startDate && data.endDate) {
+    doc.text(`Validity: ${data.startDate} to ${data.endDate}`, 110, 85.5);
+  } else {
+    doc.text(`Validity: Active`, 110, 85.5);
+  }
   doc.text(`Payment Mode: ${data.paymentMethod || "UPI"}`, 110, 91.5);
   doc.text(`Receipt #: ${data.receiptNo}`, 110, 97.5);
 
-  // 4. Line Items Table Header
+  // 4. Line Items Table Header (No tax columns)
   doc.setFillColor(15, 23, 42);
   doc.rect(15, 113, 180, 8.5, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
   doc.text("DESCRIPTION", 20, 118.5);
-  doc.text("HSN / SAC", 100, 118.5);
-  doc.text("RATE (INR)", 135, 118.5);
-  doc.text("AMOUNT (INR)", 168, 118.5);
+  doc.text("AMOUNT (Rs.)", 155, 118.5);
 
   // Line Item Row
   doc.setTextColor(15, 23, 42);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.text(data.planName.slice(0, 42), 20, 128);
-  doc.text("999723", 100, 128);
-  doc.text(formatINR(data.taxableAmount).replace("₹", "").trim(), 135, 128);
-  doc.text(formatINR(data.taxableAmount).replace("₹", "").trim(), 168, 128);
+  doc.setFontSize(9);
+  doc.text(data.planName.slice(0, 50), 20, 129);
+  doc.setFont("helvetica", "bold");
+  doc.text(toRs(data.totalAmount), 155, 129);
 
   doc.setDrawColor(226, 232, 240);
-  doc.line(15, 133, 195, 133);
+  doc.line(15, 136, 195, 136);
 
-  // 5. Tax Breakdown & Totals (Right Column)
-  let y = 143;
-  doc.setFontSize(8.5);
-  doc.setTextColor(100, 116, 139);
-  doc.text("Taxable Value:", 120, y);
-  doc.setTextColor(15, 23, 42);
-  doc.text(formatRS(data.taxableAmount), 168, y);
-
-  y += 6.5;
-  doc.setTextColor(100, 116, 139);
-  doc.text("CGST (9%):", 120, y);
-  doc.setTextColor(15, 23, 42);
-  doc.text(formatRS(data.cgst), 168, y);
-
-  y += 6.5;
-  doc.setTextColor(100, 116, 139);
-  doc.text("SGST (9%):", 120, y);
-  doc.setTextColor(15, 23, 42);
-  doc.text(formatRS(data.sgst), 168, y);
-
-  y += 5;
-  doc.setDrawColor(203, 213, 225);
-  doc.line(120, y, 195, y);
-
-  y += 8;
+  // 5. Clean Total Section (Direct amount, zero tax division)
+  const y = 146;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(15, 23, 42);
-  doc.text("Total Amount:", 120, y);
-  doc.text(formatRS(data.totalAmount), 168, y);
+  doc.text("Total Amount Paid:", 100, y);
+  doc.text(toRs(data.totalAmount), 155, y);
 
-  // 7. Footer & Legal Disclaimer
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineWidth(0.3);
+  doc.line(100, y + 3, 195, y + 3);
+
+  // 6. Payment Status Confirmation
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(22, 101, 52); // emerald-800
+  doc.text(`Status: Payment Received & Accounted (${data.paymentMethod})`, 100, y + 10);
+
+  // 7. Footer & Notes
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(148, 163, 184);
   doc.text(
-    "This is an electronically generated tax invoice. No signature or physical stamp is required.",
+    "This is an electronically generated payment receipt. No signature or physical stamp is required.",
     15,
-    192
+    185
   );
   doc.text(
     "Thank you for being part of Concept 1 Gym! Stay dedicated, stay strong.",
     15,
-    197
+    191
   );
 
   const arrayBuffer = doc.output("arraybuffer");
@@ -215,17 +212,14 @@ export async function getReceiptPdfBuffer(identifier: string): Promise<{
     payment.ptSubscription
       ? `Personal Training - ${payment.ptSubscription.planName}${ptTrainer ? ` (Trainer: ${ptTrainer})` : ""}`
       : payment.subscription?.planName ||
-        (payment.paymentType ? payment.paymentType.replace(/_/g, " ") : "Gym Membership");
+        (payment.paymentType === "OTHER" && payment.notes
+          ? `Other: ${payment.notes}`
+          : payment.paymentType ? payment.paymentType.replace(/_/g, " ") : "Gym Membership");
 
   const startDate = payment.ptSubscription?.startDate || payment.subscription?.startDate;
   const endDate = payment.ptSubscription?.endDate || payment.subscription?.endDate;
 
   const totalAmount = Number(payment.amount) || 0;
-  const taxableAmount = Math.round((totalAmount / 1.18) * 100) / 100;
-  const totalGst = Math.round((totalAmount - taxableAmount) * 100) / 100;
-  const cgst = Math.round((totalGst / 2) * 100) / 100;
-  const sgst = Math.round((totalGst - cgst) * 100) / 100;
-
   const invoiceNo = formatInvoiceNo(payment.receiptNo, payment.paymentDate);
 
   const pdfBuffer = buildReceiptPdfDocument({
@@ -241,11 +235,8 @@ export async function getReceiptPdfBuffer(identifier: string): Promise<{
     endDate: endDate ? formatDate(endDate) : undefined,
     paymentMethod: payment.paymentMethod || "UPI",
     totalAmount,
-    taxableAmount,
-    cgst,
-    sgst,
   });
 
-  const cleanFilename = `Concept1Gym_Invoice_${payment.receiptNo}.pdf`;
+  const cleanFilename = `Concept1Gym_Receipt_${payment.receiptNo}.pdf`;
   return { buffer: pdfBuffer, filename: cleanFilename };
 }

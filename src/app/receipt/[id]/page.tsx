@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { formatINR, formatDate, formatInvoiceNo } from "@/lib/utils";
+import { formatINR, formatRS, formatDate, formatInvoiceNo } from "@/lib/utils";
 import { CheckCircle2, Dumbbell, Printer } from "lucide-react";
 import { PrintButton } from "./PrintButton";
 
@@ -46,17 +46,14 @@ export default async function PublicReceiptPage({ params }: ReceiptPageProps) {
     payment.ptSubscription
       ? `Personal Training - ${payment.ptSubscription.planName}${ptTrainer ? ` (Trainer: ${ptTrainer})` : ""}`
       : payment.subscription?.planName ||
-        (payment.paymentType ? payment.paymentType.replace(/_/g, " ") : "Gym Membership");
+        (payment.paymentType === "OTHER" && payment.notes
+          ? `Other: ${payment.notes}`
+          : payment.paymentType ? payment.paymentType.replace(/_/g, " ") : "Gym Membership");
 
   const startDate = payment.ptSubscription?.startDate || payment.subscription?.startDate;
   const endDate = payment.ptSubscription?.endDate || payment.subscription?.endDate;
 
   const totalAmount = Number(payment.amount) || 0;
-  const taxableValue = Math.round((totalAmount / 1.18) * 100) / 100;
-  const totalGst = Math.round((totalAmount - taxableValue) * 100) / 100;
-  const cgst = Math.round((totalGst / 2) * 100) / 100;
-  const sgst = Math.round((totalGst - cgst) * 100) / 100;
-
   const invoiceNo = formatInvoiceNo(payment.receiptNo, payment.paymentDate);
 
   return (
@@ -69,16 +66,16 @@ export default async function PublicReceiptPage({ params }: ReceiptPageProps) {
           </div>
           <div>
             <span className="font-bold text-xs text-slate-900 uppercase tracking-tight block">
-              Concept I Gym
+              Concept 1 Gym
             </span>
-            <span className="text-[10px] text-slate-500">Official Digital Tax Receipt</span>
+            <span className="text-[10px] text-slate-500">Official Payment Receipt</span>
           </div>
         </div>
 
         <PrintButton receiptId={payment.receiptNo} />
       </div>
 
-      {/* Main Printable Tax Invoice Card */}
+      {/* Main Printable Payment Receipt Card */}
       <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden print:shadow-none print:border-none print:max-w-none print:w-full">
         <div className="p-6 sm:p-8 space-y-5 text-slate-900 font-sans">
           
@@ -94,11 +91,11 @@ export default async function PublicReceiptPage({ params }: ReceiptPageProps) {
             </div>
           </div>
 
-          {/* Invoice Meta Banner */}
+          {/* Receipt Meta Banner */}
           <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs">
             <div>
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                {isPT ? "Personal Training (PT) Tax Invoice" : "Membership Tax Invoice"}
+                {isPT ? "Personal Training (PT) Receipt" : "Payment Receipt"}
               </span>
               <span className="font-mono font-bold text-slate-900 text-sm">
                 {invoiceNo}
@@ -111,7 +108,7 @@ export default async function PublicReceiptPage({ params }: ReceiptPageProps) {
             </div>
             <div className="text-right">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                Invoice Date
+                Receipt Date
               </span>
               <span className="font-semibold text-slate-800">
                 {formatDate(payment.paymentDate)}
@@ -174,34 +171,22 @@ export default async function PublicReceiptPage({ params }: ReceiptPageProps) {
               <thead>
                 <tr className="bg-slate-100 text-slate-600 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
                   <th className="py-2.5 px-4">Description</th>
-                  <th className="py-2.5 px-4 text-right">Amount (₹)</th>
+                  <th className="py-2.5 px-4 text-right">Amount (Rs.)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-800">
                 <tr>
-                  <td className="py-2.5 px-4 font-semibold text-slate-900">
+                  <td className="py-3 px-4 font-semibold text-slate-900">
                     {planName}
                   </td>
-                  <td className="py-2.5 px-4 text-right font-medium">
-                    {formatINR(totalAmount)}
+                  <td className="py-3 px-4 text-right font-medium">
+                    {formatRS(totalAmount)}
                   </td>
                 </tr>
-                <tr className="bg-slate-50/50 text-slate-600 text-[11px]">
-                  <td className="py-2 px-4">Taxable Value (Base)</td>
-                  <td className="py-2 px-4 text-right font-mono">{formatINR(taxableValue)}</td>
-                </tr>
-                <tr className="bg-slate-50/50 text-slate-600 text-[11px]">
-                  <td className="py-1.5 px-4">CGST @ 9%</td>
-                  <td className="py-1.5 px-4 text-right font-mono">{formatINR(cgst)}</td>
-                </tr>
-                <tr className="bg-slate-50/50 text-slate-600 text-[11px]">
-                  <td className="py-1.5 px-4">SGST @ 9%</td>
-                  <td className="py-1.5 px-4 text-right font-mono">{formatINR(sgst)}</td>
-                </tr>
                 <tr className="bg-slate-100/80 font-bold text-slate-900 text-xs border-t-2 border-slate-300">
-                  <td className="py-3 px-4">Total Amount</td>
+                  <td className="py-3 px-4">Total Amount Paid</td>
                   <td className="py-3 px-4 text-right text-base text-emerald-800 font-black">
-                    {formatINR(totalAmount)}
+                    {formatRS(totalAmount)}
                   </td>
                 </tr>
               </tbody>
@@ -228,7 +213,7 @@ export default async function PublicReceiptPage({ params }: ReceiptPageProps) {
           <div className="pt-4 border-t border-slate-200 flex items-end justify-between text-[10px] text-slate-400">
             <div>
               <p className="font-semibold text-slate-600">Concept 1 Gym Management</p>
-              <p>This is a computer-generated digital tax invoice.</p>
+              <p>This is a computer-generated digital payment receipt.</p>
               <p className="mt-0.5 text-emerald-600 font-medium flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3" />
                 <span>Payment Verified & Accounted</span>

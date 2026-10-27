@@ -226,7 +226,7 @@ export function PaymentsClient({ payments, dueSubscriptions, allMembers }: Payme
             Payments & Financial Ledger
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Sequential receipt numbering, member fees, PT payments, and printable tax invoices.
+            Sequential receipt numbering, member fees, PT payments, and printable payment receipts.
           </p>
         </div>
 

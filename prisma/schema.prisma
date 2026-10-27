@@ -104,11 +104,29 @@ model MembershipPlan {
   durationInDays Int
   price          Float
   description    String?
+  category       String               @default("GYM") // "GYM" | "PT" | "OTHER"
+  sessions       Int?
   isActive       Boolean              @default(true)
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 
   subscriptions  MemberSubscription[]
+
+  @@index([category])
+  @@index([isActive])
+}
+
+model Trainer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  specialty String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([isActive])
 }
 
 model MemberSubscription {

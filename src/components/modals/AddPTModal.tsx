@@ -8,8 +8,10 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { addOrRenewMemberPT } from "@/lib/actions/pt";
+import { getTrainers } from "@/lib/actions/trainers";
+import { getPlans } from "@/lib/actions/plans";
 import { STANDARD_PT_PLANS } from "@/lib/pt-constants";
-import { formatINR, formatDate } from "@/lib/utils";
+import { formatRS, formatDate } from "@/lib/utils";
 import { PaymentMethod } from "@prisma/client";
 
 interface AddPTModalProps {
@@ -34,7 +36,7 @@ interface AddPTModalProps {
   onPrintReceipt?: (receipt: any) => void;
 }
 
-const TRAINER_OPTIONS = [
+const DEFAULT_TRAINER_OPTIONS = [
   "-",
   "Coach Vikram",
   "Coach Rahul",
@@ -42,7 +44,6 @@ const TRAINER_OPTIONS = [
   "Coach Simran",
   "Coach Alex",
   "Head Coach Aman",
-  "General Trainer",
   "Other / Custom",
 ];
 
@@ -50,6 +51,7 @@ const DEFAULT_FALLBACK_PLAN = {
   name: "1 Month PT (12 Sessions)",
   price: 6000,
   durationInDays: 30,
+  sessions: 12,
   description: "12 One-on-one sessions in 1 month",
 };
 
@@ -79,7 +81,10 @@ export function AddPTModal({
   const isExistingOngoingPT =
     Boolean(member.activePT && new Date(member.activePT.endDate) > new Date());
 
-  const initialPlan = STANDARD_PT_PLANS[0] || DEFAULT_FALLBACK_PLAN;
+  const [ptPlansList, setPtPlansList] = useState<any[]>(STANDARD_PT_PLANS);
+  const [trainersList, setTrainersList] = useState<string[]>(DEFAULT_TRAINER_OPTIONS);
+
+  const initialPlan = ptPlansList[0] || DEFAULT_FALLBACK_PLAN;
 
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
   const [selectedTrainerOption, setSelectedTrainerOption] = useState<string>("Coach Vikram");
@@ -98,6 +103,33 @@ export function AddPTModal({
 
   useEffect(() => {
     if (isOpen) {
+      // Dynamically load trainers from DB
+      getTrainers().then((dbTrainers) => {
+        if (dbTrainers && dbTrainers.length > 0) {
+          const names = ["-", ...dbTrainers.map((t) => t.name), "Other / Custom"];
+          setTrainersList(names);
+        }
+      });
+
+      // Dynamically load PT plans from DB
+      getPlans("PT").then((dbPlans) => {
+        if (dbPlans && dbPlans.length > 0) {
+          const mapped = dbPlans.map((p) => ({
+            name: p.name,
+            price: p.price,
+            durationInDays: p.durationInDays,
+            sessions: p.sessions || 12,
+            description: p.description || "",
+          }));
+          setPtPlansList(mapped);
+          if (mapped[0]) {
+            setTotalAmount(mapped[0].price);
+            setPaidAmount(mapped[0].price);
+            setEndDate(calculateExpiryDate(startDate, mapped[0].durationInDays));
+          }
+        }
+      });
+
       const isOngoing = Boolean(
         member.activePT && new Date(member.activePT.endDate) > new Date()
       );
@@ -105,7 +137,7 @@ export function AddPTModal({
         ? new Date(member.activePT!.endDate).toISOString().split("T")[0]
         : new Date().toISOString().split("T")[0];
 
-      const defaultPlan = STANDARD_PT_PLANS[0] || DEFAULT_FALLBACK_PLAN;
+      const defaultPlan = ptPlansList[0] || DEFAULT_FALLBACK_PLAN;
       setSelectedPlanIndex(0);
       setStartDate(defaultStart);
       setEndDate(calculateExpiryDate(defaultStart, defaultPlan.durationInDays));
@@ -114,7 +146,7 @@ export function AddPTModal({
       const existingTrainer =
         member.activePT?.trainerName ||
         (member.representative && member.representative !== "-" ? member.representative : "-");
-      if (TRAINER_OPTIONS.includes(existingTrainer)) {
+      if (trainersList.includes(existingTrainer)) {
         setSelectedTrainerOption(existingTrainer);
         setCustomTrainerName("");
       } else if (existingTrainer && existingTrainer !== "-") {
@@ -138,7 +170,7 @@ export function AddPTModal({
 
   const handlePlanChange = (index: number) => {
     setSelectedPlanIndex(index);
-    const plan = STANDARD_PT_PLANS[index];
+    const plan = ptPlansList[index];
     if (plan) {
       setTotalAmount(plan.price);
       setPaidAmount(plan.price);
@@ -179,7 +211,7 @@ export function AddPTModal({
     setLoading(true);
     setError(null);
 
-    const plan = STANDARD_PT_PLANS[selectedPlanIndex] || DEFAULT_FALLBACK_PLAN;
+    const plan = ptPlansList[selectedPlanIndex] || DEFAULT_FALLBACK_PLAN;
     const planName = plan.name;
     const sessions = plan.sessions || 12;
 
@@ -283,9 +315,9 @@ export function AddPTModal({
               onChange={(e) => handlePlanChange(Number(e.target.value))}
               className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
             >
-              {STANDARD_PT_PLANS.map((plan, idx) => (
+              {ptPlansList.map((plan, idx) => (
                 <option key={idx} value={idx}>
-                  {plan.name} (Amt:- {plan.price.toFixed(2)})
+                  {plan.name} (Amt:- Rs. {plan.price.toLocaleString("en-IN")})
                 </option>
               ))}
             </select>
@@ -301,7 +333,7 @@ export function AddPTModal({
               onChange={(e) => setSelectedTrainerOption(e.target.value)}
               className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
             >
-              {TRAINER_OPTIONS.map((trainer) => (
+              {trainersList.map((trainer) => (
                 <option key={trainer} value={trainer}>
                   {trainer}
                 </option>
@@ -356,7 +388,7 @@ export function AddPTModal({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Total Package Fee (₹)
+                  Total Package Fee (Rs.)
                 </label>
                 <input
                   type="number"
@@ -377,7 +409,7 @@ export function AddPTModal({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Amount Paid Today (₹)
+                  Amount Paid Today (Rs.)
                 </label>
                 <input
                   type="number"
@@ -399,7 +431,7 @@ export function AddPTModal({
             {dueAmount > 0 && (
               <div className="flex items-center justify-between text-xs text-rose-700 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-200">
                 <span className="font-medium">Pending Balance:</span>
-                <span className="font-bold">{formatINR(dueAmount)}</span>
+                <span className="font-bold">{formatRS(dueAmount)}</span>
               </div>
             )}
 

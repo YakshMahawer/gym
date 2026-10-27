@@ -64,7 +64,9 @@ export function formatWhatsAppReceiptText(receipt: ReceiptData): string {
     (receipt.ptSubscription
       ? `PT: ${receipt.ptSubscription.planName}${receipt.ptSubscription.trainerName ? ` (${receipt.ptSubscription.trainerName})` : ""}`
       : receipt.subscription?.planName ||
-        (receipt.paymentType ? receipt.paymentType.replace(/_/g, " ") : "Gym Membership"));
+        (receipt.paymentType === "OTHER" && receipt.notes
+          ? `Other: ${receipt.notes}`
+          : receipt.paymentType ? receipt.paymentType.replace(/_/g, " ") : "Gym Membership"));
 
   const due =
     receipt.subscription?.dueAmount !== undefined
@@ -94,7 +96,7 @@ export function formatWhatsAppReceiptText(receipt: ReceiptData): string {
     `💰 *Amount Paid:* ${amount}\n` +
     `💳 *Payment Mode:* ${mode}\n` +
     `⚖️ *Pending Balance:* ${due}\n\n` +
-    `📄 *Official Digital Invoice Link:*\n${receiptUrl}\n\n` +
+    `📄 *Official Digital Receipt Link:*\n${receiptUrl}\n\n` +
     `Thank you for choosing Concept 1 Gym! Stay fit & strong! 💪\n` +
     `_1st floor, Dream Iconia, near Hans Party Plot, Manjalpur, Vadodara, Gujarat 390011_`
   );

@@ -24,7 +24,9 @@ export async function GET(
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `inline; filename="${result.filename}"`,
-        "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=43200",
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
       },
     });
   } catch (error: any) {

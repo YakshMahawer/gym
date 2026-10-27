@@ -173,7 +173,11 @@ export async function addPayment(input: AddPaymentInput) {
     let targetSubId = input.subscriptionId;
     let targetPtId = input.ptId;
 
-    if (!targetSubId && !targetPtId) {
+    if (input.paymentType === "OTHER") {
+      // Standalone Other payment (e.g. Diet plan, locker, add-on) - do not link to subscription dues
+      targetSubId = undefined;
+      targetPtId = undefined;
+    } else if (!targetSubId && !targetPtId) {
       // Find latest active subscription with due amount
       const subWithDue = await prisma.memberSubscription.findFirst({
         where: {
