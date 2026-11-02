@@ -111,7 +111,7 @@ export function ReportsClient({ data }: ReportsClientProps) {
   const [activeReportTab, setActiveReportTab] = useState<"ledger" | "packages" | "others" | "overview">("ledger");
 
   // Package view states
-  const [categoryFilter, setCategoryFilter] = useState<"ACTIVE" | "ALL" | "General" | "Special Offer">("ACTIVE");
+  const [categoryFilter, setCategoryFilter] = useState<"ACTIVE" | "ALL" | "General" | "Personal Training" | "Special Offer">("ACTIVE");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Ledger Report filters
@@ -238,24 +238,6 @@ export function ReportsClient({ data }: ReportsClientProps) {
         { header: "Price (Rs.)", accessor: (p) => p.price },
         { header: "Duration (Days)", accessor: (p) => p.durationInDays },
         { header: "Subscriptions Sold", accessor: (p) => p.count },
-        { header: "Total Revenue (Rs.)", accessor: (p) => p.revenue },
-      ],
-    });
-  };
-
-  const handleExportPTExcel = () => {
-    const ptTrainers = data.ptTrainerDistribution || [];
-    exportToExcel({
-      data: ptTrainers,
-      fileName: "Concept1Gym_PT_Trainer_Performance",
-      sheetName: "PT Trainers",
-      columns: [
-        { header: "Personal Trainer", accessor: (t) => t.trainer },
-        { header: "Total Clients", accessor: (t) => t.clientCount },
-        { header: "Active Clients", accessor: (t) => t.activeClients },
-        { header: "Total Sessions", accessor: (t) => t.totalSessions },
-        { header: "Completed Sessions", accessor: (t) => t.completedSessions },
-        { header: "Total Revenue Generated (Rs.)", accessor: (t) => t.revenue },
       ],
     });
   };
@@ -559,162 +541,20 @@ export function ReportsClient({ data }: ReportsClientProps) {
         </div>
       )}
 
-      {/* TAB 2: PACKAGES & PT ANALYTICS (Requirement 4) */}
+      {/* TAB 2: PACKAGES & MEMBERSHIPS ANALYTICS (Unified Gym & PT) */}
       {activeReportTab === "packages" && (
         <div className="space-y-6 animate-in fade-in duration-150">
-          
-          {/* SECTION 1: PERSONAL TRAINING (PT) DETAIL */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-xs space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Target className="w-5 h-5 text-rose-500" />
-                  <h3 className="font-bold text-base text-slate-900 dark:text-white">
-                    Personal Training (PT) Packages & Coach Performance
-                  </h3>
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Complete breakdown of PT packages sold, active trainees, sessions completed, and coach revenues.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleExportPTExcel}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-sky-600 dark:hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow-xs transition shrink-0 self-start sm:self-auto"
-              >
-                <Download className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Export PT Report</span>
-              </button>
-            </div>
-
-            {/* PT Metrics KPI Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Active PT Trainees</span>
-                <div className="text-lg font-black text-rose-600 dark:text-rose-400 mt-1">
-                  {data.ptSummary?.activeClients || 0}
-                </div>
-                <p className="text-[10px] text-slate-400 mt-0.5">Currently training</p>
-              </div>
-
-              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Total PT Enrolled</span>
-                <div className="text-lg font-black text-slate-900 dark:text-white mt-1">
-                  {data.ptSummary?.totalClients || 0}
-                </div>
-                <p className="text-[10px] text-slate-400 mt-0.5">All-time packages</p>
-              </div>
-
-              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Total PT Revenue</span>
-                <div className="text-lg font-black text-emerald-700 dark:text-emerald-400 mt-1">
-                  {formatRS(data.ptSummary?.totalRevenue || 0)}
-                </div>
-                <p className="text-[10px] text-slate-400 mt-0.5">Personal training fee</p>
-              </div>
-
-              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Sessions Completed</span>
-                <div className="text-lg font-black text-blue-600 dark:text-blue-400 mt-1">
-                  {data.ptSummary?.completedSessions || 0}
-                </div>
-                <p className="text-[10px] text-slate-400 mt-0.5">Tracked workouts</p>
-              </div>
-            </div>
-
-            {/* PT Packages Cards Grid */}
-            <div className="space-y-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                PT Package Options Sold
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {(data.ptPackagesDistribution || []).map((ptPlan) => (
-                  <div
-                    key={ptPlan.name}
-                    className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                        {ptPlan.activeCount} Active
-                      </span>
-                      <span className="text-xs font-mono text-slate-400">
-                        {ptPlan.count} total sold
-                      </span>
-                    </div>
-
-                    <h5 className="font-bold text-xs text-slate-900 dark:text-white">
-                      {ptPlan.name}
-                    </h5>
-
-                    <div className="pt-2 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-xs">
-                      <span className="text-slate-400 text-[11px]">{ptPlan.sessions} Sessions</span>
-                      <span className="font-bold text-emerald-700 dark:text-emerald-400">
-                        {formatRS(ptPlan.revenue)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Coach & Personal Trainer Performance Table */}
-            <div className="space-y-2 pt-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Personal Trainer & Coach Performance
-              </h4>
-              <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-xl">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-700">
-                      <th className="py-2.5 px-4">Personal Trainer</th>
-                      <th className="py-2.5 px-4 text-center">Active Trainees</th>
-                      <th className="py-2.5 px-4 text-center">Total Clients</th>
-                      <th className="py-2.5 px-4 text-center">Sessions Logged</th>
-                      <th className="py-2.5 px-4 text-right">Total Revenue</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {(data.ptTrainerDistribution || []).map((t) => (
-                      <tr key={t.trainer} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                        <td className="py-2.5 px-4 font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 text-[10px] font-black flex items-center justify-center shrink-0">
-                            {t.trainer[0] || "T"}
-                          </div>
-                          <span>{t.trainer}</span>
-                        </td>
-                        <td className="py-2.5 px-4 text-center font-bold text-rose-600 dark:text-rose-400">
-                          {t.activeClients}
-                        </td>
-                        <td className="py-2.5 px-4 text-center text-slate-600 dark:text-slate-300">
-                          {t.clientCount}
-                        </td>
-                        <td className="py-2.5 px-4 text-center text-slate-600 dark:text-slate-300 font-mono text-[11px]">
-                          {t.completedSessions} / {t.totalSessions}
-                        </td>
-                        <td className="py-2.5 px-4 text-right font-bold text-emerald-700 dark:text-emerald-400">
-                          {formatRS(t.revenue)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          {/* SECTION 2: REGULAR GYM MEMBERSHIP PACKAGES */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-[0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
             <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
                   <Trophy className="w-4 h-4 text-amber-500" />
                   <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                    Gym Membership Packages Analytics
+                    Membership & PT Packages Analytics
                   </h3>
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Breakdown across regular gym membership plans, duration terms, and special offers.
+                  Breakdown across gym memberships, personal training (PT) packages, and special offers.
                 </p>
               </div>
 
@@ -776,6 +616,18 @@ export function ReportsClient({ data }: ReportsClientProps) {
               </button>
 
               <button
+                onClick={() => setCategoryFilter("Personal Training")}
+                className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition flex items-center gap-1 ${
+                  categoryFilter === "Personal Training"
+                    ? "bg-slate-900 dark:bg-sky-600 text-white shadow-xs"
+                    : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 border border-slate-200/60 dark:border-slate-700"
+                }`}
+              >
+                <Target className="w-3.5 h-3.5 text-rose-500" />
+                <span>Personal Training (PT)</span>
+              </button>
+
+              <button
                 onClick={() => setCategoryFilter("Special Offer")}
                 className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition flex items-center gap-1 ${
                   categoryFilter === "Special Offer"
@@ -819,7 +671,15 @@ export function ReportsClient({ data }: ReportsClientProps) {
                                   #{index + 1}
                                 </span>
                               )}
-                              <span className="text-[10px] font-medium text-slate-500">
+                              <span
+                                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                                  plan.category === "Personal Training"
+                                    ? "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
+                                    : plan.category === "Special Offer"
+                                    ? "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+                                    : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+                                }`}
+                              >
                                 {plan.category || "General"}
                               </span>
                             </div>
@@ -846,8 +706,8 @@ export function ReportsClient({ data }: ReportsClientProps) {
                               )}
                             </span>
 
-                            <span className="font-medium text-slate-500">
-                              {plan.revenue > 0 ? formatRS(plan.revenue) : "Rs. 0"}
+                            <span className="font-medium text-slate-500 font-mono text-[10px]">
+                              {percentageOfTotal}% share
                             </span>
                           </div>
 
@@ -862,7 +722,7 @@ export function ReportsClient({ data }: ReportsClientProps) {
 
                           <div className="flex justify-between items-center text-[10px] text-slate-400">
                             <span>{plan.durationInDays} Days Duration</span>
-                            <span>{percentageOfTotal}% share</span>
+                            <span>{percentageOfTotal}% of total</span>
                           </div>
                         </div>
                       </div>

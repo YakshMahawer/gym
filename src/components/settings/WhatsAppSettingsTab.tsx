@@ -20,11 +20,15 @@ import {
   XCircle,
   Cake,
   HeartHandshake,
+  Gift,
+  Trash2,
 } from "lucide-react";
 import {
   getWhatsAppStatusAction,
   toggleWhatsAppAutomationAction,
   saveWhatsAppApiSettingsAction,
+  getScheduledWhatsAppMessagesAction,
+  cancelScheduledWhatsAppMessageAction,
 } from "@/lib/actions/whatsapp-automation";
 import { formatDateTime } from "@/lib/utils";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -51,6 +55,11 @@ export function WhatsAppSettingsTab() {
   const [tplExpiryMessage, setTplExpiryMessage] = useState("36849");
   const [tplTodayExpiry, setTplTodayExpiry] = useState("37428");
   const [tplWelcomeReceipt, setTplWelcomeReceipt] = useState("36850");
+  const [tplCustomerFollowup, setTplCustomerFollowup] = useState("");
+  const [tplMembershipExtension, setTplMembershipExtension] = useState("");
+
+  const [scheduledMessages, setScheduledMessages] = useState<any[]>([]);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
   const [statusMessage, setStatusMessage] = useState<{
@@ -78,12 +87,46 @@ export function WhatsAppSettingsTab() {
         setTplExpiryMessage(t.expiryMessage || "36849");
         setTplTodayExpiry(t.todayExpiry || "37428");
         setTplWelcomeReceipt(t.welcomeAndReceipt || "36850");
+        setTplCustomerFollowup(t.customerFollowupUpdate || "");
+        setTplMembershipExtension(t.membershipExtensionReminder || "");
       }
       setRecentLogs(res.recentLogs || []);
+
+      const schedRes = await getScheduledWhatsAppMessagesAction();
+      if (schedRes.success) {
+        setScheduledMessages(schedRes.messages || []);
+      }
     } catch (err: any) {
       console.error("Failed to load WhatsApp status:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelScheduled = async (id: string) => {
+    if (!confirm("Are you sure you want to cancel this scheduled WhatsApp message?")) return;
+    setCancellingId(id);
+    try {
+      const res = await cancelScheduledWhatsAppMessageAction(id);
+      if (res.success) {
+        setStatusMessage({
+          type: "success",
+          text: res.message || "Scheduled message cancelled successfully.",
+        });
+        loadStatus();
+      } else {
+        setStatusMessage({
+          type: "error",
+          text: res.error || "Failed to cancel scheduled message.",
+        });
+      }
+    } catch (err: any) {
+      setStatusMessage({
+        type: "error",
+        text: err.message || "Error cancelling scheduled message.",
+      });
+    } finally {
+      setCancellingId(null);
     }
   };
 
@@ -147,6 +190,8 @@ export function WhatsAppSettingsTab() {
         tplExpiryMessage: tplExpiryMessage,
         tplTodayExpiry: tplTodayExpiry,
         tplWelcomeReceipt: tplWelcomeReceipt,
+        tplCustomerFollowup: tplCustomerFollowup,
+        tplMembershipExtension: tplMembershipExtension,
       });
 
       if (res.success) {
@@ -489,6 +534,48 @@ export function WhatsAppSettingsTab() {
               </div>
               <p className="text-[10px] text-indigo-700 font-medium">✓ Button changes to &quot;Resend&quot; once sent</p>
             </div>
+
+            {/* Template 6: Customer Follow-up Update */}
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                  Manual & Scheduled
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {tplCustomerFollowup ? `ID: ${tplCustomerFollowup}` : "ID: Fast2SMS/Meta"}
+                </span>
+              </div>
+              <h3 className="text-xs font-bold text-slate-900">customer_followup_update</h3>
+              <p className="text-[11px] text-slate-500 leading-snug">
+                Follow-up with member or enquiry. Send now or queue for schedule.
+              </p>
+              <div className="p-2 bg-slate-50 rounded-lg text-[10px] text-slate-600 font-mono space-y-0.5">
+                <div>&#123;&#123;1&#125;&#125;: Customer First Name</div>
+              </div>
+              <p className="text-[10px] text-amber-700 font-medium">✓ Accessible to Frontdesk, Admin & Superuser</p>
+            </div>
+
+            {/* Template 7: Membership Extension Reminder */}
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                  <Gift className="w-2.5 h-2.5 text-emerald-600" />
+                  Active Members Only
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {tplMembershipExtension ? `ID: ${tplMembershipExtension}` : "ID: Fast2SMS/Meta"}
+                </span>
+              </div>
+              <h3 className="text-xs font-bold text-slate-900">membership_extension_reminder</h3>
+              <p className="text-[11px] text-slate-500 leading-snug">
+                Send extension offer to active members with custom validity date.
+              </p>
+              <div className="p-2 bg-slate-50 rounded-lg text-[10px] text-slate-600 font-mono space-y-0.5">
+                <div>&#123;&#123;1&#125;&#125;: Member First Name</div>
+                <div>&#123;&#123;2&#125;&#125;: Offer Valid Until Date</div>
+              </div>
+              <p className="text-[10px] text-emerald-700 font-medium">✓ Strictly gated to Active Members</p>
+            </div>
           </div>
 
           {/* FAST2SMS CREDENTIALS FORM */}
@@ -667,6 +754,34 @@ export function WhatsAppSettingsTab() {
                       className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800"
                     />
                   </div>
+
+                  {/* Customer Follow-up Update Message */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-700">
+                      Follow-up Message ID
+                    </label>
+                    <input
+                      type="text"
+                      value={tplCustomerFollowup}
+                      onChange={(e) => setTplCustomerFollowup(e.target.value)}
+                      placeholder="e.g. 38200"
+                      className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800"
+                    />
+                  </div>
+
+                  {/* Membership Extension Reminder Message */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-700">
+                      Extension Reminder Message ID
+                    </label>
+                    <input
+                      type="text"
+                      value={tplMembershipExtension}
+                      onChange={(e) => setTplMembershipExtension(e.target.value)}
+                      placeholder="e.g. 38201"
+                      className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -683,6 +798,109 @@ export function WhatsAppSettingsTab() {
           </div>
         </>
       )}
+
+      {/* SCHEDULED WHATSAPP MESSAGES QUEUE */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-900">Scheduled WhatsApp Messages Queue</h3>
+              {scheduledMessages.filter((m) => m.status === "PENDING").length > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  {scheduledMessages.filter((m) => m.status === "PENDING").length} Pending
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Future messages queued from Follow-up & Extension Offer dialogs.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={loadStatus}
+            className="text-xs text-slate-500 hover:text-slate-900 flex items-center gap-1 font-medium"
+          >
+            <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        {scheduledMessages.length === 0 ? (
+          <div className="p-8 text-center text-slate-400 space-y-1">
+            <Clock className="w-8 h-8 text-slate-300 mx-auto" />
+            <p className="text-xs font-medium">No scheduled WhatsApp messages.</p>
+            <p className="text-[11px] text-slate-400">
+              Messages scheduled for future follow-ups or extension offers will appear here.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <th className="pb-2">Recipient</th>
+                  <th className="pb-2">Phone</th>
+                  <th className="pb-2">Template</th>
+                  <th className="pb-2">Scheduled For</th>
+                  <th className="pb-2">Status</th>
+                  <th className="pb-2">Created By</th>
+                  <th className="pb-2 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                {scheduledMessages.map((msg) => (
+                  <tr key={msg.id} className="hover:bg-slate-50/60">
+                    <td className="py-2.5 font-medium text-slate-900">
+                      {msg.recipientName}
+                    </td>
+                    <td className="py-2.5 font-mono text-[11px] text-slate-600">
+                      {msg.recipientPhone}
+                    </td>
+                    <td className="py-2.5 font-medium">
+                      <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-mono">
+                        {msg.templateName}
+                      </span>
+                    </td>
+                    <td className="py-2.5 font-mono text-[11px] text-indigo-700 font-semibold">
+                      {formatDateTime(msg.scheduledFor)}
+                    </td>
+                    <td className="py-2.5">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          msg.status === "PENDING"
+                            ? "bg-amber-50 text-amber-700 border border-amber-200"
+                            : msg.status === "SENT"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : msg.status === "CANCELLED"
+                            ? "bg-slate-100 text-slate-600 border border-slate-200"
+                            : "bg-rose-50 text-rose-700 border border-rose-200"
+                        }`}
+                      >
+                        {msg.status}
+                      </span>
+                    </td>
+                    <td className="py-2.5 text-[11px] text-slate-500">
+                      {msg.sentBy || "System"}
+                    </td>
+                    <td className="py-2.5 text-right">
+                      {msg.status === "PENDING" && (
+                        <button
+                          type="button"
+                          onClick={() => handleCancelScheduled(msg.id)}
+                          disabled={cancellingId === msg.id}
+                          className="px-2 py-1 text-[11px] font-semibold text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded transition disabled:opacity-50"
+                        >
+                          {cancellingId === msg.id ? "Cancelling..." : "Cancel"}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* RECENT WHATSAPP MESSAGE LOGS */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">

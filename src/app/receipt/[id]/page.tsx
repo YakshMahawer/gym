@@ -53,6 +53,9 @@ export default async function PublicReceiptPage({ params }: ReceiptPageProps) {
   const startDate = payment.ptSubscription?.startDate || payment.subscription?.startDate;
   const endDate = payment.ptSubscription?.endDate || payment.subscription?.endDate;
 
+  const isOther = payment.paymentType === "OTHER";
+  const sacCode = isPT ? "999729" : isOther ? "" : "999723";
+
   const totalAmount = Number(payment.amount) || 0;
   const invoiceNo = formatInvoiceNo(payment.receiptNo, payment.paymentDate);
 
@@ -87,6 +90,9 @@ export default async function PublicReceiptPage({ params }: ReceiptPageProps) {
               </h1>
               <p className="text-xs text-slate-600 mt-0.5">
                 1st floor, Dream Iconia, near Hans Party Plot, Manjalpur, Vadodara, Gujarat 390011
+              </p>
+              <p className="text-[11px] text-slate-500 font-medium mt-1">
+                GSTIN: <span className="font-mono font-bold text-slate-800">24AALFC1929P1Z2</span> • <span className="text-slate-500">Composition Scheme</span>
               </p>
             </div>
           </div>
@@ -171,6 +177,7 @@ export default async function PublicReceiptPage({ params }: ReceiptPageProps) {
               <thead>
                 <tr className="bg-slate-100 text-slate-600 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
                   <th className="py-2.5 px-4">Description</th>
+                  <th className="py-2.5 px-4 text-center">HSN / SAC</th>
                   <th className="py-2.5 px-4 text-right">Amount (Rs.)</th>
                 </tr>
               </thead>
@@ -179,12 +186,15 @@ export default async function PublicReceiptPage({ params }: ReceiptPageProps) {
                   <td className="py-3 px-4 font-semibold text-slate-900">
                     {planName}
                   </td>
+                  <td className="py-3 px-4 text-center font-mono font-medium text-slate-600">
+                    {sacCode || "-"}
+                  </td>
                   <td className="py-3 px-4 text-right font-medium">
                     {formatRS(totalAmount)}
                   </td>
                 </tr>
                 <tr className="bg-slate-100/80 font-bold text-slate-900 text-xs border-t-2 border-slate-300">
-                  <td className="py-3 px-4">Total Amount Paid</td>
+                  <td colSpan={2} className="py-3 px-4">Total Amount Paid</td>
                   <td className="py-3 px-4 text-right text-base text-emerald-800 font-black">
                     {formatRS(totalAmount)}
                   </td>
@@ -226,6 +236,27 @@ export default async function PublicReceiptPage({ params }: ReceiptPageProps) {
                 Authorized Signatory
               </p>
             </div>
+          </div>
+
+          {/* CONCEPT GYM – TERMS & CONDITIONS (Downside) */}
+          <div className="pt-4 border-t border-slate-200 space-y-2 bg-slate-50/60 p-3.5 rounded-xl border border-slate-200/80">
+            <h4 className="font-bold text-[11px] text-slate-800 uppercase tracking-wider">
+              Concept Gym – Terms & Conditions
+            </h4>
+            <ol className="list-decimal list-inside space-y-1 text-[10px] text-slate-600 leading-relaxed">
+              <li>The management reserves the right of admission, renewal, and termination of membership.</li>
+              <li>The gymnasium is open to members of all communities, irrespective of caste or creed.</li>
+              <li>All fees must be paid in advance. Once paid, fees are non-refundable, non-transferable, and no extension is given under any circumstances.</li>
+              <li>Concept Gym holds the right to discontinue or restrict facilities without prior notice.</li>
+              <li>Members must use all equipment and facilities with due care and return them to their proper place after use.</li>
+              <li>Any loss or damage to equipment or facilities due to careless handling shall be borne by the member concerned.</li>
+              <li>Valuables or electronic items kept in the gym premises are at the member’s own risk. Management shall not be responsible for any loss or damage.</li>
+              <li>Members shall use the facilities at their own risk. The gym shall not be liable for any accidents, injuries, or mishaps occurring during their presence in the premises.</li>
+              <li>Members with a history of illness, injury, operations, or medical conditions shall enroll at their own risk.</li>
+              <li>Members must provide accurate information regarding their medical history at the time of enrollment. Concept Gym is not responsible for any health issues that come back or increase.</li>
+              <li>Any disputes arising out of this membership/services or any Concept Gym-related issues shall be subject to Vadodara jurisdiction only.</li>
+              <li>The GST Number is under Composition Scheme.</li>
+            </ol>
           </div>
         </div>
       </div>

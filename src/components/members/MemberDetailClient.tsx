@@ -25,6 +25,8 @@ import {
   Printer,
   Sparkles,
   MessageSquare,
+  Gift,
+  Clock,
 } from "lucide-react";
 import { formatINR, formatDate, formatDateTime, calculateDaysRemaining } from "@/lib/utils";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
@@ -33,6 +35,8 @@ import { ReceiptModal } from "@/components/payments/ReceiptModal";
 import { DeleteReceiptModal } from "@/components/modals/DeleteReceiptModal";
 import { EditPaymentDateModal } from "@/components/modals/EditPaymentDateModal";
 import { SendExpiryWhatsAppModal } from "@/components/modals/SendExpiryWhatsAppModal";
+import { SendFollowUpWhatsAppModal } from "@/components/modals/SendFollowUpWhatsAppModal";
+import { SendExtensionWhatsAppModal } from "@/components/modals/SendExtensionWhatsAppModal";
 import { renewSubscription, deleteMember } from "@/lib/actions/members";
 import { updatePTSessions } from "@/lib/actions/pt";
 import { sendReceiptWhatsAppAction } from "@/lib/actions/whatsapp-automation";
@@ -53,6 +57,8 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
   const [renewalModalOpen, setRenewalModalOpen] = useState(false);
   const [ptModalOpen, setPtModalOpen] = useState(false);
   const [expiryModalOpen, setExpiryModalOpen] = useState(false);
+  const [followUpModalOpen, setFollowUpModalOpen] = useState(false);
+  const [extensionModalOpen, setExtensionModalOpen] = useState(false);
   const [sendingWaPaymentId, setSendingWaPaymentId] = useState<string | null>(null);
   const [selectedReceiptForPrint, setSelectedReceiptForPrint] = useState<any | null>(null);
   const [editingPayment, setEditingPayment] = useState<any | null>(null);
@@ -81,6 +87,10 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
   const isExpired = daysLeft < 0 || member.membershipStatus === "EXPIRED";
   const isOngoing = activeSub && new Date(activeSub.endDate) > new Date();
   const dueAmount = activeSub?.dueAmount || 0;
+  const isActiveMember =
+    member.membershipStatus === "ACTIVE" ||
+    Boolean(activeSub && new Date(activeSub.endDate) >= new Date());
+  const hasPhone = Boolean(member.phone && member.phone.trim().length >= 10);
 
   // Personal Training (PT) State
   const latestPT = member.ptSubscriptions?.[0];
@@ -237,14 +247,40 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
             <span>WhatsApp</span>
           </a>
 
+          {/* Follow-up WhatsApp Button: Only if there is a mobile number */}
+          {hasPhone && (
+            <button
+              type="button"
+              onClick={() => setFollowUpModalOpen(true)}
+              className="flex-1 sm:flex-none px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
+              title="Send Follow-up WhatsApp (customer_followup_update)"
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-amber-700" />
+              <span>Follow-up WhatsApp</span>
+            </button>
+          )}
+
+          {/* Membership Extension Reminder: Strictly for Active Members */}
+          {isActiveMember && hasPhone && (
+            <button
+              type="button"
+              onClick={() => setExtensionModalOpen(true)}
+              className="flex-1 sm:flex-none px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
+              title="Send Membership Extension Offer (membership_extension_reminder)"
+            >
+              <Gift className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Extension Offer</span>
+            </button>
+          )}
+
           {/* Send Expiry Message Button */}
           <button
             type="button"
             onClick={() => setExpiryModalOpen(true)}
-            className="flex-1 sm:flex-none px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
+            className="flex-1 sm:flex-none px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
             title="Send Fast2SMS Expiry Message Template"
           >
-            <MessageSquare className="w-3.5 h-3.5 text-amber-700" />
+            <Clock className="w-3.5 h-3.5 text-slate-600" />
             <span>Send Expiry Alert</span>
           </button>
 
@@ -348,6 +384,17 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                   <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>Renewal will automatically start on {formatDate(activeSub.endDate)}.</span>
                 </p>
+              )}
+
+              {isActiveMember && hasPhone && (
+                <button
+                  type="button"
+                  onClick={() => setExtensionModalOpen(true)}
+                  className="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold text-xs rounded-lg transition flex items-center justify-center gap-1.5 active:scale-98"
+                >
+                  <Gift className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Send Extension Offer WhatsApp</span>
+                </button>
               )}
 
               <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] text-slate-400">
@@ -534,9 +581,22 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
             {activeTab === "overview" && (
               <div className="p-4 sm:p-5 space-y-4 text-xs">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-                  <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-100">
-                    <span className="text-slate-400 font-medium block">Phone</span>
-                    <span className="font-semibold text-slate-800 text-sm">{member.phone}</span>
+                  <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-100 flex items-center justify-between">
+                    <div>
+                      <span className="text-slate-400 font-medium block">Phone</span>
+                      <span className="font-semibold text-slate-800 text-sm">{member.phone || "No phone"}</span>
+                    </div>
+                    {hasPhone && (
+                      <button
+                        type="button"
+                        onClick={() => setFollowUpModalOpen(true)}
+                        className="px-2.5 py-1 text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg transition inline-flex items-center gap-1.5"
+                        title="Send Follow-up WhatsApp"
+                      >
+                        <MessageSquare className="w-3 h-3 text-amber-700" />
+                        <span>Follow-up WhatsApp</span>
+                      </button>
+                    )}
                   </div>
 
                   <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-100">
@@ -1121,6 +1181,37 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
             memberId: member.memberId,
             expiryDate: activeSub?.endDate,
             planName: activeSub?.planName,
+          }}
+          onSuccess={() => router.refresh()}
+        />
+      )}
+
+      {/* Send Follow-up WhatsApp Modal */}
+      {followUpModalOpen && (
+        <SendFollowUpWhatsAppModal
+          isOpen={followUpModalOpen}
+          onClose={() => setFollowUpModalOpen(false)}
+          recipient={{
+            name: member.fullName,
+            phone: member.phone || "",
+            memberId: member.id,
+            planOrStatus: activeSub?.planName || member.membershipStatus,
+          }}
+          onSuccess={() => router.refresh()}
+        />
+      )}
+
+      {/* Send Extension Offer WhatsApp Modal */}
+      {extensionModalOpen && (
+        <SendExtensionWhatsAppModal
+          isOpen={extensionModalOpen}
+          onClose={() => setExtensionModalOpen(false)}
+          member={{
+            id: member.id,
+            fullName: member.fullName,
+            phone: member.phone,
+            planName: activeSub?.planName,
+            endDate: activeSub?.endDate,
           }}
           onSuccess={() => router.refresh()}
         />

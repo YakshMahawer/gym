@@ -15,7 +15,23 @@ export interface ReceiptPdfData {
   endDate?: string;
   paymentMethod: string;
   totalAmount: number;
+  sacCode?: string;
 }
+
+const TERMS_AND_CONDITIONS = [
+  "1. The management reserves the right of admission, renewal, and termination of membership.",
+  "2. The gymnasium is open to members of all communities, irrespective of caste or creed.",
+  "3. All fees must be paid in advance. Once paid, fees are non-refundable, non-transferable, and no extension is given under any circumstances.",
+  "4. Concept Gym holds the right to discontinue or restrict facilities without prior notice.",
+  "5. Members must use all equipment and facilities with due care and return them to their proper place after use.",
+  "6. Any loss or damage to equipment or facilities due to careless handling shall be borne by the member concerned.",
+  "7. Valuables or electronic items kept in the gym premises are at the member's own risk. Management shall not be responsible for any loss or damage.",
+  "8. Members shall use the facilities at their own risk. The gym shall not be liable for any accidents, injuries, or mishaps occurring during their presence in the premises.",
+  "9. Members with a history of illness, injury, operations, or medical conditions shall enroll at their own risk.",
+  "10. Members must provide accurate information regarding their medical history at the time of enrollment. Concept Gym is not responsible for any health issues that come back or increase.",
+  "11. Any disputes arising out of this membership/services or any Concept Gym-related issues shall be subject to Vadodara jurisdiction only.",
+  "12. The GST Number is under Composition Scheme.",
+];
 
 /**
  * Pure ASCII currency formatter for jsPDF
@@ -30,7 +46,7 @@ function toRs(amount: number | null | undefined): string {
 
 /**
  * Generates a clean, professional vector PDF receipt for Concept 1 Gym
- * With pure Rs. currency formatting and zero tax breakdown.
+ * With pure Rs. currency formatting, zero tax breakdown, and Terms & Conditions.
  */
 export function buildReceiptPdfDocument(data: ReceiptPdfData): Uint8Array {
   const doc = new jsPDF({
@@ -45,14 +61,15 @@ export function buildReceiptPdfDocument(data: ReceiptPdfData): Uint8Array {
 
   // Gym Branded Title
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(22);
+  doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
-  doc.text("CONCEPT 1 GYM", 15, 17);
+  doc.text("CONCEPT 1 GYM", 15, 16);
 
-  doc.setFontSize(8);
+  doc.setFontSize(7.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(203, 213, 225);
-  doc.text("1st floor, Dream Iconia, near Hans Party Plot, Manjalpur, Vadodara, Gujarat 390011", 15, 26);
+  doc.text("1st floor, Dream Iconia, near Hans Party Plot, Manjalpur, Vadodara, Gujarat 390011", 15, 23.5);
+  doc.text("GSTIN: 24AALFC1929P1Z2  |  Composition Scheme (No tax collected on bill)", 15, 29);
 
   // 2. Receipt Meta Banner
   doc.setFillColor(248, 250, 252); // slate-50
@@ -82,7 +99,7 @@ export function buildReceiptPdfDocument(data: ReceiptPdfData): Uint8Array {
   doc.setFont("helvetica", "bold");
   doc.text("RECEIVED FROM (MEMBER):", 20, 72);
 
-  doc.setFontSize(11);
+  doc.setFontSize(10.5);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(15, 23, 42);
   doc.text(data.memberName, 20, 79);
@@ -102,7 +119,7 @@ export function buildReceiptPdfDocument(data: ReceiptPdfData): Uint8Array {
   doc.setFont("helvetica", "bold");
   doc.text("PLAN & MEMBERSHIP DETAILS:", 110, 72);
 
-  doc.setFontSize(10.5);
+  doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(15, 23, 42);
   doc.text(data.planName.slice(0, 38), 110, 79);
@@ -118,57 +135,79 @@ export function buildReceiptPdfDocument(data: ReceiptPdfData): Uint8Array {
   doc.text(`Payment Mode: ${data.paymentMethod || "UPI"}`, 110, 91.5);
   doc.text(`Receipt #: ${data.receiptNo}`, 110, 97.5);
 
-  // 4. Line Items Table Header (No tax columns)
+  // 4. Line Items Table Header (with SAC code column)
   doc.setFillColor(15, 23, 42);
   doc.rect(15, 113, 180, 8.5, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
   doc.text("DESCRIPTION", 20, 118.5);
+  doc.text("HSN / SAC", 115, 118.5);
   doc.text("AMOUNT (Rs.)", 155, 118.5);
 
   // Line Item Row
   doc.setTextColor(15, 23, 42);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text(data.planName.slice(0, 50), 20, 129);
+  doc.setFontSize(8.5);
+  doc.text(data.planName.slice(0, 48), 20, 127.5);
   doc.setFont("helvetica", "bold");
-  doc.text(toRs(data.totalAmount), 155, 129);
+  doc.text(data.sacCode || "-", 115, 127.5);
+  doc.text(toRs(data.totalAmount), 155, 127.5);
 
   doc.setDrawColor(226, 232, 240);
-  doc.line(15, 136, 195, 136);
+  doc.line(15, 134, 195, 134);
 
   // 5. Clean Total Section (Direct amount, zero tax division)
-  const y = 146;
+  const y = 143;
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
+  doc.setFontSize(10.5);
   doc.setTextColor(15, 23, 42);
-  doc.text("Total Amount Paid:", 100, y);
+  doc.text("Total Amount Paid:", 95, y);
   doc.text(toRs(data.totalAmount), 155, y);
 
   doc.setDrawColor(203, 213, 225);
   doc.setLineWidth(0.3);
-  doc.line(100, y + 3, 195, y + 3);
+  doc.line(95, y + 2.5, 195, y + 2.5);
 
   // 6. Payment Status Confirmation
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
   doc.setTextColor(22, 101, 52); // emerald-800
-  doc.text(`Status: Payment Received & Accounted (${data.paymentMethod})`, 100, y + 10);
+  doc.text(`Status: Payment Received & Accounted (${data.paymentMethod})`, 95, y + 8.5);
 
-  // 7. Footer & Notes
-  doc.setFont("helvetica", "normal");
+  // 7. CONCEPT GYM - TERMS & CONDITIONS (Downside Section)
+  const termsBoxY = 158;
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(15, termsBoxY, 180, 116, 2, 2, "FD");
+
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text("CONCEPT GYM - TERMS & CONDITIONS", 20, termsBoxY + 6);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(5.8);
+  doc.setTextColor(71, 85, 105);
+
+  let curY = termsBoxY + 11;
+  const maxTermsWidth = 170;
+
+  for (const term of TERMS_AND_CONDITIONS) {
+    const splitLines = doc.splitTextToSize(term, maxTermsWidth);
+    doc.text(splitLines, 20, curY);
+    curY += splitLines.length * 3.3 + 1.2;
+  }
+
+  // 8. Bottom Footer Signoff
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.5);
   doc.setTextColor(148, 163, 184);
   doc.text(
-    "This is an electronically generated payment receipt. No signature or physical stamp is required.",
+    "This is an electronically generated digital payment receipt. Valid without signature or stamp. Thank you for choosing Concept 1 Gym!",
     15,
-    185
-  );
-  doc.text(
-    "Thank you for being part of Concept 1 Gym! Stay dedicated, stay strong.",
-    15,
-    191
+    286
   );
 
   const arrayBuffer = doc.output("arraybuffer");
@@ -206,6 +245,10 @@ export async function getReceiptPdfBuffer(identifier: string): Promise<{
   const isPT = Boolean(
     payment.paymentType === "PERSONAL_TRAINING" || payment.ptSubscription
   );
+  const isOther = payment.paymentType === "OTHER";
+
+  // SAC code: 999723 for Gym membership, 999729 for PT, blank for Others
+  const sacCode = isPT ? "999729" : isOther ? "" : "999723";
 
   const ptTrainer = payment.ptSubscription?.trainerName;
   const planName =
@@ -235,6 +278,7 @@ export async function getReceiptPdfBuffer(identifier: string): Promise<{
     endDate: endDate ? formatDate(endDate) : undefined,
     paymentMethod: payment.paymentMethod || "UPI",
     totalAmount,
+    sacCode,
   });
 
   const cleanFilename = `Concept1Gym_Receipt_${payment.receiptNo}.pdf`;

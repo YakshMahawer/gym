@@ -187,20 +187,36 @@ export async function getReportsData() {
   };
 
   for (const p of allDbPlans) {
-    if (p.category === "PT") continue; // Handled separately in PT Analytics
     knownNames.add(p.name.toLowerCase());
-    const match = subscriptionsGrouped.find(
-      (g) => g.planName.toLowerCase() === p.name.toLowerCase()
-    );
-    plansDistribution.push({
-      id: p.id,
-      name: p.name,
-      price: p.price,
-      durationInDays: p.durationInDays,
-      count: match?._count.id || 0,
-      revenue: match?._sum.totalAmount || 0,
-      category: getCategory(p.name),
-    });
+    if (p.category === "PT") {
+      const matchingPt = allMemberPT.filter(
+        (pt) => pt.planName?.toLowerCase() === p.name.toLowerCase()
+      );
+      const count = matchingPt.length;
+      const revenue = matchingPt.reduce((acc, pt) => acc + (Number(pt.totalAmount) || 0), 0);
+      plansDistribution.push({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        durationInDays: p.durationInDays,
+        count,
+        revenue,
+        category: "Personal Training",
+      });
+    } else {
+      const match = subscriptionsGrouped.find(
+        (g) => g.planName.toLowerCase() === p.name.toLowerCase()
+      );
+      plansDistribution.push({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        durationInDays: p.durationInDays,
+        count: match?._count.id || 0,
+        revenue: match?._sum.totalAmount || 0,
+        category: getCategory(p.name),
+      });
+    }
   }
 
   for (const g of subscriptionsGrouped) {
@@ -216,6 +232,29 @@ export async function getReportsData() {
       });
     }
   }
+
+  // Any PT plans from actual enrollments not in standard DB plans
+  const ptEnrollmentGroups = new Map<string, { count: number; revenue: number }>();
+  for (const pt of allMemberPT) {
+    const key = (pt.planName || "PT").trim();
+    if (!knownNames.has(key.toLowerCase())) {
+      const cur = ptEnrollmentGroups.get(key) || { count: 0, revenue: 0 };
+      cur.count += 1;
+      cur.revenue += Number(pt.totalAmount) || 0;
+      ptEnrollmentGroups.set(key, cur);
+    }
+  }
+  ptEnrollmentGroups.forEach((val, name) => {
+    plansDistribution.push({
+      id: `pt-${name}`,
+      name,
+      price: val.revenue / (val.count || 1),
+      durationInDays: 30,
+      count: val.count,
+      revenue: val.revenue,
+      category: "Personal Training",
+    });
+  });
 
   plansDistribution.sort((a, b) => b.count - a.count || b.revenue - a.revenue);
 

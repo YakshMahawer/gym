@@ -8,6 +8,8 @@ export interface SendWhatsAppTemplateOptions {
     | "welcome_and_receipt"
     | "birthday_wish"
     | "anniversary_wish"
+    | "customer_followup_update"
+    | "membership_extension_reminder"
     | string;
   variables?: (string | number)[]; // [var1, var2, ...]
   mediaUrl?: string | null;
@@ -20,7 +22,11 @@ export interface SendWhatsAppTemplateOptions {
     | "MANUAL_EXPIRY"
     | "MANUAL_RECEIPT"
     | "MANUAL_BIRTHDAY"
-    | "MANUAL_ANNIVERSARY";
+    | "MANUAL_ANNIVERSARY"
+    | "MANUAL_FOLLOWUP"
+    | "SCHEDULED_FOLLOWUP"
+    | "MANUAL_EXTENSION_REMINDER"
+    | "SCHEDULED_EXTENSION_REMINDER";
   sentBy?: string; // username e.g. "admin", "superuser", or "SYSTEM_AUTOMATION"
   memberId?: string | null;
   paymentId?: string | null;
@@ -88,6 +94,24 @@ export const FAST2SMS_TEMPLATES = {
     hasHeaderMedia: true,
     exampleVars: ["8–14 October 2026"],
     description: "Weekly membership and business report PDF",
+  },
+  customer_followup_update: {
+    messageId: null as number | null,
+    templateId: "",
+    name: "customer_followup_update",
+    varCount: 1,
+    hasHeaderMedia: false,
+    exampleVars: ["First Name"],
+    description: "Follow-up update message sent to customer/lead",
+  },
+  membership_extension_reminder: {
+    messageId: null as number | null,
+    templateId: "",
+    name: "membership_extension_reminder",
+    varCount: 2,
+    hasHeaderMedia: false,
+    exampleVars: ["First Name", "Offer Validity Date"],
+    description: "Special extension offer reminder for active members",
   },
 } as const;
 
@@ -160,6 +184,10 @@ export async function getWhatsAppConfig() {
     dbTplReceipt,
     dbTplNameBirthday,
     dbTplNameAnniversary,
+    dbTplCustomerFollowup,
+    dbTplMembershipExtension,
+    dbTplNameCustomerFollowup,
+    dbTplNameMembershipExtension,
   ] = await Promise.all([
     prisma.systemSetting.findUnique({ where: { key: "fast2sms_tpl_birthday_wish" } }),
     prisma.systemSetting.findUnique({ where: { key: "fast2sms_tpl_anniversary_wish" } }),
@@ -168,6 +196,10 @@ export async function getWhatsAppConfig() {
     prisma.systemSetting.findUnique({ where: { key: "fast2sms_tpl_welcome_and_receipt" } }),
     prisma.systemSetting.findUnique({ where: { key: "fast2sms_tpl_name_birthday_wish" } }),
     prisma.systemSetting.findUnique({ where: { key: "fast2sms_tpl_name_anniversary_wish" } }),
+    prisma.systemSetting.findUnique({ where: { key: "fast2sms_tpl_customer_followup_update" } }),
+    prisma.systemSetting.findUnique({ where: { key: "fast2sms_tpl_membership_extension_reminder" } }),
+    prisma.systemSetting.findUnique({ where: { key: "fast2sms_tpl_name_customer_followup_update" } }),
+    prisma.systemSetting.findUnique({ where: { key: "fast2sms_tpl_name_membership_extension_reminder" } }),
   ]);
 
   const apiKey = dbApiKey?.value || process.env.FAST2SMS_API_KEY || "";
@@ -195,6 +227,10 @@ export async function getWhatsAppConfig() {
       welcomeAndReceipt: dbTplReceipt?.value || "36850",
       nameBirthday: dbTplNameBirthday?.value || "birthday_wish",
       nameAnniversary: dbTplNameAnniversary?.value || "anniversary_wish",
+      customerFollowupUpdate: dbTplCustomerFollowup?.value || "",
+      membershipExtensionReminder: dbTplMembershipExtension?.value || "",
+      nameCustomerFollowupUpdate: dbTplNameCustomerFollowup?.value || "customer_followup_update",
+      nameMembershipExtensionReminder: dbTplNameMembershipExtension?.value || "membership_extension_reminder",
     },
   };
 }

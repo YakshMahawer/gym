@@ -24,11 +24,16 @@ const DEFAULT_PLANS: Array<{
   { name: "1 Year (Student)", price: 23000, durationInDays: 365, category: "GYM", description: "1 Year membership (Student concession)" },
   { name: "Group Training (3 Persons 12 Sessions)", price: 7500, durationInDays: 30, category: "GYM", sessions: 12, description: "Small group training for 3 persons" },
 
-  // Personal Training (PT)
-  { name: "1 Month PT (12 Sessions)", price: 6000, durationInDays: 30, category: "PT", sessions: 12, description: "12 One-on-one personal training sessions" },
-  { name: "3 Months PT (36 Sessions)", price: 15000, durationInDays: 90, category: "PT", sessions: 36, description: "36 One-on-one personal training sessions" },
-  { name: "6 Months PT (72 Sessions)", price: 28000, durationInDays: 180, category: "PT", sessions: 72, description: "72 One-on-one personal training sessions" },
-  { name: "1 Year PT (144 Sessions)", price: 50000, durationInDays: 365, category: "PT", sessions: 144, description: "144 One-on-one personal training sessions" },
+  // Personal Training (PT) - Official Concept 1 Gym PT Packages
+  { name: "PT", price: 1000, durationInDays: 30, category: "PT", sessions: 1, description: "Personal Training starter / single session" },
+  { name: "1 Month PT (12 Sessions)", price: 6000, durationInDays: 30, category: "PT", sessions: 12, description: "12 One-on-one sessions in 1 month" },
+  { name: "3 Months PT (36 Sessions)", price: 16500, durationInDays: 90, category: "PT", sessions: 36, description: "36 PT sessions across 3 months" },
+  { name: "6 Months PT (72 Sessions)", price: 30000, durationInDays: 180, category: "PT", sessions: 72, description: "72 PT sessions across 6 months" },
+  { name: "12 Months PT (144 Sessions)", price: 54000, durationInDays: 365, category: "PT", sessions: 144, description: "144 PT sessions across 1 year" },
+  { name: "1 Month PT (24 Sessions)", price: 10000, durationInDays: 30, category: "PT", sessions: 24, description: "24 PT sessions in 1 month" },
+  { name: "3 Months PT (72 Sessions)", price: 28500, durationInDays: 90, category: "PT", sessions: 72, description: "72 PT sessions across 3 months" },
+  { name: "6 Months PT (144 Sessions)", price: 54000, durationInDays: 180, category: "PT", sessions: 144, description: "144 PT sessions across 6 months" },
+  { name: "12 Months PT (288 Sessions)", price: 102000, durationInDays: 365, category: "PT", sessions: 288, description: "288 PT sessions across 1 year" },
 
   // Others (Add-ons / Misc)
   { name: "Dietitian Nutrition Plan", price: 2500, durationInDays: 30, category: "OTHER", description: "Personalized sports nutrition and diet chart" },
@@ -41,19 +46,24 @@ const DEFAULT_PLANS: Array<{
  */
 async function ensureDefaultPlansSeeded() {
   const count = await prisma.membershipPlan.count();
-  if (count === 0) {
+  if (count < DEFAULT_PLANS.length) {
     for (const p of DEFAULT_PLANS) {
-      await prisma.membershipPlan.create({
-        data: {
-          name: p.name,
-          price: p.price,
-          durationInDays: p.durationInDays,
-          category: p.category,
-          sessions: p.sessions || null,
-          description: p.description,
-          isActive: true,
-        },
+      const existing = await prisma.membershipPlan.findFirst({
+        where: { name: p.name },
       });
+      if (!existing) {
+        await prisma.membershipPlan.create({
+          data: {
+            name: p.name,
+            price: p.price,
+            durationInDays: p.durationInDays,
+            category: p.category,
+            sessions: p.sessions || null,
+            description: p.description,
+            isActive: true,
+          },
+        });
+      }
     }
   }
 }

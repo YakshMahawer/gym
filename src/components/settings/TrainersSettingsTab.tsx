@@ -204,72 +204,87 @@ export function TrainersSettingsTab() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredTrainers.map((t) => (
-            <div
-              key={t.id}
-              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition flex flex-col justify-between"
-            >
-              <div className="flex items-start gap-3.5">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
-                  {t.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate">
-                    {t.name}
-                  </h3>
-
-                  {t.specialty ? (
-                    <div className="flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5 font-medium">
-                      <Award className="w-3 h-3 shrink-0" />
-                      <span className="truncate">{t.specialty}</span>
-                    </div>
-                  ) : (
-                    <span className="text-[11px] text-slate-400">Fitness Coach</span>
-                  )}
-
-                  {t.phone && (
-                    <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                      <Phone className="w-3 h-3 text-slate-400" />
-                      <span>{t.phone}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="pt-3 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Active Coach
-                </span>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => openEditModal(t)}
-                    className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
-                    title="Edit Trainer"
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-800/70 text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200/80 dark:border-slate-800">
+                  <th className="py-3 px-4">Trainer Name</th>
+                  <th className="py-3 px-4">Domain & Specialty</th>
+                  <th className="py-3 px-4">Phone Number</th>
+                  <th className="py-3 px-4 text-center">Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredTrainers.map((t) => (
+                  <tr
+                    key={t.id}
+                    className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition group"
                   >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(t)}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition"
-                    title="Remove Trainer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                          {t.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </div>
+                        <span className="font-bold text-slate-900 dark:text-white text-xs">
+                          {t.name}
+                        </span>
+                      </div>
+                    </td>
+
+                    <td className="py-3 px-4">
+                      {t.specialty ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                          <Award className="w-3 h-3 shrink-0" />
+                          <span>{t.specialty}</span>
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-slate-400">Fitness Coach</span>
+                      )}
+                    </td>
+
+                    <td className="py-3 px-4 font-mono text-slate-600 dark:text-slate-300 text-xs">
+                      {t.phone || "-"}
+                    </td>
+
+                    <td className="py-3 px-4 text-center">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        Active
+                      </span>
+                    </td>
+
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(t)}
+                          className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+                          title="Edit Trainer"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(t)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition"
+                          title="Remove Trainer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

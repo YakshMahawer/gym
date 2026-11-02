@@ -76,6 +76,9 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
     receipt.ptSubscription ||
     Boolean(receipt.planName?.startsWith("PT") || receipt.planName?.includes("Personal Training"));
 
+  const isOther = receipt.paymentType === "OTHER";
+  const sacCode = isPT ? "999729" : isOther ? "" : "999723";
+
   const ptTrainer = receipt.ptSubscription?.trainerName;
   const ptSessions = receipt.ptSubscription?.totalSessions;
 
@@ -142,10 +145,10 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
       {/* Targeted Printable Modal Container */}
       <div
         id="gym-receipt-modal"
-        className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-150 print:shadow-none print:border-none print:max-w-none print:w-full"
+        className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-150 print:shadow-none print:border-none print:max-w-none print:w-full print:max-h-none print:overflow-visible"
       >
         {/* Tax Invoice Content Body */}
-        <div className="p-6 sm:p-8 space-y-5 text-slate-900 font-sans">
+        <div className="p-6 sm:p-8 space-y-5 text-slate-900 font-sans overflow-y-auto flex-1 print:overflow-visible print:p-0">
           
           {/* Top Header */}
           <div className="flex items-start justify-between pb-4 border-b border-slate-300">
@@ -155,6 +158,9 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
               </h1>
               <p className="text-xs text-slate-600 mt-0.5">
                 1st floor, Dream Iconia, near Hans Party Plot, Manjalpur, Vadodara, Gujarat 390011
+              </p>
+              <p className="text-[11px] font-semibold text-slate-700 mt-0.5">
+                GSTIN: <span className="font-mono">24AALFC1929P1Z2</span> • Composition Scheme
               </p>
             </div>
 
@@ -173,7 +179,7 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
           <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs">
             <div>
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                {isPT ? "Personal Training (PT) Receipt" : "Payment Receipt"}
+                {isPT ? "Personal Training (PT) Receipt" : isOther ? "Add-On Payment Receipt" : "Gym Membership Receipt"}
               </span>
               <span className="font-mono font-bold text-slate-900 text-sm">
                 {invoiceNo}
@@ -261,6 +267,7 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
               <thead>
                 <tr className="bg-slate-100 text-slate-600 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
                   <th className="py-2.5 px-4">Description</th>
+                  <th className="py-2.5 px-4 text-center">HSN / SAC</th>
                   <th className="py-2.5 px-4 text-right">Amount (Rs.)</th>
                 </tr>
               </thead>
@@ -269,12 +276,15 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
                   <td className="py-3 px-4 font-semibold text-slate-900">
                     {planName}
                   </td>
+                  <td className="py-3 px-4 text-center font-mono text-[11px] text-slate-600">
+                    {sacCode || "—"}
+                  </td>
                   <td className="py-3 px-4 text-right font-medium">
                     {formatRS(totalAmount)}
                   </td>
                 </tr>
                 <tr className="bg-slate-100/80 font-bold text-slate-900 text-xs border-t-2 border-slate-300">
-                  <td className="py-3 px-4">Total Amount Paid</td>
+                  <td className="py-3 px-4" colSpan={2}>Total Amount Paid</td>
                   <td className="py-3 px-4 text-right text-base text-emerald-800 font-black">
                     {formatRS(totalAmount)}
                   </td>
@@ -297,6 +307,27 @@ export function ReceiptModal({ receipt, onClose, onEditPaymentDate }: ReceiptMod
                 Remark: {receipt.notes}
               </div>
             )}
+          </div>
+
+          {/* Concept Gym Terms & Conditions */}
+          <div className="pt-4 border-t border-slate-200">
+            <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-800 mb-2">
+              CONCEPT GYM – TERMS & CONDITIONS
+            </h3>
+            <ol className="list-decimal list-inside space-y-1 text-[10px] text-slate-500 leading-relaxed font-normal">
+              <li>The management reserves the right of admission, renewal, and termination of membership.</li>
+              <li>The gymnasium is open to members of all communities, irrespective of caste or creed.</li>
+              <li>All fees must be paid in advance. Once paid, fees are non-refundable, non-transferable, and no extension is given under any circumstances.</li>
+              <li>Concept Gym holds the right to discontinue or restrict facilities without prior notice.</li>
+              <li>Members must use all equipment and facilities with due care and return them to their proper place after use.</li>
+              <li>Any loss or damage to equipment or facilities due to careless handling shall be borne by the member concerned.</li>
+              <li>Valuables or electronic items kept in the gym premises are at the member’s own risk. Management shall not be responsible for any loss or damage.</li>
+              <li>Members shall use the facilities at their own risk. The gym shall not be liable for any accidents, injuries, or mishaps occurring during their presence in the premises.</li>
+              <li>Members with a history of illness, injury, operations, or medical conditions shall enroll at their own risk.</li>
+              <li>Members must provide accurate information regarding their medical history at the time of enrollment. Concept Gym is not responsible for any health issues that come back or increase.</li>
+              <li>Any disputes arising out of this membership/services or any Concept Gym-related issues shall be subject to Vadodara jurisdiction only.</li>
+              <li>The GST Number is under Composition Scheme.</li>
+            </ol>
           </div>
 
           {/* Verification & Stamp */}

@@ -108,6 +108,10 @@ export async function saveWhatsAppApiSettingsAction(data: {
   tplWelcomeReceipt?: string;
   tplNameBirthday?: string;
   tplNameAnniversary?: string;
+  tplCustomerFollowup?: string;
+  tplMembershipExtension?: string;
+  tplNameCustomerFollowup?: string;
+  tplNameMembershipExtension?: string;
 }) {
   const session = await getSessionUser();
   if (!session || (session.role !== "ADMIN" && session.role !== "SUPERUSER")) {
@@ -200,6 +204,38 @@ export async function saveWhatsAppApiSettingsAction(data: {
       where: { key: "fast2sms_tpl_name_anniversary_wish" },
       update: { value: data.tplNameAnniversary.trim() },
       create: { key: "fast2sms_tpl_name_anniversary_wish", value: data.tplNameAnniversary.trim() },
+    });
+  }
+
+  if (data.tplCustomerFollowup !== undefined) {
+    await prisma.systemSetting.upsert({
+      where: { key: "fast2sms_tpl_customer_followup_update" },
+      update: { value: data.tplCustomerFollowup.trim() },
+      create: { key: "fast2sms_tpl_customer_followup_update", value: data.tplCustomerFollowup.trim() },
+    });
+  }
+
+  if (data.tplMembershipExtension !== undefined) {
+    await prisma.systemSetting.upsert({
+      where: { key: "fast2sms_tpl_membership_extension_reminder" },
+      update: { value: data.tplMembershipExtension.trim() },
+      create: { key: "fast2sms_tpl_membership_extension_reminder", value: data.tplMembershipExtension.trim() },
+    });
+  }
+
+  if (data.tplNameCustomerFollowup !== undefined) {
+    await prisma.systemSetting.upsert({
+      where: { key: "fast2sms_tpl_name_customer_followup_update" },
+      update: { value: data.tplNameCustomerFollowup.trim() },
+      create: { key: "fast2sms_tpl_name_customer_followup_update", value: data.tplNameCustomerFollowup.trim() },
+    });
+  }
+
+  if (data.tplNameMembershipExtension !== undefined) {
+    await prisma.systemSetting.upsert({
+      where: { key: "fast2sms_tpl_name_membership_extension_reminder" },
+      update: { value: data.tplNameMembershipExtension.trim() },
+      create: { key: "fast2sms_tpl_name_membership_extension_reminder", value: data.tplNameMembershipExtension.trim() },
     });
   }
 
@@ -686,6 +722,9 @@ export async function runDailyExpiryWhatsAppAutomation() {
 
   const totalSent = sentExpiry7Count + sentExpiryTodayCount + sentBirthdayCount + sentAnniversaryCount;
 
+  // Process any pending scheduled messages that are due
+  const scheduledResult = await processDueScheduledWhatsAppMessages();
+
   return {
     success: true,
     sentCount: totalSent,
@@ -696,6 +735,384 @@ export async function runDailyExpiryWhatsAppAutomation() {
     skippedRenewed,
     skippedDuplicate,
     skippedInactiveCount,
-    message: `Automated run finished. Sent: ${totalSent} (7-Day Expiry: ${sentExpiry7Count}, Today Expiry: ${sentExpiryTodayCount}, Birthdays: ${sentBirthdayCount}, Anniversaries: ${sentAnniversaryCount}). Skipped (Renewed): ${skippedRenewed}, Skipped (Already sent): ${skippedDuplicate}, Skipped (Inactive/Expired): ${skippedInactiveCount}.`,
+    scheduledDispatchedCount: scheduledResult.sentCount,
+    message: `Automated run finished. Sent: ${totalSent} (7-Day Expiry: ${sentExpiry7Count}, Today Expiry: ${sentExpiryTodayCount}, Birthdays: ${sentBirthdayCount}, Anniversaries: ${sentAnniversaryCount}). Scheduled Dispatched: ${scheduledResult.sentCount}. Skipped (Renewed): ${skippedRenewed}, Skipped (Already sent): ${skippedDuplicate}, Skipped (Inactive/Expired): ${skippedInactiveCount}.`,
   };
+}
+
+/**
+ * 7. MANUAL / SCHEDULED TRIGGER: Customer Follow-up Update
+ * Template: customer_followup_update
+ * Allowed for: FRONTDESK, ADMIN, SUPERUSER
+ * Variable {{1}}: First Name only
+ */
+export async function sendCustomerFollowUpWhatsAppAction(data: {
+  recipientName: string;
+  recipientPhone: string;
+  enquiryId?: string | null;
+  memberId?: string | null;
+  scheduledFor?: string | Date | null;
+}) {
+  const session = await getSessionUser();
+  if (!session) {
+    return { success: false, error: "Unauthorized. Please log in." };
+  }
+
+  const phone = sanitizeWhatsAppPhone(data.recipientPhone);
+  if (!phone || phone.length < 10) {
+    return { success: false, error: "Recipient does not have a valid mobile number." };
+  }
+
+  // Extract first name only
+  const firstName = getFirstName({ fullName: data.recipientName }) || data.recipientName.trim().split(" ")[0] || "Member";
+  const variables = [firstName];
+
+  // If user chose to schedule this message
+  if (data.scheduledFor) {
+    const scheduleDate = new Date(data.scheduledFor);
+    if (isNaN(scheduleDate.getTime()) || scheduleDate <= new Date()) {
+      return { success: false, error: "Please select a valid future date and time to schedule." };
+    }
+
+    const scheduled = await prisma.scheduledWhatsAppMessage.create({
+      data: {
+        recipientName: data.recipientName,
+        recipientPhone: phone,
+        memberId: data.memberId || null,
+        enquiryId: data.enquiryId || null,
+        templateName: "customer_followup_update",
+        variables: JSON.stringify(variables),
+        scheduledFor: scheduleDate,
+        status: "PENDING",
+        sentBy: `${session.username} (${session.role})`,
+      },
+    });
+
+    await recordAuditLog({
+      userId: session.id,
+      username: session.username,
+      role: session.role,
+      action: "WHATSAPP_FOLLOWUP_SCHEDULED",
+      category: "GENERAL",
+      title: `📅 Follow-up WhatsApp Scheduled: ${data.recipientName}`,
+      details: `${session.username} scheduled customer_followup_update for ${data.recipientName} (${phone}) on ${formatDate(scheduleDate)}.`,
+    });
+
+    return {
+      success: true,
+      scheduled: true,
+      scheduledId: scheduled.id,
+      message: `Follow-up WhatsApp scheduled for ${formatDate(scheduleDate)}!`,
+    };
+  }
+
+  // Send directly now
+  const result = await sendWhatsAppTemplate({
+    to: phone,
+    templateName: "customer_followup_update",
+    variables,
+    triggerType: "MANUAL_FOLLOWUP",
+    sentBy: `${session.username} (${session.role})`,
+    memberId: data.memberId || null,
+  });
+
+  if (result.success) {
+    await recordAuditLog({
+      userId: session.id,
+      username: session.username,
+      role: session.role,
+      action: "WHATSAPP_FOLLOWUP_SENT",
+      category: "GENERAL",
+      title: `💬 Follow-up WhatsApp Sent: ${data.recipientName}`,
+      details: `${session.username} sent customer_followup_update template to ${data.recipientName} (${phone}).`,
+    });
+
+    return {
+      success: true,
+      message: `Follow-up WhatsApp message sent to ${data.recipientName}!`,
+    };
+  } else {
+    return {
+      success: false,
+      error: result.error || "Failed to send follow-up message via Fast2SMS.",
+    };
+  }
+}
+
+/**
+ * 8. MANUAL / SCHEDULED TRIGGER: Membership Extension Reminder
+ * Template: membership_extension_reminder
+ * Audience: Active members only
+ * Allowed for: FRONTDESK, ADMIN, SUPERUSER
+ * Variable {{1}}: First Name only
+ * Variable {{2}}: Offer validity date string
+ */
+export async function sendMembershipExtensionWhatsAppAction(data: {
+  memberId: string;
+  offerValidUntil: string | Date;
+  scheduledFor?: string | Date | null;
+}) {
+  const session = await getSessionUser();
+  if (!session) {
+    return { success: false, error: "Unauthorized. Please log in." };
+  }
+
+  const member = await prisma.member.findUnique({
+    where: { id: data.memberId },
+    include: {
+      subscriptions: {
+        where: { status: "ACTIVE" },
+        orderBy: { endDate: "desc" },
+      },
+    },
+  });
+
+  if (!member) {
+    return { success: false, error: "Member not found." };
+  }
+
+  if (!member.phone) {
+    return { success: false, error: "Member does not have a registered phone number." };
+  }
+
+  // Strict check: Only active members
+  const hasActiveSub = member.subscriptions.length > 0 && new Date(member.subscriptions[0].endDate) >= new Date();
+  if (member.membershipStatus !== "ACTIVE" && !hasActiveSub) {
+    return {
+      success: false,
+      error: "Membership Extension Reminder is strictly reserved for active members.",
+    };
+  }
+
+  if (!data.offerValidUntil) {
+    return { success: false, error: "Please specify the date until which this extension offer is valid." };
+  }
+
+  const offerDate = new Date(data.offerValidUntil);
+  if (isNaN(offerDate.getTime())) {
+    return { success: false, error: "Invalid offer validity date format." };
+  }
+
+  const formattedOfferDate = formatDate(offerDate);
+  const firstName = getFirstName(member);
+  const variables = [firstName, formattedOfferDate];
+
+  // If user chose to schedule this message
+  if (data.scheduledFor) {
+    const scheduleDate = new Date(data.scheduledFor);
+    if (isNaN(scheduleDate.getTime()) || scheduleDate <= new Date()) {
+      return { success: false, error: "Please select a valid future date and time to schedule." };
+    }
+
+    const scheduled = await prisma.scheduledWhatsAppMessage.create({
+      data: {
+        recipientName: member.fullName,
+        recipientPhone: sanitizeWhatsAppPhone(member.phone),
+        memberId: member.id,
+        templateName: "membership_extension_reminder",
+        variables: JSON.stringify(variables),
+        offerDate: offerDate,
+        scheduledFor: scheduleDate,
+        status: "PENDING",
+        sentBy: `${session.username} (${session.role})`,
+      },
+    });
+
+    await recordAuditLog({
+      userId: session.id,
+      username: session.username,
+      role: session.role,
+      action: "WHATSAPP_EXTENSION_SCHEDULED",
+      category: "MEMBERSHIP_DATES_CHANGED",
+      title: `📅 Extension Reminder Scheduled: ${member.fullName}`,
+      details: `${session.username} scheduled membership_extension_reminder for ${member.fullName} on ${formatDate(scheduleDate)} (Offer valid until: ${formattedOfferDate}).`,
+    });
+
+    return {
+      success: true,
+      scheduled: true,
+      scheduledId: scheduled.id,
+      message: `Membership extension reminder scheduled for ${formatDate(scheduleDate)}!`,
+    };
+  }
+
+  // Send directly now
+  const result = await sendWhatsAppTemplate({
+    to: member.phone,
+    templateName: "membership_extension_reminder",
+    variables,
+    triggerType: "MANUAL_EXTENSION_REMINDER",
+    sentBy: `${session.username} (${session.role})`,
+    memberId: member.id,
+  });
+
+  if (result.success) {
+    await recordAuditLog({
+      userId: session.id,
+      username: session.username,
+      role: session.role,
+      action: "WHATSAPP_EXTENSION_SENT",
+      category: "MEMBERSHIP_DATES_CHANGED",
+      title: `⭐ Extension Reminder WhatsApp Sent: ${member.fullName}`,
+      details: `${session.username} sent membership_extension_reminder template to ${member.fullName} (${member.phone}). Offer Valid Until: ${formattedOfferDate}.`,
+    });
+
+    return {
+      success: true,
+      message: `Membership extension reminder successfully sent to ${member.fullName}!`,
+    };
+  } else {
+    return {
+      success: false,
+      error: result.error || "Failed to send extension reminder via Fast2SMS.",
+    };
+  }
+}
+
+/**
+ * 9. Process and dispatch all pending scheduled WhatsApp messages that are due
+ */
+export async function processDueScheduledWhatsAppMessages() {
+  const now = new Date();
+
+  const dueMessages = await prisma.scheduledWhatsAppMessage.findMany({
+    where: {
+      status: "PENDING",
+      scheduledFor: { lte: now },
+    },
+    take: 50,
+    orderBy: { scheduledFor: "asc" },
+  });
+
+  if (dueMessages.length === 0) {
+    return { success: true, processedCount: 0, sentCount: 0, failedCount: 0 };
+  }
+
+  let sentCount = 0;
+  let failedCount = 0;
+
+  for (const item of dueMessages) {
+    try {
+      const vars = item.variables ? JSON.parse(item.variables) : [];
+      const triggerType =
+        item.templateName === "customer_followup_update"
+          ? "SCHEDULED_FOLLOWUP"
+          : "SCHEDULED_EXTENSION_REMINDER";
+
+      const res = await sendWhatsAppTemplate({
+        to: item.recipientPhone,
+        templateName: item.templateName,
+        variables: vars,
+        triggerType,
+        sentBy: `SCHEDULED (${item.sentBy || "SYSTEM"})`,
+        memberId: item.memberId,
+      });
+
+      if (res.success) {
+        await prisma.scheduledWhatsAppMessage.update({
+          where: { id: item.id },
+          data: {
+            status: "SENT",
+            sentAt: new Date(),
+          },
+        });
+        sentCount++;
+      } else {
+        await prisma.scheduledWhatsAppMessage.update({
+          where: { id: item.id },
+          data: {
+            status: "FAILED",
+            error: res.error || "Delivery failed",
+          },
+        });
+        failedCount++;
+      }
+    } catch (err: any) {
+      await prisma.scheduledWhatsAppMessage.update({
+        where: { id: item.id },
+        data: {
+          status: "FAILED",
+          error: err.message || "Execution exception",
+        },
+      });
+      failedCount++;
+    }
+  }
+
+  return {
+    success: true,
+    processedCount: dueMessages.length,
+    sentCount,
+    failedCount,
+  };
+}
+
+/**
+ * 10. Fetch Scheduled WhatsApp Messages
+ */
+export async function getScheduledWhatsAppMessagesAction(options?: {
+  memberId?: string;
+  enquiryId?: string;
+  status?: string;
+}) {
+  const where: any = {};
+  if (options?.memberId) where.memberId = options.memberId;
+  if (options?.enquiryId) where.enquiryId = options.enquiryId;
+  if (options?.status) where.status = options.status;
+
+  const messages = await prisma.scheduledWhatsAppMessage.findMany({
+    where,
+    orderBy: { scheduledFor: "desc" },
+    take: 50,
+  });
+
+  return {
+    success: true,
+    messages: messages.map((m) => ({
+      ...m,
+      scheduledFor: m.scheduledFor.toISOString(),
+      createdAt: m.createdAt.toISOString(),
+      sentAt: m.sentAt ? m.sentAt.toISOString() : null,
+      offerDate: m.offerDate ? m.offerDate.toISOString() : null,
+    })),
+  };
+}
+
+/**
+ * 11. Cancel a Scheduled WhatsApp Message
+ */
+export async function cancelScheduledWhatsAppMessageAction(id: string) {
+  const session = await getSessionUser();
+  if (!session) {
+    return { success: false, error: "Unauthorized." };
+  }
+
+  const existing = await prisma.scheduledWhatsAppMessage.findUnique({
+    where: { id },
+  });
+
+  if (!existing) {
+    return { success: false, error: "Scheduled message not found." };
+  }
+
+  if (existing.status !== "PENDING") {
+    return { success: false, error: `Cannot cancel message with status ${existing.status}.` };
+  }
+
+  await prisma.scheduledWhatsAppMessage.update({
+    where: { id },
+    data: { status: "CANCELLED" },
+  });
+
+  await recordAuditLog({
+    userId: session.id,
+    username: session.username,
+    role: session.role,
+    action: "WHATSAPP_SCHEDULE_CANCELLED",
+    category: "GENERAL",
+    title: `❌ Scheduled WhatsApp Cancelled`,
+    details: `${session.username} cancelled scheduled message for ${existing.recipientName} (${existing.recipientPhone}).`,
+  });
+
+  return { success: true, message: "Scheduled message cancelled successfully." };
 }

@@ -19,9 +19,11 @@ import {
   CreditCard,
   ChevronRight,
   ShieldAlert,
+  MessageSquare,
 } from "lucide-react";
 import { formatINR, formatDate, getFirstName } from "@/lib/utils";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
+import { SendFollowUpWhatsAppModal } from "@/components/modals/SendFollowUpWhatsAppModal";
 
 interface DashboardDataProps {
   data: {
@@ -101,6 +103,14 @@ export function DashboardClient({ data }: DashboardDataProps) {
     id: string;
     name: string;
     amount: number;
+  } | null>(null);
+
+  // Follow-up WhatsApp modal state
+  const [followUpModalRecipient, setFollowUpModalRecipient] = useState<{
+    name: string;
+    phone: string;
+    enquiryId?: string;
+    planOrStatus?: string;
   } | null>(null);
 
   const handleOpenPayment = (memberId: string, name: string, dueAmount: number) => {
@@ -667,10 +677,28 @@ export function DashboardClient({ data }: DashboardDataProps) {
                           target="_blank"
                           rel="noreferrer"
                           className="p-2 bg-white hover:bg-slate-50 border border-slate-200 text-emerald-600 rounded-lg text-xs font-semibold flex items-center justify-center"
-                          title="WhatsApp"
+                          title="Direct WhatsApp"
                         >
                           <MessageCircle className="w-4 h-4" />
                         </a>
+
+                        {Boolean(enq.phone && enq.phone.trim().length >= 10) && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFollowUpModalRecipient({
+                                name: enq.name,
+                                phone: enq.phone,
+                                enquiryId: enq.id,
+                                planOrStatus: enq.preferredPlan || enq.status,
+                              })
+                            }
+                            className="p-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-lg text-xs font-semibold flex items-center justify-center transition"
+                            title="Follow-up WhatsApp Template"
+                          >
+                            <MessageSquare className="w-4 h-4 text-amber-700" />
+                          </button>
+                        )}
 
                         <Link
                           href={`/portal/members/new?name=${encodeURIComponent(
@@ -735,6 +763,24 @@ export function DashboardClient({ data }: DashboardDataProps) {
                           </td>
                           <td className="py-3 px-3 text-right">
                             <div className="flex items-center justify-end gap-1.5">
+                              {Boolean(enq.phone && enq.phone.trim().length >= 10) && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setFollowUpModalRecipient({
+                                      name: enq.name,
+                                      phone: enq.phone,
+                                      enquiryId: enq.id,
+                                      planOrStatus: enq.preferredPlan || enq.status,
+                                    })
+                                  }
+                                  className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-md text-xs font-semibold inline-flex items-center gap-1 transition"
+                                  title="Send Follow-up WhatsApp"
+                                >
+                                  <MessageSquare className="w-3 h-3 text-amber-700" />
+                                  <span>Follow-up</span>
+                                </button>
+                              )}
                               <a
                                 href={`tel:${enq.phone}`}
                                 className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-md text-xs font-medium inline-flex items-center gap-1 transition"
@@ -1035,6 +1081,16 @@ export function DashboardClient({ data }: DashboardDataProps) {
           onSuccess={() => {
             router.refresh();
           }}
+        />
+      )}
+
+      {/* Follow-up WhatsApp Modal */}
+      {followUpModalRecipient && (
+        <SendFollowUpWhatsAppModal
+          isOpen={Boolean(followUpModalRecipient)}
+          onClose={() => setFollowUpModalRecipient(null)}
+          recipient={followUpModalRecipient}
+          onSuccess={() => router.refresh()}
         />
       )}
     </div>
