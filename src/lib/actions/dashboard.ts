@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays } from "date-fns";
+import { sanitizeWhatsAppPhone } from "@/lib/whatsapp";
 
 export type Timeframe = "today" | "week" | "month";
 
@@ -330,7 +331,44 @@ export async function getDashboardData() {
       totalDue: totalOutstandingDue,
     },
     dueSubscriptions: combinedDueItems,
-    pendingFollowUps,
+    pendingFollowUps: await (async () => {
+      const followupEnquiryIds = pendingFollowUps.map((e) => e.id);
+      const scheduledMsgs = await prisma.scheduledWhatsAppMessage.findMany({
+        where: {
+          templateName: "customer_followup_update",
+          status: { in: ["PENDING", "SENT"] },
+          OR: [
+            { enquiryId: { in: followupEnquiryIds } },
+            { recipientPhone: { in: pendingFollowUps.map((e) => sanitizeWhatsAppPhone(e.phone)).filter(Boolean) as string[] } },
+          ],
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      return pendingFollowUps.map((enq) => {
+        const sanitized = sanitizeWhatsAppPhone(enq.phone);
+        const pendingMatch = scheduledMsgs.find(
+          (m) => m.status === "PENDING" && (m.enquiryId === enq.id || (sanitized && m.recipientPhone === sanitized))
+        );
+        const sentMatch = scheduledMsgs.find(
+          (m) => m.status === "SENT" && (m.enquiryId === enq.id || (sanitized && m.recipientPhone === sanitized))
+        );
+        const match = pendingMatch || sentMatch;
+
+        return {
+          ...enq,
+          scheduledWhatsApp: match
+            ? {
+                id: match.id,
+                status: match.status,
+                scheduledFor: match.scheduledFor.toISOString(),
+                sentAt: match.sentAt ? match.sentAt.toISOString() : null,
+                sentBy: match.sentBy,
+              }
+            : null,
+        };
+      });
+    })(),
     recentMembers,
     expiringSoon: combinedExpiringSoon,
     upcomingEvents,

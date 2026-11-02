@@ -774,6 +774,22 @@ export async function sendCustomerFollowUpWhatsAppAction(data: {
       return { success: false, error: "Please select a valid future date and time to schedule." };
     }
 
+    // Cancel any previous pending follow-up scheduled for this enquiry or phone
+    const orConditions: any[] = [{ recipientPhone: phone }];
+    if (data.enquiryId) orConditions.push({ enquiryId: data.enquiryId });
+    if (data.memberId) orConditions.push({ memberId: data.memberId });
+
+    await prisma.scheduledWhatsAppMessage.updateMany({
+      where: {
+        OR: orConditions,
+        templateName: "customer_followup_update",
+        status: "PENDING",
+      },
+      data: {
+        status: "CANCELLED",
+      },
+    });
+
     const scheduled = await prisma.scheduledWhatsAppMessage.create({
       data: {
         recipientName: data.recipientName,
@@ -802,6 +818,7 @@ export async function sendCustomerFollowUpWhatsAppAction(data: {
       success: true,
       scheduled: true,
       scheduledId: scheduled.id,
+      scheduledFor: scheduled.scheduledFor.toISOString(),
       message: `Follow-up WhatsApp scheduled for ${formatDate(scheduleDate)}!`,
     };
   }
@@ -817,6 +834,23 @@ export async function sendCustomerFollowUpWhatsAppAction(data: {
   });
 
   if (result.success) {
+    // Mark any existing pending schedule for this enquiry/phone as SENT
+    const orConditions: any[] = [{ recipientPhone: phone }];
+    if (data.enquiryId) orConditions.push({ enquiryId: data.enquiryId });
+    if (data.memberId) orConditions.push({ memberId: data.memberId });
+
+    await prisma.scheduledWhatsAppMessage.updateMany({
+      where: {
+        OR: orConditions,
+        templateName: "customer_followup_update",
+        status: "PENDING",
+      },
+      data: {
+        status: "SENT",
+        sentAt: new Date(),
+      },
+    });
+
     await recordAuditLog({
       userId: session.id,
       username: session.username,

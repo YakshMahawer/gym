@@ -12,9 +12,14 @@ import {
   RefreshCw,
   Phone,
   User,
-  Sparkles,
+  Trash2,
+  Check,
 } from "lucide-react";
-import { sendCustomerFollowUpWhatsAppAction } from "@/lib/actions/whatsapp-automation";
+import {
+  sendCustomerFollowUpWhatsAppAction,
+  cancelScheduledWhatsAppMessageAction,
+} from "@/lib/actions/whatsapp-automation";
+import { formatDateTime } from "@/lib/utils";
 
 interface SendFollowUpWhatsAppModalProps {
   isOpen: boolean;
@@ -22,9 +27,16 @@ interface SendFollowUpWhatsAppModalProps {
   recipient: {
     name: string;
     phone: string;
-    memberId?: string;
     enquiryId?: string;
+    memberId?: string;
     planOrStatus?: string;
+    scheduledWhatsApp?: {
+      id: string;
+      status: string; // "PENDING" | "SENT"
+      scheduledFor: string;
+      sentAt?: string | null;
+      sentBy?: string | null;
+    } | null;
   };
   onSuccess?: () => void;
 }
@@ -35,18 +47,34 @@ export function SendFollowUpWhatsAppModal({
   recipient,
   onSuccess,
 }: SendFollowUpWhatsAppModalProps) {
-  const [mode, setMode] = useState<"now" | "schedule">("now");
+  const isAlreadyPending = recipient.scheduledWhatsApp?.status === "PENDING";
+  const isAlreadySent = recipient.scheduledWhatsApp?.status === "SENT";
 
-  // Default schedule: tomorrow at 10:00 AM
-  const getTomorrowString = () => {
+  const [mode, setMode] = useState<"now" | "schedule">(
+    isAlreadyPending ? "schedule" : "now"
+  );
+
+  // Default schedule: prefill with existing schedule or tomorrow 10:00 AM
+  const getInitialScheduleString = () => {
+    if (recipient.scheduledWhatsApp?.scheduledFor) {
+      try {
+        const d = new Date(recipient.scheduledWhatsApp.scheduledFor);
+        if (!isNaN(d.getTime())) {
+          return d.toISOString().slice(0, 16);
+        }
+      } catch {}
+    }
     const d = new Date();
     d.setDate(d.getDate() + 1);
     d.setHours(10, 0, 0, 0);
-    return d.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+    return d.toISOString().slice(0, 16);
   };
 
-  const [scheduleDateTime, setScheduleDateTime] = useState<string>(getTomorrowString());
+  const [scheduleDateTime, setScheduleDateTime] = useState<string>(
+    getInitialScheduleString()
+  );
   const [loading, setLoading] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -63,7 +91,7 @@ export function SendFollowUpWhatsAppModal({
       const scheduledFor = mode === "schedule" ? new Date(scheduleDateTime) : null;
       if (mode === "schedule") {
         if (!scheduledFor || isNaN(scheduledFor.getTime()) || scheduledFor <= new Date()) {
-          setError("Please select a future date and time for the scheduled message.");
+          setError("Please select a future date and time.");
           setLoading(false);
           return;
         }
@@ -78,13 +106,19 @@ export function SendFollowUpWhatsAppModal({
       });
 
       if (res.success) {
-        setSuccess(res.message || "Follow-up WhatsApp processed successfully!");
+        setSuccess(
+          mode === "schedule"
+            ? isAlreadyPending
+              ? "Schedule updated successfully!"
+              : "Message scheduled successfully!"
+            : "Follow-up WhatsApp sent successfully!"
+        );
         if (onSuccess) onSuccess();
         setTimeout(() => {
           onClose();
-        }, 1500);
+        }, 1200);
       } else {
-        setError(res.error || "Failed to dispatch WhatsApp message.");
+        setError(res.error || "Failed to process WhatsApp message.");
       }
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred.");
@@ -93,18 +127,45 @@ export function SendFollowUpWhatsAppModal({
     }
   };
 
+  const handleCancelSchedule = async () => {
+    if (!recipient.scheduledWhatsApp?.id) return;
+    setError(null);
+    setCancelling(true);
+
+    try {
+      const res = await cancelScheduledWhatsAppMessageAction(
+        recipient.scheduledWhatsApp.id
+      );
+      if (res.success) {
+        setSuccess("Scheduled message cancelled successfully.");
+        if (onSuccess) onSuccess();
+        setTimeout(() => {
+          onClose();
+        }, 1200);
+      } else {
+        setError(res.error || "Failed to cancel scheduled message.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to cancel schedule.");
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden space-y-4">
-        {/* Header */}
-        <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200">
-              <MessageSquare className="w-4 h-4" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in duration-150">
+      <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
+        {/* Compact Header */}
+        <div className="px-4 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center">
+              <MessageSquare className="w-3.5 h-3.5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Follow-up WhatsApp</h3>
-              <p className="text-[11px] text-slate-400">Template: customer_followup_update</p>
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-xs font-bold text-slate-900">Follow-up WhatsApp</h3>
+                <span className="text-[10px] font-mono text-slate-400">customer_followup_update</span>
+              </div>
             </div>
           </div>
           <button
@@ -115,127 +176,139 @@ export function SendFollowUpWhatsAppModal({
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-5 space-y-4">
+        {/* Compact Body */}
+        <div className="p-4 space-y-3">
           {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
+            <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           {success && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2 font-medium">
+            <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2 font-medium">
               <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
               <span>{success}</span>
             </div>
           )}
 
-          {/* Recipient Details */}
-          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2 text-xs">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 font-bold text-slate-900 text-sm">
-                <User className="w-4 h-4 text-slate-500" />
-                <span>{recipient.name}</span>
-              </div>
-              {recipient.planOrStatus && (
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                  {recipient.planOrStatus}
+          {/* Already Scheduled Banner */}
+          {isAlreadyPending && (
+            <div className="p-2.5 bg-indigo-50 border border-indigo-200 rounded-xl space-y-1.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1 font-bold text-indigo-950">
+                  <Clock className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+                  Currently Scheduled
                 </span>
-              )}
+                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">
+                  {formatDateTime(recipient.scheduledWhatsApp!.scheduledFor)}
+                </span>
+              </div>
+              <p className="text-[11px] text-indigo-800/80 leading-tight">
+                Queued by {recipient.scheduledWhatsApp!.sentBy || "Staff"}. You can change the time below, send now, or cancel.
+              </p>
+              <div className="pt-1 flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={handleCancelSchedule}
+                  disabled={cancelling || loading}
+                  className="px-2 py-1 text-[11px] font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-100/60 rounded-md transition flex items-center gap-1 border border-rose-200"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  <span>{cancelling ? "Cancelling..." : "Cancel Schedule"}</span>
+                </button>
+              </div>
             </div>
+          )}
 
-            <div className="flex items-center justify-between text-slate-600 text-[11px] pt-1 border-t border-slate-200/60">
-              <span className="flex items-center gap-1 font-mono">
+          {/* Already Sent Banner */}
+          {isAlreadySent && !isAlreadyPending && (
+            <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-800">
+              <span className="flex items-center gap-1 font-semibold text-[11px]">
+                <Check className="w-3 h-3 text-emerald-600" />
+                Sent on {formatDateTime(recipient.scheduledWhatsApp!.sentAt || recipient.scheduledWhatsApp!.scheduledFor)}
+              </span>
+              <span className="text-[10px] text-emerald-700 font-medium">Can send again below</span>
+            </div>
+          )}
+
+          {/* Compact Recipient Bar (Single Line) */}
+          <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200/80 text-xs">
+            <div className="flex items-center gap-1.5 font-bold text-slate-800">
+              <User className="w-3.5 h-3.5 text-slate-400" />
+              <span>{recipient.name}</span>
+            </div>
+            <div className="flex items-center gap-2 font-mono text-[11px] text-slate-500">
+              <span className="flex items-center gap-0.5">
                 <Phone className="w-3 h-3 text-slate-400" />
                 {recipient.phone}
               </span>
-              <span className="text-slate-500">
-                1st Parameter: <strong className="text-slate-800 font-semibold">&quot;{firstName}&quot;</strong>
+              <span className="text-slate-400">·</span>
+              <span className="text-slate-700 font-sans">
+                Name: <strong className="font-semibold text-slate-900">{firstName}</strong>
               </span>
             </div>
           </div>
 
-          {/* Mode Option: Send Now vs Schedule */}
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-slate-700 block">
-              Choose Dispatch Mode
-            </label>
-
-            <div className="grid grid-cols-2 gap-2">
+          {/* Segmented Dispatch Mode Pill */}
+          <div className="space-y-1">
+            <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl text-xs font-semibold gap-1">
               <button
                 type="button"
                 onClick={() => setMode("now")}
-                className={`p-3 rounded-xl border text-left transition flex items-start gap-2.5 ${
+                className={`py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition ${
                   mode === "now"
-                    ? "bg-amber-50/70 border-amber-400 text-amber-950 shadow-xs"
-                    : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                    ? "bg-white text-slate-900 shadow-xs font-bold"
+                    : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                <Send className={`w-4 h-4 mt-0.5 ${mode === "now" ? "text-amber-600" : "text-slate-400"}`} />
-                <div>
-                  <span className="font-bold text-xs block">Send Now</span>
-                  <span className="text-[10px] text-slate-500">Dispatch directly</span>
-                </div>
+                <Send className="w-3 h-3 text-amber-600" />
+                <span>Send Now</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setMode("schedule")}
-                className={`p-3 rounded-xl border text-left transition flex items-start gap-2.5 ${
+                className={`py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition ${
                   mode === "schedule"
-                    ? "bg-indigo-50/70 border-indigo-400 text-indigo-950 shadow-xs"
-                    : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                    ? "bg-white text-slate-900 shadow-xs font-bold"
+                    : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                <Clock className={`w-4 h-4 mt-0.5 ${mode === "schedule" ? "text-indigo-600" : "text-slate-400"}`} />
-                <div>
-                  <span className="font-bold text-xs block">Schedule</span>
-                  <span className="text-[10px] text-slate-500">Send on set date</span>
-                </div>
+                <Clock className="w-3 h-3 text-indigo-600" />
+                <span>Schedule</span>
               </button>
             </div>
           </div>
 
-          {/* Schedule Date & Time Picker */}
+          {/* Schedule Picker (Only shown when mode === "schedule") */}
           {mode === "schedule" && (
-            <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 space-y-2">
-              <label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Select Schedule Date & Time</span>
-              </label>
+            <div className="p-2.5 bg-indigo-50/60 rounded-xl border border-indigo-100 space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-800">
+                <span className="flex items-center gap-1 text-indigo-950 text-[11px]">
+                  <Calendar className="w-3 h-3 text-indigo-600" />
+                  Scheduled Date & Time
+                </span>
+                <span className="text-[10px] text-indigo-600 font-normal">Auto-dispatched</span>
+              </div>
               <input
                 type="datetime-local"
                 value={scheduleDateTime}
                 onChange={(e) => setScheduleDateTime(e.target.value)}
                 min={new Date().toISOString().slice(0, 16)}
-                className="w-full px-3 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                className="w-full px-2.5 py-1.5 text-xs font-medium bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600"
               />
-              <p className="text-[11px] text-indigo-700">
-                The message will be queued and automatically sent to {firstName} at the scheduled time.
-              </p>
             </div>
           )}
-
-          {/* Template Info Card */}
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-500 space-y-1">
-            <div className="flex items-center gap-1 font-semibold text-slate-700">
-              <Sparkles className="w-3 h-3 text-amber-500" />
-              <span>Fast2SMS Template Details</span>
-            </div>
-            <p>
-              Sends official follow-up template addressed to <strong>{firstName}</strong>.
-            </p>
-          </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+        {/* Compact Footer */}
+        <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            disabled={loading}
-            className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 rounded-xl transition"
+            disabled={loading || cancelling}
+            className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 rounded-lg transition"
           >
             Cancel
           </button>
@@ -243,24 +316,34 @@ export function SendFollowUpWhatsAppModal({
           <button
             type="button"
             onClick={handleDispatch}
-            disabled={loading}
-            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center gap-1.5 disabled:opacity-50"
+            disabled={loading || cancelling}
+            className={`px-3.5 py-1.5 text-white text-xs font-bold rounded-lg transition shadow-xs flex items-center gap-1.5 active:scale-95 disabled:opacity-50 ${
+              mode === "schedule"
+                ? "bg-indigo-600 hover:bg-indigo-700"
+                : "bg-amber-600 hover:bg-amber-700"
+            }`}
           >
             {loading ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              <RefreshCw className="w-3 h-3 animate-spin" />
             ) : mode === "schedule" ? (
-              <Clock className="w-3.5 h-3.5" />
+              <Clock className="w-3 h-3" />
             ) : (
-              <Send className="w-3.5 h-3.5" />
+              <Send className="w-3 h-3" />
             )}
             <span>
               {loading
                 ? mode === "schedule"
-                  ? "Scheduling..."
+                  ? isAlreadyPending
+                    ? "Updating..."
+                    : "Scheduling..."
                   : "Sending..."
                 : mode === "schedule"
-                ? "Schedule WhatsApp"
-                : "Send Follow-up WhatsApp"}
+                ? isAlreadyPending
+                  ? "Update Schedule"
+                  : "Schedule WhatsApp"
+                : isAlreadyPending
+                ? "Send Directly Now"
+                : "Send Follow-up Now"}
             </span>
           </button>
         </div>
@@ -268,4 +351,3 @@ export function SendFollowUpWhatsAppModal({
     </div>
   );
 }
-

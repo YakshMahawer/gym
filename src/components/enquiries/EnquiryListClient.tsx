@@ -15,8 +15,10 @@ import {
   ArrowRight,
   Download,
   MessageSquare,
+  Clock,
+  Check,
 } from "lucide-react";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatDateTime } from "@/lib/utils";
 import { updateEnquiryStatus, deleteEnquiry } from "@/lib/actions/enquiries";
 import { NewEnquiryModal } from "@/components/modals/NewEnquiryModal";
 import { SendFollowUpWhatsAppModal } from "@/components/modals/SendFollowUpWhatsAppModal";
@@ -42,6 +44,7 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
     phone: string;
     enquiryId?: string;
     planOrStatus?: string;
+    scheduledWhatsApp?: any;
   } | null>(null);
 
   // Pagination state
@@ -234,6 +237,22 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
                     <span>Follow-up: {formatDate(enq.followUpDate)}</span>
                   </div>
 
+                  {/* Scheduled WhatsApp status banner if present */}
+                  {enq.scheduledWhatsApp?.status === "PENDING" ? (
+                    <div className="flex items-center justify-between px-2.5 py-1.5 bg-indigo-50 border border-indigo-200/80 rounded-lg text-[11px] text-indigo-900 font-semibold">
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+                        <span>WA Scheduled: {formatDateTime(enq.scheduledWhatsApp.scheduledFor)}</span>
+                      </span>
+                      <span className="text-[10px] text-indigo-600 font-mono font-bold">Auto</span>
+                    </div>
+                  ) : enq.scheduledWhatsApp?.status === "SENT" ? (
+                    <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-200/80 rounded-lg text-[10px] text-emerald-800 font-medium">
+                      <Check className="w-3 h-3 text-emerald-600" />
+                      <span>WA Sent: {formatDateTime(enq.scheduledWhatsApp.sentAt || enq.scheduledWhatsApp.scheduledFor)}</span>
+                    </div>
+                  ) : null}
+
                   {enq.notes && (
                     <p className="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-lg italic">
                       &quot;{enq.notes}&quot;
@@ -272,13 +291,31 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
                             phone: enq.phone,
                             enquiryId: enq.id,
                             planOrStatus: enq.preferredPlan || enq.status,
+                            scheduledWhatsApp: enq.scheduledWhatsApp,
                           })
                         }
-                        className="py-1.5 px-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 active:bg-amber-200 transition"
-                        title="Send Follow-up WhatsApp"
+                        className={`py-1.5 px-2 border rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition ${
+                          enq.scheduledWhatsApp?.status === "PENDING"
+                            ? "bg-indigo-50 hover:bg-indigo-100 border-indigo-300 text-indigo-900 font-bold"
+                            : "bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-800"
+                        }`}
+                        title={
+                          enq.scheduledWhatsApp?.status === "PENDING"
+                            ? "Already Scheduled - Click to view or edit"
+                            : "Send Follow-up WhatsApp"
+                        }
                       >
-                        <MessageSquare className="w-3.5 h-3.5 text-amber-700" />
-                        <span>Follow-up</span>
+                        {enq.scheduledWhatsApp?.status === "PENDING" ? (
+                          <>
+                            <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>Scheduled</span>
+                          </>
+                        ) : (
+                          <>
+                            <MessageSquare className="w-3.5 h-3.5 text-amber-700" />
+                            <span>Follow-up</span>
+                          </>
+                        )}
                       </button>
                     )}
 
@@ -329,7 +366,21 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
                       {/* Contact */}
                       <td className="py-3 px-4">
                         <span className="font-semibold text-slate-900 block">{enq.name}</span>
-                        <span className="text-[11px] text-slate-400 font-mono">{enq.phone}</span>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          <span className="text-[11px] text-slate-400 font-mono">{enq.phone}</span>
+                          {enq.scheduledWhatsApp?.status === "PENDING" && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                              <Clock className="w-2.5 h-2.5 text-indigo-600 animate-pulse" />
+                              <span>Sched: {formatDateTime(enq.scheduledWhatsApp.scheduledFor)}</span>
+                            </span>
+                          )}
+                          {enq.scheduledWhatsApp?.status === "SENT" && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <Check className="w-2.5 h-2.5 text-emerald-600" />
+                              <span>WA Sent</span>
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Plan & Source */}
@@ -387,13 +438,31 @@ export function EnquiryListClient({ enquiries, plans = [] }: EnquiryListClientPr
                                   phone: enq.phone,
                                   enquiryId: enq.id,
                                   planOrStatus: enq.preferredPlan || enq.status,
+                                  scheduledWhatsApp: enq.scheduledWhatsApp,
                                 })
                               }
-                              className="px-2 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded text-xs font-semibold inline-flex items-center gap-1 transition"
-                              title="Send Follow-up WhatsApp Template"
+                              className={`px-2 py-1 border rounded text-xs font-semibold inline-flex items-center gap-1 transition ${
+                                enq.scheduledWhatsApp?.status === "PENDING"
+                                  ? "bg-indigo-50 hover:bg-indigo-100 border-indigo-300 text-indigo-900 font-bold"
+                                  : "bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800"
+                              }`}
+                              title={
+                                enq.scheduledWhatsApp?.status === "PENDING"
+                                  ? "Already Scheduled - Click to view or edit"
+                                  : "Send Follow-up WhatsApp Template"
+                              }
                             >
-                              <MessageSquare className="w-3 h-3 text-amber-700" />
-                              <span>Follow-up</span>
+                              {enq.scheduledWhatsApp?.status === "PENDING" ? (
+                                <>
+                                  <Clock className="w-3 h-3 text-indigo-600" />
+                                  <span>Scheduled</span>
+                                </>
+                              ) : (
+                                <>
+                                  <MessageSquare className="w-3 h-3 text-amber-700" />
+                                  <span>Follow-up</span>
+                                </>
+                              )}
                             </button>
                           )}
 

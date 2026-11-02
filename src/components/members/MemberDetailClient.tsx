@@ -35,7 +35,6 @@ import { ReceiptModal } from "@/components/payments/ReceiptModal";
 import { DeleteReceiptModal } from "@/components/modals/DeleteReceiptModal";
 import { EditPaymentDateModal } from "@/components/modals/EditPaymentDateModal";
 import { SendExpiryWhatsAppModal } from "@/components/modals/SendExpiryWhatsAppModal";
-import { SendFollowUpWhatsAppModal } from "@/components/modals/SendFollowUpWhatsAppModal";
 import { SendExtensionWhatsAppModal } from "@/components/modals/SendExtensionWhatsAppModal";
 import { renewSubscription, deleteMember } from "@/lib/actions/members";
 import { updatePTSessions } from "@/lib/actions/pt";
@@ -57,7 +56,6 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
   const [renewalModalOpen, setRenewalModalOpen] = useState(false);
   const [ptModalOpen, setPtModalOpen] = useState(false);
   const [expiryModalOpen, setExpiryModalOpen] = useState(false);
-  const [followUpModalOpen, setFollowUpModalOpen] = useState(false);
   const [extensionModalOpen, setExtensionModalOpen] = useState(false);
   const [sendingWaPaymentId, setSendingWaPaymentId] = useState<string | null>(null);
   const [selectedReceiptForPrint, setSelectedReceiptForPrint] = useState<any | null>(null);
@@ -246,19 +244,6 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
             <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
             <span>WhatsApp</span>
           </a>
-
-          {/* Follow-up WhatsApp Button: Only if there is a mobile number */}
-          {hasPhone && (
-            <button
-              type="button"
-              onClick={() => setFollowUpModalOpen(true)}
-              className="flex-1 sm:flex-none px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
-              title="Send Follow-up WhatsApp (customer_followup_update)"
-            >
-              <MessageSquare className="w-3.5 h-3.5 text-amber-700" />
-              <span>Follow-up WhatsApp</span>
-            </button>
-          )}
 
           {/* Membership Extension Reminder: Strictly for Active Members */}
           {isActiveMember && hasPhone && (
@@ -581,22 +566,9 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
             {activeTab === "overview" && (
               <div className="p-4 sm:p-5 space-y-4 text-xs">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-                  <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-100 flex items-center justify-between">
-                    <div>
-                      <span className="text-slate-400 font-medium block">Phone</span>
-                      <span className="font-semibold text-slate-800 text-sm">{member.phone || "No phone"}</span>
-                    </div>
-                    {hasPhone && (
-                      <button
-                        type="button"
-                        onClick={() => setFollowUpModalOpen(true)}
-                        className="px-2.5 py-1 text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg transition inline-flex items-center gap-1.5"
-                        title="Send Follow-up WhatsApp"
-                      >
-                        <MessageSquare className="w-3 h-3 text-amber-700" />
-                        <span>Follow-up WhatsApp</span>
-                      </button>
-                    )}
+                  <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-100">
+                    <span className="text-slate-400 font-medium block">Phone</span>
+                    <span className="font-semibold text-slate-800 text-sm">{member.phone}</span>
                   </div>
 
                   <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-100">
@@ -1181,21 +1153,6 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
             memberId: member.memberId,
             expiryDate: activeSub?.endDate,
             planName: activeSub?.planName,
-          }}
-          onSuccess={() => router.refresh()}
-        />
-      )}
-
-      {/* Send Follow-up WhatsApp Modal */}
-      {followUpModalOpen && (
-        <SendFollowUpWhatsAppModal
-          isOpen={followUpModalOpen}
-          onClose={() => setFollowUpModalOpen(false)}
-          recipient={{
-            name: member.fullName,
-            phone: member.phone || "",
-            memberId: member.id,
-            planOrStatus: activeSub?.planName || member.membershipStatus,
           }}
           onSuccess={() => router.refresh()}
         />

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { EnquiryStatus } from "@prisma/client";
 import { getSessionUser } from "@/lib/auth";
+import { sanitizeWhatsAppPhone } from "@/lib/whatsapp";
 
 export interface CreateEnquiryInput {
   name: string;
@@ -38,12 +39,47 @@ export async function getEnquiries(filters?: {
       whereClause.status = filters.status;
     }
 
-    const enquiries = await prisma.enquiry.findMany({
-      where: whereClause,
-      orderBy: [{ followUpDate: "asc" }, { createdAt: "desc" }],
-    });
+    const [enquiries, scheduledMsgs] = await Promise.all([
+      prisma.enquiry.findMany({
+        where: whereClause,
+        orderBy: [{ followUpDate: "asc" }, { createdAt: "desc" }],
+      }),
+      prisma.scheduledWhatsAppMessage.findMany({
+        where: {
+          templateName: "customer_followup_update",
+          status: { in: ["PENDING", "SENT"] },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
 
-    return enquiries;
+    return enquiries.map((enq) => {
+      const sanitized = sanitizeWhatsAppPhone(enq.phone);
+      const pendingMatch = scheduledMsgs.find(
+        (m) =>
+          m.status === "PENDING" &&
+          (m.enquiryId === enq.id || (sanitized && m.recipientPhone === sanitized))
+      );
+      const sentMatch = scheduledMsgs.find(
+        (m) =>
+          m.status === "SENT" &&
+          (m.enquiryId === enq.id || (sanitized && m.recipientPhone === sanitized))
+      );
+      const match = pendingMatch || sentMatch;
+
+      return {
+        ...enq,
+        scheduledWhatsApp: match
+          ? {
+              id: match.id,
+              status: match.status,
+              scheduledFor: match.scheduledFor.toISOString(),
+              sentAt: match.sentAt ? match.sentAt.toISOString() : null,
+              sentBy: match.sentBy,
+            }
+          : null,
+      };
+    });
   } catch (error) {
     console.error("Failed to fetch enquiries:", error);
     return [];
