@@ -162,15 +162,19 @@ export function AppShell({ children }: AppShellProps) {
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
-            <Link href="/portal" className="flex items-center gap-2.5 group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-amber-500 text-white flex items-center justify-center font-bold shadow-md shadow-rose-500/20 transition-transform group-hover:scale-105">
-                <Dumbbell className="w-4.5 h-4.5 text-white" />
+            <Link href="/portal" className="flex items-center gap-2.5 sm:gap-3 group">
+              <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white p-1 shadow-md shadow-slate-950/40 border border-white/30 flex items-center justify-center shrink-0 overflow-hidden transition-all duration-200 group-hover:scale-105 group-hover:shadow-rose-500/20 group-hover:border-rose-300/40">
+                <img
+                  src="/icons/logo.png"
+                  alt="Concept 1 Gym Logo"
+                  className="w-full h-full object-contain select-none"
+                />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm sm:text-base font-bold tracking-tight text-white leading-none">
-                  Concept I <span className="text-rose-400 font-extrabold">Gym</span>
+                <span className="text-sm sm:text-base font-extrabold tracking-tight text-white leading-none">
+                  Concept 1 <span className="text-rose-400 font-black">Gym</span>
                 </span>
-                <span className="text-[9px] sm:text-[10px] text-blue-200/70 font-medium tracking-wide">
+                <span className="text-[9px] sm:text-[10px] text-blue-200/70 font-medium tracking-wide mt-0.5">
                   Reception Desk
                 </span>
               </div>
@@ -406,13 +410,17 @@ export function AppShell({ children }: AppShellProps) {
             <div className="w-72 bg-white dark:bg-slate-900 h-full p-4 space-y-4 flex flex-col justify-between shadow-2xl animate-in slide-in-from-left duration-200 border-r border-slate-200 dark:border-slate-800">
               <div className="space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-amber-500 text-white flex items-center justify-center font-bold">
-                      <Dumbbell className="w-4 h-4" />
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-white p-1 shadow-xs border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 overflow-hidden">
+                      <img
+                        src="/icons/logo.png"
+                        alt="Concept 1 Gym Logo"
+                        className="w-full h-full object-contain select-none"
+                      />
                     </div>
                     <div>
-                      <span className="font-bold text-sm text-slate-900 dark:text-white block leading-tight">
-                        Concept I <span className="text-rose-600 dark:text-rose-500">Gym</span>
+                      <span className="font-extrabold text-sm text-slate-900 dark:text-white block leading-tight">
+                        Concept 1 <span className="text-rose-600 dark:text-rose-500 font-black">Gym</span>
                       </span>
                       <span className="text-[10px] text-slate-400 dark:text-slate-500">
                         {user?.name || "Portal User"}

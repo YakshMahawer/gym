@@ -371,17 +371,6 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                 </p>
               )}
 
-              {isActiveMember && hasPhone && (
-                <button
-                  type="button"
-                  onClick={() => setExtensionModalOpen(true)}
-                  className="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold text-xs rounded-lg transition flex items-center justify-center gap-1.5 active:scale-98"
-                >
-                  <Gift className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Send Extension Offer WhatsApp</span>
-                </button>
-              )}
-
               <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] text-slate-400">
                 <span>Goal: {member.programme || "Fitness"}</span>
                 <span>Source: {member.source || "Walk-in"}</span>
@@ -430,12 +419,14 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                 <Dumbbell className="w-4 h-4 text-indigo-600" />
                 <span>Personal Training (PT)</span>
               </div>
-              <button
-                onClick={() => setPtModalOpen(true)}
-                className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
-              >
-                {latestPT ? "Manage / Renew" : "+ Add PT"}
-              </button>
+              {latestPT && (
+                <button
+                  onClick={() => setPtModalOpen(true)}
+                  className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
+                >
+                  Manage / Renew
+                </button>
+              )}
             </div>
 
             {latestPT ? (
@@ -478,15 +469,8 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
                 </div>
               </div>
             ) : (
-              <div className="p-4 bg-slate-50/70 border border-dashed border-slate-200 rounded-xl text-center space-y-2">
+              <div className="p-4 bg-slate-50/70 border border-dashed border-slate-200 rounded-xl text-center">
                 <p className="text-xs text-slate-500">No active Personal Training package.</p>
-                <button
-                  onClick={() => setPtModalOpen(true)}
-                  className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 shadow-2xs transition"
-                >
-                  <Dumbbell className="w-3.5 h-3.5 text-indigo-300" />
-                  <span>Add PT Add-on</span>
-                </button>
               </div>
             )}
           </div>
