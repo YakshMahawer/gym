@@ -1,8 +1,30 @@
 import * as XLSX from "xlsx";
 import * as path from "path";
+import * as fs from "fs";
 import { PrismaClient, MembershipStatus, SubscriptionStatus, PaymentMethod } from "@prisma/client";
 
 const prisma = new PrismaClient();
+
+function mapPaymentType(typeVal: any): PaymentMethod {
+  if (typeVal === undefined || typeVal === null) return PaymentMethod.UPI;
+  const val = String(typeVal).trim().toUpperCase();
+  if (val === "1" || val === "CASH") return PaymentMethod.CASH;
+  if (val === "2" || val === "CHEQUE" || val === "CHECK") return PaymentMethod.CHEQUE;
+  if (val === "3" || val === "CARD" || val === "CREDIT" || val === "DEBIT" || val === "POS") return PaymentMethod.CARD;
+  if (
+    val === "4" ||
+    val === "BANK" ||
+    val === "BANK_TRANSFER" ||
+    val === "NETBANKING" ||
+    val === "NEFT" ||
+    val === "RTGS" ||
+    val === "IMPS"
+  ) {
+    return PaymentMethod.BANK_TRANSFER;
+  }
+  if (val === "5" || val === "UPI" || val === "GPAY" || val === "PHONEPE" || val === "PAYTM") return PaymentMethod.UPI;
+  return PaymentMethod.UPI;
+}
 
 function excelSerialToDate(serial: any): Date | null {
   if (!serial || serial === "NULL" || isNaN(Number(serial))) return null;
@@ -45,17 +67,20 @@ function padReceiptNo(num: number): string {
 }
 
 async function run() {
-  const filePath = path.join(process.cwd(), "Workbook1.xlsx");
+  const selectedFileName = fs.existsSync(path.join(process.cwd(), "AppointmentBees.xlsx"))
+    ? "AppointmentBees.xlsx"
+    : "Workbook1.xlsx";
+  const filePath = path.join(process.cwd(), selectedFileName);
   const workbook = XLSX.readFile(filePath);
-  const sheet = workbook.Sheets["Sheet1"];
+  const sheet = workbook.Sheets["Sheet1"] || workbook.Sheets[workbook.SheetNames[0]];
   const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
-  console.log(`Read ${rows.length} total rows from Workbook1.xlsx`);
+  console.log(`Read ${rows.length} total rows from ${selectedFileName}`);
 
   // Group by customer
   const customerMap = new Map<string, any[]>();
   for (const row of rows) {
-    if (row.IsDeleted === 1 || row.IsDeleted_1 === 1) continue;
+    if (row.IsDeleted === 1 || row.IsDeleted_1 === 1 || row.IsDeleted_2 === 1) continue;
     const phone = cleanPhone(row.PhoneNo);
     if (!phone) continue; // Skip rows without valid phone
 
@@ -169,14 +194,55 @@ async function run() {
 
     // Create subscriptions and payments for this member
     for (const r of custRows) {
-      const sDate = excelSerialToDate(r.StartDate) || enrollDate;
+      const sDate =
+        excelSerialToDate(r.StartDate) ||
+        excelSerialToDate(r.PaymentDate) ||
+        excelSerialToDate(r.PaidDate) ||
+        excelSerialToDate(r.SaleDate) ||
+        enrollDate;
       const eDate = excelSerialToDate(r.EndDate) || new Date(sDate.getTime() + 30 * 86400 * 1000);
-      const amount = Number(r.Amount) || 0;
+      const packageAmount = Number(r.Amount) || 0;
+      const paidAmountVal =
+        r.PaidAmount !== undefined && r.PaidAmount !== null && r.PaidAmount !== "" && r.PaidAmount !== "NULL"
+          ? Number(r.PaidAmount)
+          : packageAmount;
+      const paymentAmount = !isNaN(paidAmountVal) ? paidAmountVal : packageAmount;
+
       const planName = formatPlanName(r.Month, r.Amount, r.MembershipId);
       const isSubActive = eDate >= now;
 
+      const payDate =
+        excelSerialToDate(r.PaymentDate) ||
+        excelSerialToDate(r.PaidDate) ||
+        excelSerialToDate(r.SaleDate) ||
+        sDate;
+
+      const paymentMethod = mapPaymentType(r.Type ?? r.paymentMethod);
+
       // Check if this record is PT or standard membership
       const isPT = String(r.MembershipId) === "605" || String(r.MembershipId) === "606" || Number(r.Sessions) > 0;
+
+      const recInfo =
+        r.ReceiptNo && r.ReceiptNo !== "NULL"
+          ? `Legacy Rec #${r.ReceiptNo}`
+          : r.Id && r.Id !== "NULL"
+          ? `Rec #${r.Id}`
+          : "";
+      const refInfo =
+        r.ReferenceNumber && r.ReferenceNumber !== "NULL" && String(r.ReferenceNumber).trim() !== ""
+          ? `Ref: ${String(r.ReferenceNumber).trim()}`
+          : null;
+      const noteInfo =
+        r.Notes && r.Notes !== "NULL" && String(r.Notes).trim() !== ""
+          ? `Note: ${String(r.Notes).trim()}`
+          : null;
+      const paymentNotes = [
+        isPT ? `Old ERP PT Migration${recInfo ? ` (${recInfo})` : ""}` : `Old ERP Migration${recInfo ? ` (${recInfo})` : ""}`,
+        refInfo,
+        noteInfo,
+      ]
+        .filter(Boolean)
+        .join(" | ");
 
       if (isPT) {
         const ptSub = await prisma.memberPT.create({
@@ -188,9 +254,9 @@ async function run() {
             completedSessions: isSubActive ? 4 : (Number(r.Sessions) || 12),
             startDate: sDate,
             endDate: eDate,
-            totalAmount: amount,
-            paidAmount: amount,
-            dueAmount: 0,
+            totalAmount: packageAmount || paymentAmount,
+            paidAmount: paymentAmount,
+            dueAmount: Math.max(0, (packageAmount || paymentAmount) - paymentAmount),
             status: isSubActive ? "ACTIVE" : "EXPIRED",
             notes: r.Note && r.Note !== "NULL" ? String(r.Note) : null,
           },
@@ -201,11 +267,11 @@ async function run() {
             receiptNo: padReceiptNo(receiptCounter++),
             memberId: member.id,
             ptId: ptSub.id,
-            amount: amount,
-            paymentDate: excelSerialToDate(r.PaidDate) || excelSerialToDate(r.SaleDate) || sDate,
-            paymentMethod: PaymentMethod.UPI,
+            amount: paymentAmount,
+            paymentDate: payDate,
+            paymentMethod,
             paymentType: "PERSONAL_TRAINING",
-            notes: `Old ERP PT Migration (Rec #${r.Id})`,
+            notes: paymentNotes,
           },
         });
       } else {
@@ -215,9 +281,9 @@ async function run() {
             planName,
             startDate: sDate,
             endDate: eDate,
-            totalAmount: amount,
-            paidAmount: amount,
-            dueAmount: 0,
+            totalAmount: packageAmount || paymentAmount,
+            paidAmount: paymentAmount,
+            dueAmount: Math.max(0, (packageAmount || paymentAmount) - paymentAmount),
             status: isSubActive ? SubscriptionStatus.ACTIVE : SubscriptionStatus.EXPIRED,
           },
         });
@@ -227,11 +293,11 @@ async function run() {
             receiptNo: padReceiptNo(receiptCounter++),
             memberId: member.id,
             subscriptionId: sub.id,
-            amount: amount,
-            paymentDate: excelSerialToDate(r.PaidDate) || excelSerialToDate(r.SaleDate) || sDate,
-            paymentMethod: PaymentMethod.UPI,
+            amount: paymentAmount,
+            paymentDate: payDate,
+            paymentMethod,
             paymentType: "MEMBERSHIP_FEE",
-            notes: `Old ERP Migration (Rec #${r.Id}, Note: ${r.Note && r.Note !== "NULL" ? r.Note : "None"})`,
+            notes: paymentNotes,
           },
         });
       }

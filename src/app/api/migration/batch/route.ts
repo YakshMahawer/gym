@@ -22,6 +22,27 @@ function formatPlanName(months: any, amount: any, membershipId: any): string {
   return `Standard Plan (${membershipId || "General"})`;
 }
 
+function mapPaymentType(typeVal: any): PaymentMethod {
+  if (typeVal === undefined || typeVal === null) return PaymentMethod.UPI;
+  const val = String(typeVal).trim().toUpperCase();
+  if (val === "1" || val === "CASH") return PaymentMethod.CASH;
+  if (val === "2" || val === "CHEQUE" || val === "CHECK") return PaymentMethod.CHEQUE;
+  if (val === "3" || val === "CARD" || val === "CREDIT" || val === "DEBIT" || val === "POS") return PaymentMethod.CARD;
+  if (
+    val === "4" ||
+    val === "BANK" ||
+    val === "BANK_TRANSFER" ||
+    val === "NETBANKING" ||
+    val === "NEFT" ||
+    val === "RTGS" ||
+    val === "IMPS"
+  ) {
+    return PaymentMethod.BANK_TRANSFER;
+  }
+  if (val === "5" || val === "UPI" || val === "GPAY" || val === "PHONEPE" || val === "PAYTM") return PaymentMethod.UPI;
+  return PaymentMethod.UPI;
+}
+
 function padCleanReceiptNo(num: number): string {
   return String(num).padStart(5, "0");
 }
@@ -94,6 +115,7 @@ export async function POST(request: NextRequest) {
           excelSerialToDate(r.EnrollDate) ||
           excelSerialToDate(r.CreatedDate) ||
           excelSerialToDate(r.StartDate) ||
+          excelSerialToDate(r.PaymentDate) ||
           excelSerialToDate(r.PaidDate) ||
           excelSerialToDate(r.SaleDate);
 
@@ -148,9 +170,15 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      for (const r of records) {
+      // Track subscriptions and PT packages by legacy membership ID to attach split payments correctly
+      const createdSubs = new Map<string, string>(); // membershipKey -> subscriptionId
+      const createdPTs = new Map<string, string>();  // membershipKey -> ptId
+
+      for (let rIdx = 0; rIdx < records.length; rIdx++) {
+        const r = records[rIdx];
         const sDate =
           excelSerialToDate(r.StartDate) ||
+          excelSerialToDate(r.PaymentDate) ||
           excelSerialToDate(r.PaidDate) ||
           excelSerialToDate(r.SaleDate) ||
           excelSerialToDate(r.CreatedDate) ||
@@ -161,15 +189,24 @@ export async function POST(request: NextRequest) {
           excelSerialToDate(r.EndDate) ||
           new Date(sDate.getTime() + monthsCount * 30 * 86400 * 1000);
 
-        const amount = Number(r.Amount) || 0;
+        const packageAmount = Number(r.Amount) || 0;
+        const paidAmountVal =
+          r.PaidAmount !== undefined && r.PaidAmount !== null && r.PaidAmount !== "" && r.PaidAmount !== "NULL"
+            ? Number(r.PaidAmount)
+            : packageAmount;
+        const paymentAmount = !isNaN(paidAmountVal) ? paidAmountVal : packageAmount;
+
         const planName = formatPlanName(r.Month, r.Amount, r.MembershipId);
         const isSubActive = eDate.getTime() >= now.getTime();
 
         const payDate =
+          excelSerialToDate(r.PaymentDate) ||
           excelSerialToDate(r.PaidDate) ||
           excelSerialToDate(r.SaleDate) ||
           excelSerialToDate(r.CreatedDate) ||
           sDate;
+
+        const paymentMethod = mapPaymentType(r.Type ?? r.paymentMethod);
 
         // Clean receipt number: receipts from April 1st 2026 start from 00001
         // receipts before April 1st 2026 get legacy OLD-00001 format
@@ -183,75 +220,157 @@ export async function POST(request: NextRequest) {
           String(r.MembershipId) === "606" ||
           Number(r.Sessions) > 0;
 
+        const recInfo =
+          r.ReceiptNo && r.ReceiptNo !== "NULL"
+            ? `Legacy Rec #${r.ReceiptNo}`
+            : r.Id && r.Id !== "NULL"
+            ? `Rec #${r.Id}`
+            : "";
+        const refInfo =
+          r.ReferenceNumber && r.ReferenceNumber !== "NULL" && String(r.ReferenceNumber).trim() !== ""
+            ? `Ref: ${String(r.ReferenceNumber).trim()}`
+            : null;
+        const noteInfo =
+          r.Notes && r.Notes !== "NULL" && String(r.Notes).trim() !== ""
+            ? `Note: ${String(r.Notes).trim()}`
+            : null;
+        const paymentNotes = [
+          isPT ? `Old ERP PT Migration${recInfo ? ` (${recInfo})` : ""}` : `Old ERP Migration${recInfo ? ` (${recInfo})` : ""}`,
+          refInfo,
+          noteInfo,
+        ]
+          .filter(Boolean)
+          .join(" | ");
+
+        // Distinct key for membership if provided, otherwise fallback to row index
+        const membershipKey =
+          r.CustomerMembershipId && r.CustomerMembershipId !== "NULL"
+            ? String(r.CustomerMembershipId)
+            : r.Id && r.Id !== "NULL"
+            ? String(r.Id)
+            : `row_${rIdx}`;
+
         if (isPT) {
-          const ptTrainer =
-            r.TrainerName && r.TrainerName !== "NULL" && String(r.TrainerName).trim() !== ""
-              ? String(r.TrainerName).trim()
-              : cleanRep !== "-"
-              ? cleanRep
-              : "-";
+          let ptId = createdPTs.get(membershipKey);
 
-          const ptSub = await prisma.memberPT.create({
-            data: {
-              memberId: member.id,
-              planName: `Personal Training (${r.Month || 1}M)`,
-              trainerName: ptTrainer,
-              totalSessions: Number(r.Sessions) || 12,
-              completedSessions: isSubActive ? 4 : Number(r.Sessions) || 12,
-              startDate: sDate,
-              endDate: eDate,
-              totalAmount: amount,
-              paidAmount: amount,
-              dueAmount: 0,
-              status: isSubActive ? "ACTIVE" : "EXPIRED",
-              notes: r.Note && r.Note !== "NULL" ? String(r.Note) : null,
-              createdAt: sDate,
-            },
-          });
+          if (!ptId) {
+            const ptTrainer =
+              r.TrainerName && r.TrainerName !== "NULL" && String(r.TrainerName).trim() !== ""
+                ? String(r.TrainerName).trim()
+                : cleanRep !== "-"
+                ? cleanRep
+                : "-";
+
+            // Total paid for this PT package across records
+            const matchingRecords = records.filter(
+              (x: any) =>
+                (x.CustomerMembershipId && String(x.CustomerMembershipId) === membershipKey) ||
+                (x.Id && String(x.Id) === membershipKey)
+            );
+            const totalPaidForPT =
+              matchingRecords.length > 0
+                ? matchingRecords.reduce((sum: number, x: any) => {
+                    const pVal =
+                      x.PaidAmount !== undefined && x.PaidAmount !== null && x.PaidAmount !== "" && x.PaidAmount !== "NULL"
+                        ? Number(x.PaidAmount)
+                        : Number(x.Amount) || 0;
+                    return sum + (isNaN(pVal) ? 0 : pVal);
+                  }, 0)
+                : paymentAmount;
+
+            const finalPackageAmount = packageAmount || totalPaidForPT;
+
+            const ptSub = await prisma.memberPT.create({
+              data: {
+                memberId: member.id,
+                planName: `Personal Training (${r.Month || 1}M)`,
+                trainerName: ptTrainer,
+                totalSessions: Number(r.Sessions) || 12,
+                completedSessions: isSubActive ? 4 : Number(r.Sessions) || 12,
+                startDate: sDate,
+                endDate: eDate,
+                totalAmount: finalPackageAmount,
+                paidAmount: totalPaidForPT,
+                dueAmount: Math.max(0, finalPackageAmount - totalPaidForPT),
+                status: isSubActive ? "ACTIVE" : "EXPIRED",
+                notes: r.Note && r.Note !== "NULL" ? String(r.Note) : null,
+                createdAt: sDate,
+              },
+            });
+
+            ptId = ptSub.id;
+            createdPTs.set(membershipKey, ptId);
+            importedPT++;
+          }
 
           await prisma.payment.create({
             data: {
               receiptNo,
               memberId: member.id,
-              ptId: ptSub.id,
-              amount: amount,
+              ptId,
+              amount: paymentAmount,
               paymentDate: payDate,
-              paymentMethod: PaymentMethod.UPI,
+              paymentMethod,
               paymentType: "PERSONAL_TRAINING",
-              notes: `Old ERP PT Migration (Rec #${r.Id})`,
+              notes: paymentNotes,
               createdAt: payDate,
             },
           });
-          importedPT++;
         } else {
-          const sub = await prisma.memberSubscription.create({
-            data: {
-              memberId: member.id,
-              planName,
-              startDate: sDate,
-              endDate: eDate,
-              totalAmount: amount,
-              paidAmount: amount,
-              dueAmount: 0,
-              status: isSubActive ? SubscriptionStatus.ACTIVE : SubscriptionStatus.EXPIRED,
-              createdAt: sDate,
-            },
-          });
+          let subscriptionId = createdSubs.get(membershipKey);
+
+          if (!subscriptionId) {
+            // Total paid for this subscription package across records
+            const matchingRecords = records.filter(
+              (x: any) =>
+                (x.CustomerMembershipId && String(x.CustomerMembershipId) === membershipKey) ||
+                (x.Id && String(x.Id) === membershipKey)
+            );
+            const totalPaidForSub =
+              matchingRecords.length > 0
+                ? matchingRecords.reduce((sum: number, x: any) => {
+                    const pVal =
+                      x.PaidAmount !== undefined && x.PaidAmount !== null && x.PaidAmount !== "" && x.PaidAmount !== "NULL"
+                        ? Number(x.PaidAmount)
+                        : Number(x.Amount) || 0;
+                    return sum + (isNaN(pVal) ? 0 : pVal);
+                  }, 0)
+                : paymentAmount;
+
+            const finalPackageAmount = packageAmount || totalPaidForSub;
+
+            const sub = await prisma.memberSubscription.create({
+              data: {
+                memberId: member.id,
+                planName,
+                startDate: sDate,
+                endDate: eDate,
+                totalAmount: finalPackageAmount,
+                paidAmount: totalPaidForSub,
+                dueAmount: Math.max(0, finalPackageAmount - totalPaidForSub),
+                status: isSubActive ? SubscriptionStatus.ACTIVE : SubscriptionStatus.EXPIRED,
+                createdAt: sDate,
+              },
+            });
+
+            subscriptionId = sub.id;
+            createdSubs.set(membershipKey, subscriptionId);
+            importedSubs++;
+          }
 
           await prisma.payment.create({
             data: {
               receiptNo,
               memberId: member.id,
-              subscriptionId: sub.id,
-              amount: amount,
+              subscriptionId,
+              amount: paymentAmount,
               paymentDate: payDate,
-              paymentMethod: PaymentMethod.UPI,
+              paymentMethod,
               paymentType: "MEMBERSHIP_FEE",
-              notes: `Old ERP Migration (Rec #${r.Id})`,
+              notes: paymentNotes,
               createdAt: payDate,
             },
           });
-          importedSubs++;
         }
       }
 

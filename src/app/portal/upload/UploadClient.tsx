@@ -13,6 +13,8 @@ import {
   XCircle,
   ArrowRight,
   Download,
+  CreditCard,
+  Banknote,
 } from "lucide-react";
 import { isValidPhoneNumber, cleanPhoneNumber } from "@/lib/utils";
 import { exportToExcel, ExcelColumnMapping } from "@/lib/export-excel";
@@ -44,6 +46,27 @@ interface RejectedRow {
   rawRecord?: Record<string, any>;
 }
 
+export function mapPaymentType(typeVal: any): "CASH" | "CHEQUE" | "CARD" | "BANK_TRANSFER" | "UPI" {
+  if (typeVal === undefined || typeVal === null) return "UPI";
+  const val = String(typeVal).trim().toUpperCase();
+  if (val === "1" || val === "CASH") return "CASH";
+  if (val === "2" || val === "CHEQUE" || val === "CHECK") return "CHEQUE";
+  if (val === "3" || val === "CARD" || val === "CREDIT" || val === "DEBIT" || val === "POS") return "CARD";
+  if (
+    val === "4" ||
+    val === "BANK" ||
+    val === "BANK_TRANSFER" ||
+    val === "NETBANKING" ||
+    val === "NEFT" ||
+    val === "RTGS" ||
+    val === "IMPS"
+  ) {
+    return "BANK_TRANSFER";
+  }
+  if (val === "5" || val === "UPI" || val === "GPAY" || val === "PHONEPE" || val === "PAYTM") return "UPI";
+  return "UPI";
+}
+
 function excelSerialToDate(serial: any): Date | null {
   if (!serial || serial === "NULL" || isNaN(Number(serial))) return null;
   const num = Number(serial);
@@ -70,6 +93,21 @@ export function UploadClient() {
   const [rejectedRows, setRejectedRows] = useState<RejectedRow[]>([]);
   const [activeTab, setActiveTab] = useState<"valid" | "rejected">("valid");
   const [wipeExisting, setWipeExisting] = useState(true);
+
+  // Payment Breakdown Stats
+  const [paymentStats, setPaymentStats] = useState<{
+    CASH: { count: number; amount: number };
+    CHEQUE: { count: number; amount: number };
+    CARD: { count: number; amount: number };
+    BANK_TRANSFER: { count: number; amount: number };
+    UPI: { count: number; amount: number };
+  }>({
+    CASH: { count: 0, amount: 0 },
+    CHEQUE: { count: 0, amount: 0 },
+    CARD: { count: 0, amount: 0 },
+    BANK_TRANSFER: { count: 0, amount: 0 },
+    UPI: { count: 0, amount: 0 },
+  });
 
   // Migration state
   const [migrating, setMigrating] = useState(false);
@@ -103,6 +141,13 @@ export function UploadClient() {
 
       const customerMap = new Map<string, any[]>();
       const rejections: RejectedRow[] = [];
+      const stats = {
+        CASH: { count: 0, amount: 0 },
+        CHEQUE: { count: 0, amount: 0 },
+        CARD: { count: 0, amount: 0 },
+        BANK_TRANSFER: { count: 0, amount: 0 },
+        UPI: { count: 0, amount: 0 },
+      };
 
       rows.forEach((row, idx) => {
         const rowNum = idx + 2;
@@ -110,7 +155,7 @@ export function UploadClient() {
         const name = `${String(row.FirstName || "").trim()} ${String(row.LastName || "").trim()}`.trim();
         const rawPhone = String(row.PhoneNo || "").trim();
 
-        if (row.IsDeleted === 1 || row.IsDeleted_1 === 1) {
+        if (row.IsDeleted === 1 || row.IsDeleted_1 === 1 || row.IsDeleted_2 === 1) {
           rejections.push({
             rowNumber: rowNum,
             custCode,
@@ -176,7 +221,21 @@ export function UploadClient() {
           customerMap.set(custCode, []);
         }
         customerMap.get(custCode)!.push(row);
+
+        const pMethod = mapPaymentType(row.Type ?? row.paymentMethod);
+        const pAmt =
+          Number(
+            row.PaidAmount !== undefined && row.PaidAmount !== null && row.PaidAmount !== "" && row.PaidAmount !== "NULL"
+              ? row.PaidAmount
+              : row.Amount
+          ) || 0;
+        if (stats[pMethod]) {
+          stats[pMethod].count++;
+          stats[pMethod].amount += pAmt;
+        }
       });
+
+      setPaymentStats(stats);
 
       const validList: ParsedCustomer[] = [];
       for (const [custCode, custRows] of customerMap.entries()) {
@@ -305,9 +364,10 @@ export function UploadClient() {
         setProgressPercent(pct);
       }
 
+      const totalReceipts = (cleanReceiptIndex - 1) + (legacyReceiptIndex - 1);
       setFinalStats({
         members: totalImported,
-        receipts: cleanReceiptIndex - 1,
+        receipts: totalReceipts,
       });
       setMigrationDone(true);
       setProgressStatus("Migration successfully completed!");
@@ -465,6 +525,106 @@ export function UploadClient() {
             </div>
           </div>
 
+          {/* Payment Method Breakdown (Type 1 to 5) */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-2xs space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+                  <CreditCard className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                    Payment Mode Distribution (Type 1 - 5)
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    Detected and mapped from Excel &apos;Type&apos; column
+                  </p>
+                </div>
+              </div>
+              <div className="text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl self-start sm:self-auto">
+                Total Accounted: <span className="font-bold text-slate-900 dark:text-white">₹{(
+                  paymentStats.CASH.amount +
+                  paymentStats.CHEQUE.amount +
+                  paymentStats.CARD.amount +
+                  paymentStats.BANK_TRANSFER.amount +
+                  paymentStats.UPI.amount
+                ).toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-1">
+              {/* Cash - Type 1 */}
+              <div className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-800/50">
+                <div className="flex items-center justify-between text-[11px] font-bold text-emerald-800 dark:text-emerald-300">
+                  <span>1 - CASH</span>
+                  <span className="px-1.5 py-0.5 bg-emerald-200/70 dark:bg-emerald-900/70 rounded text-[10px] font-mono">
+                    {paymentStats.CASH.count.toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-sm sm:text-base font-black text-emerald-900 dark:text-emerald-100 mt-1">
+                  ₹{paymentStats.CASH.amount.toLocaleString()}
+                </p>
+                <p className="text-[10px] text-emerald-700/70 dark:text-emerald-400/70 mt-0.5">Physical Cash</p>
+              </div>
+
+              {/* Cheque - Type 2 */}
+              <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/50">
+                <div className="flex items-center justify-between text-[11px] font-bold text-amber-800 dark:text-amber-300">
+                  <span>2 - CHEQUE</span>
+                  <span className="px-1.5 py-0.5 bg-amber-200/70 dark:bg-amber-900/70 rounded text-[10px] font-mono">
+                    {paymentStats.CHEQUE.count.toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-sm sm:text-base font-black text-amber-900 dark:text-amber-100 mt-1">
+                  ₹{paymentStats.CHEQUE.amount.toLocaleString()}
+                </p>
+                <p className="text-[10px] text-amber-700/70 dark:text-amber-400/70 mt-0.5">Bank Cheque</p>
+              </div>
+
+              {/* Card - Type 3 */}
+              <div className="p-3 rounded-xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200/70 dark:border-purple-800/50">
+                <div className="flex items-center justify-between text-[11px] font-bold text-purple-800 dark:text-purple-300">
+                  <span>3 - CARD</span>
+                  <span className="px-1.5 py-0.5 bg-purple-200/70 dark:bg-purple-900/70 rounded text-[10px] font-mono">
+                    {paymentStats.CARD.count.toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-sm sm:text-base font-black text-purple-900 dark:text-purple-100 mt-1">
+                  ₹{paymentStats.CARD.amount.toLocaleString()}
+                </p>
+                <p className="text-[10px] text-purple-700/70 dark:text-purple-400/70 mt-0.5">Credit / Debit POS</p>
+              </div>
+
+              {/* Bank - Type 4 */}
+              <div className="p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/70 dark:border-blue-800/50">
+                <div className="flex items-center justify-between text-[11px] font-bold text-blue-800 dark:text-blue-300">
+                  <span>4 - BANK</span>
+                  <span className="px-1.5 py-0.5 bg-blue-200/70 dark:bg-blue-900/70 rounded text-[10px] font-mono">
+                    {paymentStats.BANK_TRANSFER.count.toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-sm sm:text-base font-black text-blue-900 dark:text-blue-100 mt-1">
+                  ₹{paymentStats.BANK_TRANSFER.amount.toLocaleString()}
+                </p>
+                <p className="text-[10px] text-blue-700/70 dark:text-blue-400/70 mt-0.5">NEFT / RTGS Transfer</p>
+              </div>
+
+              {/* UPI - Type 5 */}
+              <div className="p-3 rounded-xl bg-cyan-50/70 dark:bg-cyan-950/30 border border-cyan-200/70 dark:border-cyan-800/50 col-span-2 sm:col-span-1">
+                <div className="flex items-center justify-between text-[11px] font-bold text-cyan-800 dark:text-cyan-300">
+                  <span>5 - UPI</span>
+                  <span className="px-1.5 py-0.5 bg-cyan-200/70 dark:bg-cyan-900/70 rounded text-[10px] font-mono">
+                    {paymentStats.UPI.count.toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-sm sm:text-base font-black text-cyan-900 dark:text-cyan-100 mt-1">
+                  ₹{paymentStats.UPI.amount.toLocaleString()}
+                </p>
+                <p className="text-[10px] text-cyan-700/70 dark:text-cyan-400/70 mt-0.5">GPay / PhonePe / QR</p>
+              </div>
+            </div>
+          </div>
+
           {/* Action Card */}
           <div className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -589,6 +749,7 @@ export function UploadClient() {
                       <th className="py-2.5 px-4">Verified Mobile</th>
                       <th className="py-2.5 px-4">Gender</th>
                       <th className="py-2.5 px-4">Renewal Records</th>
+                      <th className="py-2.5 px-4">Payment Modes</th>
                       <th className="py-2.5 px-4">Latest Validity</th>
                     </tr>
                   </thead>
@@ -620,6 +781,42 @@ export function UploadClient() {
                               {samplePlans.slice(0, 3).join(", ")}
                               {samplePlans.length > 3 ? "..." : ""}
                             </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex flex-wrap gap-1 max-w-[200px]">
+                              {m.records.slice(0, 3).map((r, rIdx) => {
+                                const mode = mapPaymentType(r.Type ?? r.paymentMethod);
+                                const badgeColor =
+                                  mode === "CASH"
+                                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                    : mode === "CHEQUE"
+                                    ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                                    : mode === "CARD"
+                                    ? "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300"
+                                    : mode === "BANK_TRANSFER"
+                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
+                                    : "bg-cyan-100 text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-300";
+                                const amt =
+                                  Number(
+                                    r.PaidAmount !== undefined && r.PaidAmount !== "" && r.PaidAmount !== "NULL"
+                                      ? r.PaidAmount
+                                      : r.Amount
+                                  ) || 0;
+                                return (
+                                  <span
+                                    key={rIdx}
+                                    className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${badgeColor}`}
+                                  >
+                                    {mode}: ₹{amt.toLocaleString()}
+                                  </span>
+                                );
+                              })}
+                              {m.records.length > 3 && (
+                                <span className="text-[10px] text-slate-400 self-center">
+                                  +{m.records.length - 3} more
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-3 px-4 font-medium text-slate-600 dark:text-slate-400">
                             {latestEnd ? (latestEnd as Date).toISOString().split("T")[0] : "N/A"}
