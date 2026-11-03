@@ -462,7 +462,8 @@ export async function executeFullMigration(rawRows: any[], options?: { wipeExist
                 }, 0)
               : paymentAmount;
 
-          const finalPackageAmount = packageAmount || totalPaidForPT;
+          // In legacy ERP migration, historical records are settled (zero dues as approved by client)
+          const finalPackageAmount = totalPaidForPT;
 
           const ptSub = await prisma.memberPT.create({
             data: {
@@ -475,7 +476,7 @@ export async function executeFullMigration(rawRows: any[], options?: { wipeExist
               endDate: eDate,
               totalAmount: finalPackageAmount,
               paidAmount: totalPaidForPT,
-              dueAmount: Math.max(0, finalPackageAmount - totalPaidForPT),
+              dueAmount: 0,
               status: isSubActive ? "ACTIVE" : "EXPIRED",
               notes: r.Note && r.Note !== "NULL" ? String(r.Note) : null,
               createdAt: sDate,
@@ -520,7 +521,8 @@ export async function executeFullMigration(rawRows: any[], options?: { wipeExist
                 }, 0)
               : paymentAmount;
 
-          const finalPackageAmount = packageAmount || totalPaidForSub;
+          // In legacy ERP migration, historical records are settled (zero dues as approved by client)
+          const finalPackageAmount = totalPaidForSub;
 
           const sub = await prisma.memberSubscription.create({
             data: {
@@ -530,7 +532,7 @@ export async function executeFullMigration(rawRows: any[], options?: { wipeExist
               endDate: eDate,
               totalAmount: finalPackageAmount,
               paidAmount: totalPaidForSub,
-              dueAmount: Math.max(0, finalPackageAmount - totalPaidForSub),
+              dueAmount: 0,
               status: isSubActive ? SubscriptionStatus.ACTIVE : SubscriptionStatus.EXPIRED,
               createdAt: sDate,
             },
