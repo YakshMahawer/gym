@@ -11,7 +11,7 @@ export default async function PaymentsPage() {
     getMembers(),
   ]);
 
-  const allMembers = members.map((m) => ({
+  const allMembers = (members as any[]).map((m: any) => ({
     id: m.id,
     fullName: m.fullName,
     memberId: m.memberId,

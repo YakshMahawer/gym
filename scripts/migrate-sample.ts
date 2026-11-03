@@ -81,8 +81,6 @@ async function run() {
   const customerMap = new Map<string, any[]>();
   for (const row of rows) {
     if (row.IsDeleted === 1 || row.IsDeleted_1 === 1 || row.IsDeleted_2 === 1) continue;
-    const phone = cleanPhone(row.PhoneNo);
-    if (!phone) continue; // Skip rows without valid phone
 
     const custCode = String(row.CustomerCode || row.CustomerId || "").trim();
     if (!custCode || custCode === "NULL") continue;
@@ -150,7 +148,7 @@ async function run() {
     const firstName = String(firstRow.FirstName || "").trim();
     const lastName = firstRow.LastName && firstRow.LastName !== "NULL" ? String(firstRow.LastName).trim() : "";
     const fullName = lastName ? `${firstName} ${lastName}` : firstName;
-    const phone = cleanPhone(firstRow.PhoneNo)!;
+    const phone = cleanPhone(firstRow.PhoneNo) || (firstRow.PhoneNo && firstRow.PhoneNo !== "NULL" ? String(firstRow.PhoneNo).trim() : "-");
     const email = firstRow.Email && firstRow.Email !== "NULL" ? String(firstRow.Email).trim() : null;
     const gender = firstRow.Gender && firstRow.Gender !== "NULL" ? String(firstRow.Gender).trim() : "Male";
     const address = firstRow.Address && firstRow.Address !== "NULL" ? String(firstRow.Address).trim() : null;

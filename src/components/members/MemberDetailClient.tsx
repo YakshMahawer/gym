@@ -192,6 +192,7 @@ export function MemberDetailClient({ member, plans }: MemberDetailClientProps) {
         <div className="flex items-center gap-3">
           <Link
             href="/portal/members"
+            prefetch={true}
             className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-900 transition active:bg-slate-100"
           >
             <ArrowLeft className="w-4 h-4" />

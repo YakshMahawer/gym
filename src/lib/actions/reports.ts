@@ -124,7 +124,14 @@ export async function getReportsData() {
 
     // All Payments with related member, sub, and PT info
     prisma.payment.findMany({
-      include: {
+      select: {
+        id: true,
+        receiptNo: true,
+        amount: true,
+        paymentDate: true,
+        paymentMethod: true,
+        paymentType: true,
+        notes: true,
         member: {
           select: {
             id: true,
@@ -388,8 +395,8 @@ export async function getReportsData() {
       items: otherPayments,
     },
     collectionsLedger,
-    // Alias for existing references
-    taxLedger: collectionsLedger,
+    // Alias empty to prevent 25MB JSON duplication
+    taxLedger: [],
     enquiryStats: {
       total: totalEnquiries,
       converted: convertedEnquiries,

@@ -160,33 +160,54 @@ export async function getMembers(filters?: {
 
     const members = await prisma.member.findMany({
       where: whereClause,
-      include: {
+      select: {
+        id: true,
+        memberId: true,
+        firstName: true,
+        lastName: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        gender: true,
+        dob: true,
+        address: true,
+        enrollDate: true,
+        representative: true,
+        referredBy: true,
+        membershipStatus: true,
         subscriptions: {
           orderBy: { createdAt: "desc" },
           take: 1,
+          select: {
+            id: true,
+            planName: true,
+            startDate: true,
+            endDate: true,
+            totalAmount: true,
+            paidAmount: true,
+            dueAmount: true,
+            status: true,
+          },
         },
         ptSubscriptions: {
           orderBy: { createdAt: "desc" },
           take: 1,
-        },
-        payments: {
-          orderBy: { paymentDate: "desc" },
-          take: 5,
+          select: {
+            id: true,
+            planName: true,
+            trainerName: true,
+            startDate: true,
+            endDate: true,
+            totalAmount: true,
+            paidAmount: true,
+            dueAmount: true,
+            status: true,
+            totalSessions: true,
+            completedSessions: true,
+          },
         },
       },
     });
-
-    // Auto-normalize any existing prefixed member IDs in DB on read
-    for (const m of members) {
-      if (m.memberId.includes("GYM-") || m.memberId.includes("gym-")) {
-        const correctId = normalizeMemberId(m.memberId);
-        prisma.member.update({
-          where: { id: m.id },
-          data: { memberId: correctId },
-        }).catch(() => {});
-        m.memberId = correctId;
-      }
-    }
 
     // Always sort based on ID highest to lowest (descending order)
     members.sort((a, b) => {
@@ -195,7 +216,7 @@ export async function getMembers(filters?: {
       return numB - numA;
     });
 
-    return members;
+    return members as any;
   } catch (error) {
     console.error("Failed to fetch members:", error);
     return [];
@@ -239,39 +260,29 @@ export async function getMemberById(id: string) {
     const decodedId = decodeURIComponent(id).trim();
     const normalized = normalizeMemberId(decodedId);
 
+    // Fast path: if cuid format (starts with 'c' and length >= 25), look up directly by primary key
+    const isCuid = decodedId.startsWith("c") && decodedId.length >= 25;
+    const whereClause: any = isCuid
+      ? { id: decodedId }
+      : {
+          OR: [
+            { id: decodedId },
+            { memberId: decodedId },
+            { memberId: normalized },
+          ],
+        };
+
     const member = await prisma.member.findFirst({
-      where: {
-        OR: [
-          { id: decodedId },
-          { memberId: decodedId },
-          { memberId: normalized },
-          { memberId: `GYM-${normalized}` },
-          { memberId: { equals: decodedId, mode: "insensitive" } },
-        ],
-      },
+      where: whereClause,
       include: {
         subscriptions: {
           orderBy: { createdAt: "desc" },
-          include: {
-            payments: {
-              orderBy: { paymentDate: "desc" },
-            },
-          },
         },
         ptSubscriptions: {
           orderBy: { createdAt: "desc" },
-          include: {
-            payments: {
-              orderBy: { paymentDate: "desc" },
-            },
-          },
         },
         payments: {
           orderBy: { paymentDate: "desc" },
-          include: {
-            subscription: true,
-            ptSubscription: true,
-          },
         },
       },
     });

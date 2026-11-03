@@ -736,6 +736,7 @@ export function MemberListClient({ members }: MemberListClientProps) {
 
                       <Link
                         href={`/portal/members/${member.id}`}
+                        prefetch={true}
                         className="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold text-center shadow-xs active:bg-slate-800"
                       >
                         Profile
@@ -789,6 +790,7 @@ export function MemberListClient({ members }: MemberListClientProps) {
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <Link
                               href={`/portal/members/${member.id}`}
+                              prefetch={true}
                               className="font-semibold text-slate-900 hover:text-blue-600"
                             >
                               {member.fullName}
@@ -874,6 +876,7 @@ export function MemberListClient({ members }: MemberListClientProps) {
                             {!activeSub ? (
                               <Link
                                 href={`/portal/members/${member.id}`}
+                                prefetch={true}
                                 className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold transition inline-flex items-center gap-1"
                               >
                                 <span>Assign Plan</span>
@@ -917,6 +920,7 @@ export function MemberListClient({ members }: MemberListClientProps) {
 
                             <Link
                               href={`/portal/members/${member.id}`}
+                              prefetch={true}
                               className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition"
                               title="View Profile"
                             >

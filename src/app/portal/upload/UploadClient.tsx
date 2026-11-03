@@ -179,32 +179,6 @@ export function UploadClient() {
           return;
         }
 
-        // Phone check: Allow rows without phone number to pass through
-        const isPhoneEmpty =
-          !rawPhone ||
-          rawPhone === "NULL" ||
-          rawPhone.toLowerCase() === "null" ||
-          rawPhone.toLowerCase() === "n/a" ||
-          rawPhone.toLowerCase() === "none" ||
-          rawPhone.toLowerCase() === "nil" ||
-          rawPhone === "-" ||
-          rawPhone.trim() === "";
-
-        if (!isPhoneEmpty) {
-          const cleaned = cleanPhoneNumber(rawPhone);
-          if (!cleaned || !isValidPhoneNumber(cleaned)) {
-            rejections.push({
-              rowNumber: rowNum,
-              custCode,
-              name,
-              phone: rawPhone,
-              reason: "Invalid phone number format",
-              rawRecord: row,
-            });
-            return;
-          }
-        }
-
         if (!custCode || custCode === "NULL") {
           rejections.push({
             rowNumber: rowNum,
@@ -254,7 +228,7 @@ export function UploadClient() {
           phone = cleanPhoneNumber(phoneRow.PhoneNo);
         } else {
           const firstClean = cleanPhoneNumber(first.PhoneNo);
-          phone = firstClean || "-";
+          phone = firstClean || (first.PhoneNo && first.PhoneNo !== "NULL" ? String(first.PhoneNo).trim() : "-");
         }
         const email = first.Email && first.Email !== "NULL" ? String(first.Email).trim() : null;
         const gender = first.Gender && first.Gender !== "NULL" ? String(first.Gender).trim() : "Male";

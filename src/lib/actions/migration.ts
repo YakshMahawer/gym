@@ -137,31 +137,6 @@ export async function validateMigrationData(rawRows: any[]): Promise<MigrationPr
       return;
     }
 
-    // Phone check: Allow rows without phone number to pass
-    const isPhoneEmpty =
-      !rawPhone ||
-      rawPhone === "NULL" ||
-      rawPhone.toLowerCase() === "null" ||
-      rawPhone.toLowerCase() === "n/a" ||
-      rawPhone.toLowerCase() === "none" ||
-      rawPhone.toLowerCase() === "nil" ||
-      rawPhone === "-" ||
-      rawPhone.trim() === "";
-
-    if (!isPhoneEmpty) {
-      const cleaned = cleanPhoneNumber(rawPhone);
-      if (!cleaned || !isValidPhoneNumber(cleaned)) {
-        rejectedRows.push({
-          rowNumber: rowNum,
-          custCode,
-          name,
-          phone: rawPhone,
-          reason: "Invalid phone number format",
-        });
-        return;
-      }
-    }
-
     if (!custCode || custCode === "NULL") {
       rejectedRows.push({
         rowNumber: rowNum,
@@ -199,7 +174,7 @@ export async function validateMigrationData(rawRows: any[]): Promise<MigrationPr
       phone = cleanPhoneNumber(phoneRow.PhoneNo);
     } else {
       const firstClean = cleanPhoneNumber(first.PhoneNo);
-      phone = firstClean || "-";
+      phone = firstClean || (first.PhoneNo && first.PhoneNo !== "NULL" ? String(first.PhoneNo).trim() : "-");
     }
     const email = first.Email && first.Email !== "NULL" ? String(first.Email).trim() : null;
     const gender = first.Gender && first.Gender !== "NULL" ? String(first.Gender).trim() : "Male";

@@ -26,6 +26,7 @@ import {
 import { formatRS, formatDate, formatDateTime } from "@/lib/utils";
 import { ReceiptModal } from "@/components/payments/ReceiptModal";
 import { exportToExcel } from "@/lib/export-excel";
+import { Pagination } from "@/components/ui/Pagination";
 
 interface PlanItem {
   id: string;
@@ -120,6 +121,8 @@ export function ReportsClient({ data }: ReportsClientProps) {
   const [ledgerDatePreset, setLedgerDatePreset] = useState<"all" | "this_month" | "last_month" | "this_quarter" | "custom">("all");
   const [ledgerStartDate, setLedgerStartDate] = useState("");
   const [ledgerEndDate, setLedgerEndDate] = useState("");
+  const [ledgerPage, setLedgerPage] = useState(1);
+  const [ledgerPageSize, setLedgerPageSize] = useState(25);
 
   // Other Payments search
   const [otherSearch, setOtherSearch] = useState("");
@@ -193,6 +196,11 @@ export function ReportsClient({ data }: ReportsClientProps) {
   const sumCash = filteredLedger.filter((i) => i.paymentMethod === "CASH").reduce((sum, i) => sum + i.amount, 0);
   const sumCard = filteredLedger.filter((i) => i.paymentMethod === "CARD").reduce((sum, i) => sum + i.amount, 0);
   const sumOtherModes = sumGrossAmount - (sumUpi + sumCash + sumCard);
+
+  const paginatedLedger = filteredLedger.slice(
+    (ledgerPage - 1) * ledgerPageSize,
+    ledgerPage * ledgerPageSize
+  );
 
   // Other Collections items
   const otherItems = (data.otherCollections?.items || []).filter((item) => {
@@ -394,7 +402,10 @@ export function ReportsClient({ data }: ReportsClientProps) {
                   type="text"
                   placeholder="Search receipt #, member name, phone, package..."
                   value={ledgerSearch}
-                  onChange={(e) => setLedgerSearch(e.target.value)}
+                  onChange={(e) => {
+                    setLedgerSearch(e.target.value);
+                    setLedgerPage(1);
+                  }}
                   className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 text-slate-900 dark:text-white"
                 />
               </div>
@@ -405,7 +416,10 @@ export function ReportsClient({ data }: ReportsClientProps) {
                 {["ALL", "UPI", "CASH", "CARD", "BANK_TRANSFER"].map((method) => (
                   <button
                     key={method}
-                    onClick={() => setLedgerMethodFilter(method)}
+                    onClick={() => {
+                      setLedgerMethodFilter(method);
+                      setLedgerPage(1);
+                    }}
                     className={`px-2.5 py-1 rounded-md font-semibold text-xs transition shrink-0 ${
                       ledgerMethodFilter === method
                         ? "bg-slate-900 text-white shadow-xs dark:bg-sky-600"
@@ -431,7 +445,10 @@ export function ReportsClient({ data }: ReportsClientProps) {
                 ].map((preset) => (
                   <button
                     key={preset.id}
-                    onClick={() => setLedgerDatePreset(preset.id as any)}
+                    onClick={() => {
+                      setLedgerDatePreset(preset.id as any);
+                      setLedgerPage(1);
+                    }}
                     className={`px-2 py-0.5 rounded text-[11px] font-medium transition ${
                       ledgerDatePreset === preset.id
                         ? "bg-slate-800 text-white dark:bg-sky-600"
@@ -484,7 +501,7 @@ export function ReportsClient({ data }: ReportsClientProps) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {filteredLedger.map((tx) => (
+                    {paginatedLedger.map((tx) => (
                       <tr key={tx.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
                         <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-white">
                           #{tx.receiptNo}
@@ -536,6 +553,18 @@ export function ReportsClient({ data }: ReportsClientProps) {
                   </tfoot>
                 </table>
               </div>
+            )}
+
+            {filteredLedger.length > 0 && (
+              <Pagination
+                totalItems={filteredLedger.length}
+                currentPage={ledgerPage}
+                pageSize={ledgerPageSize}
+                onPageChange={setLedgerPage}
+                onPageSizeChange={setLedgerPageSize}
+                pageSizeOptions={[25, 50, 100, 200]}
+                itemLabel="transactions"
+              />
             )}
           </div>
         </div>
