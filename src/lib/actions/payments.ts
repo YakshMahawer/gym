@@ -20,6 +20,12 @@ export interface AddPaymentInput {
 
 export async function getNextSequentialReceiptNo(paymentDate?: Date | string): Promise<string> {
   try {
+    const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.getNextSequentialReceiptNo(paymentDate);
+    }
+
     const { startDate: fyStart, endDate: fyEnd } = getFiscalYear(paymentDate);
 
     // Only search payments within this specific fiscal year (April 1 to March 31)
@@ -65,6 +71,12 @@ export async function getPayments(filters?: {
   limit?: number;
 }) {
   try {
+    const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.getPayments(filters);
+    }
+
     const whereClause: any = {};
 
     if (filters?.search) {
@@ -162,6 +174,12 @@ export async function getPayments(filters?: {
 
 export async function addPayment(input: AddPaymentInput) {
   try {
+    const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.addPayment(input);
+    }
+
     const amount = Number(input.amount);
     if (isNaN(amount) || amount <= 0) {
       return { success: false, error: "Payment amount must be greater than 0" };
@@ -298,6 +316,11 @@ export async function addPayment(input: AddPaymentInput) {
 export async function deletePayment(paymentId: string) {
   try {
     const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.deletePayment(paymentId);
+    }
+
     if (session?.role === "FRONTDESK") {
       return { success: false, error: "Front Desk staff are not authorized to delete payment receipts." };
     }
@@ -390,6 +413,11 @@ export async function updatePaymentDate(input: {
 }) {
   try {
     const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.updatePaymentDate(input);
+    }
+
     if (session?.role === "FRONTDESK") {
       return { success: false, error: "Front Desk staff are not authorized to change payment dates." };
     }
@@ -563,6 +591,12 @@ export async function resequenceAllReceipts() {
 
 export async function getDueSubscriptions() {
   try {
+    const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.getDueSubscriptions();
+    }
+
     const [dueSubs, duePTs] = await Promise.all([
       prisma.memberSubscription.findMany({
         where: {

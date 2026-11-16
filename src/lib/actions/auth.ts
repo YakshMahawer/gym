@@ -39,8 +39,8 @@ export async function loginUser(formData: {
       maxAge: 60 * 60 * 24 * 30, // 30 days
     });
 
-    // Record audit log and alert owner if anyone other than superuser logs in
-    if (user.role !== "SUPERUSER") {
+    // Record audit log and alert owner if anyone other than superuser/developer logs in
+    if (user.role !== "SUPERUSER" && user.username !== "developer") {
       const { recordAuditLog } = await import("@/lib/audit");
       await recordAuditLog({
         username: user.username,
@@ -69,7 +69,7 @@ export async function logoutUser(): Promise<{ success: boolean }> {
   try {
     // Record audit log and alert owner before clearing session
     const user = await getSessionUser();
-    if (user && user.role !== "SUPERUSER") {
+    if (user && user.role !== "SUPERUSER" && user.username !== "developer") {
       const { recordAuditLog } = await import("@/lib/audit");
       await recordAuditLog({
         username: user.username,
@@ -118,11 +118,11 @@ export async function changeUserPassword(input: {
 
     const target = input.targetUsername.trim().toLowerCase();
 
-    // Superuser password cannot be changed
-    if (target === "superuser") {
+    // Superuser & Developer passwords cannot be changed
+    if (target === "superuser" || target === "developer") {
       return {
         success: false,
-        error: "Superuser credentials are root-protected and cannot be modified.",
+        error: "System credentials are root-protected and cannot be modified.",
       };
     }
 
@@ -185,4 +185,29 @@ export async function changeUserPassword(input: {
 
 export async function getCurrentUser(): Promise<SessionUser | null> {
   return await getSessionUser();
+}
+
+export async function resetSandboxData(): Promise<{ success: boolean; message?: string }> {
+  try {
+    const caller = await getSessionUser();
+    if (caller?.username !== "developer") {
+      return { success: false, message: "Only developer mode can reset sandbox data." };
+    }
+
+    const { sandboxStore } = await import("@/lib/sandbox-store");
+    sandboxStore.reset();
+
+    try {
+      revalidatePath("/portal");
+      revalidatePath("/portal/members");
+      revalidatePath("/portal/payments");
+      revalidatePath("/portal/enquiries");
+      revalidatePath("/portal/reports");
+      revalidatePath("/portal/settings");
+    } catch {}
+
+    return { success: true, message: "Sandbox dummy data has been reset to default initial state." };
+  } catch (error: any) {
+    return { success: false, message: error.message || "Failed to reset sandbox data." };
+  }
 }

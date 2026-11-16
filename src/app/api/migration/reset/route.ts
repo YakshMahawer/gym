@@ -10,6 +10,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized: Superuser required" }, { status: 403 });
     }
 
+    if (user.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      sandboxStore.reset();
+      return NextResponse.json({ success: true, message: "Developer sandbox dummy database reset successfully." });
+    }
+
     // Wipe tables for clean migration
     await prisma.payment.deleteMany();
     await prisma.memberPT.deleteMany();

@@ -20,8 +20,17 @@ export interface AddMemberPTInput {
   notes?: string;
 }
 
-export async function addOrRenewMemberPT(input: AddMemberPTInput) {
+export async function addOrRenewMemberPT(input: AddMemberPTInput): Promise<
+  | { success: true; pt: any; payment: any }
+  | { success: false; error: string; pt?: undefined; payment?: undefined }
+> {
   try {
+    const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.addOrRenewMemberPT(input);
+    }
+
     const total = Number(input.totalAmount);
     const paid = Number(input.paidAmount || 0);
     const due = Math.max(0, total - paid);
@@ -68,7 +77,6 @@ export async function addOrRenewMemberPT(input: AddMemberPTInput) {
     }
 
     // Audit Log & Owner Alert
-    const session = await getSessionUser();
     if (session && session.role !== "SUPERUSER") {
       const member = await prisma.member.findUnique({
         where: { id: input.memberId },
@@ -107,6 +115,11 @@ export async function addOrRenewMemberPT(input: AddMemberPTInput) {
 export async function updatePTSessions(ptId: string, completedSessions: number) {
   try {
     const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.updatePTSessions(ptId, completedSessions);
+    }
+
     if (session?.role === "FRONTDESK") {
       return { success: false, error: "Front Desk staff are not authorized to edit PT session counts." };
     }
@@ -148,6 +161,12 @@ export async function updatePTSessions(ptId: string, completedSessions: number) 
 
 export async function getPTList() {
   try {
+    const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.getPTList();
+    }
+
     const ptList = await prisma.memberPT.findMany({
       include: {
         member: {

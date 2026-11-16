@@ -41,6 +41,7 @@ export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAdmin, isSuperUser, isFrontDesk } = useAuth();
+  const isDeveloper = user?.username === "developer" || Boolean(user?.isDeveloper);
 
   const [enquiryModalOpen, setEnquiryModalOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -278,21 +279,23 @@ export function AppShell({ children }: AppShellProps) {
             <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-white/15 text-xs">
               <div
                 className={`w-7 h-7 rounded-full text-white font-bold flex items-center justify-center text-[10px] shadow-xs ${
-                  isSuperUser
+                  isDeveloper
+                    ? "bg-purple-600 border border-purple-300 shadow-purple-500/30"
+                    : isSuperUser
                     ? "bg-rose-500 border border-rose-300 shadow-rose-500/30"
                     : isAdmin
                     ? "bg-indigo-600 border border-indigo-300 shadow-indigo-500/30"
                     : "bg-sky-500 border border-sky-300 shadow-sky-500/30"
                 }`}
               >
-                {isSuperUser ? "ROOT" : isAdmin ? "ADM" : "REC"}
+                {isDeveloper ? "DEV" : isSuperUser ? "ROOT" : isAdmin ? "ADM" : "REC"}
               </div>
               <div className="hidden lg:flex flex-col">
                 <span className="font-semibold text-white leading-none">
-                  {user?.name || (isSuperUser ? "Superuser" : isAdmin ? "Administrator" : "Front Desk")}
+                  {user?.name || (isDeveloper ? "Developer (Sandbox)" : isSuperUser ? "Superuser" : isAdmin ? "Administrator" : "Front Desk")}
                 </span>
                 <span className="text-[10px] text-blue-200/70">
-                  {isSuperUser ? "Root Master" : isAdmin ? "Full Admin" : "Receptionist"}
+                  {isDeveloper ? "Dummy Data Sandbox" : isSuperUser ? "Root Master" : isAdmin ? "Full Admin" : "Receptionist"}
                 </span>
               </div>
               <button
@@ -313,6 +316,32 @@ export function AppShell({ children }: AppShellProps) {
           </div>
         </div>
       </header>
+
+      {/* Developer Sandbox Mode Notice Banner */}
+      {isDeveloper && (
+        <div className="bg-gradient-to-r from-amber-600 via-purple-700 to-indigo-800 text-white px-3.5 sm:px-6 py-2 text-xs font-semibold flex items-center justify-between gap-3 shadow-inner">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="px-2 py-0.5 rounded-md bg-white/20 text-white text-[10px] font-black uppercase tracking-wider shrink-0">
+              Sandbox Mode
+            </span>
+            <span className="text-white/95 truncate sm:overflow-visible">
+              Logged in as <strong>Developer</strong>. Operating on isolated dummy data (8 sample members). Real database is 100% untouched.
+            </span>
+          </div>
+          <button
+            onClick={async () => {
+              if (confirm("Reset dummy data in sandbox to default state?")) {
+                const { resetSandboxData } = await import("@/lib/actions/auth");
+                await resetSandboxData();
+                window.location.reload();
+              }
+            }}
+            className="px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 active:bg-white/30 text-[11px] font-bold text-white transition shrink-0 border border-white/20"
+          >
+            Reset Dummy Data ↺
+          </button>
+        </div>
+      )}
 
       {/* Full-width container with items-start for sticky sidebar */}
       <div className="flex-1 flex w-full px-3 sm:px-6 lg:px-8 py-3.5 sm:py-5 gap-6 items-start">
@@ -371,17 +400,17 @@ export function AppShell({ children }: AppShellProps) {
                 <div className="flex items-center gap-2 min-w-0">
                   <div
                     className={`w-7 h-7 shrink-0 rounded-lg text-white font-bold flex items-center justify-center text-[10px] ${
-                      isSuperUser ? "bg-rose-600" : isAdmin ? "bg-indigo-600" : "bg-sky-600"
+                      isDeveloper ? "bg-purple-600" : isSuperUser ? "bg-rose-600" : isAdmin ? "bg-indigo-600" : "bg-sky-600"
                     }`}
                   >
-                    {isSuperUser ? "ROOT" : isAdmin ? "ADM" : "REC"}
+                    {isDeveloper ? "DEV" : isSuperUser ? "ROOT" : isAdmin ? "ADM" : "REC"}
                   </div>
                   <div className="min-w-0">
                     <span className="font-bold text-slate-800 dark:text-slate-200 text-xs block truncate">
-                      {user?.name || (isSuperUser ? "Superuser" : isAdmin ? "Administrator" : "Front Desk")}
+                      {user?.name || (isDeveloper ? "Developer (Sandbox)" : isSuperUser ? "Superuser" : isAdmin ? "Administrator" : "Front Desk")}
                     </span>
                     <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate">
-                      @{user?.username || "deskmanager"}
+                      @{user?.username || "developer"}
                     </span>
                   </div>
                 </div>

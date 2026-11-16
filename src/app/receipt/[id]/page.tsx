@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { formatINR, formatRS, formatDate, formatInvoiceNo } from "@/lib/utils";
 import { CheckCircle2, Dumbbell, Printer } from "lucide-react";
 import { PrintButton } from "./PrintButton";
+import { getSessionUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -14,24 +15,39 @@ interface ReceiptPageProps {
 
 export default async function PublicReceiptPage({ params }: ReceiptPageProps) {
   const decodedId = decodeURIComponent(params.id).trim();
+  const session = await getSessionUser();
 
-  const payment = await prisma.payment.findFirst({
-    where: {
-      OR: [
-        { id: decodedId },
-        { receiptNo: decodedId },
-        { receiptNo: decodedId.padStart(5, "0") },
-        { receiptNo: `REC-${decodedId}` },
-      ],
-    },
-    include: {
-      member: true,
-      subscription: true,
-      ptSubscription: true,
-    },
-  });
+  let payment: any = null;
+
+  if (session?.username === "developer") {
+    const { sandboxStore } = await import("@/lib/sandbox-store");
+    payment = sandboxStore.getReceiptById(decodedId);
+  }
 
   if (!payment) {
+    payment = await prisma.payment.findFirst({
+      where: {
+        OR: [
+          { id: decodedId },
+          { receiptNo: decodedId },
+          { receiptNo: decodedId.padStart(5, "0") },
+          { receiptNo: `REC-${decodedId}` },
+        ],
+      },
+      include: {
+        member: true,
+        subscription: true,
+        ptSubscription: true,
+      },
+    });
+  }
+
+  if (!payment) {
+    const { sandboxStore } = await import("@/lib/sandbox-store");
+    payment = sandboxStore.getReceiptById(decodedId);
+  }
+
+  if (!payment || !payment.member) {
     notFound();
   }
 

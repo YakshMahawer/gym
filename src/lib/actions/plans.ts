@@ -73,6 +73,12 @@ async function ensureDefaultPlansSeeded() {
  */
 export async function getPlans(category?: string) {
   try {
+    const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.getPlans(category);
+    }
+
     await ensureDefaultPlansSeeded();
 
     const where: any = { isActive: true };
@@ -108,6 +114,12 @@ export async function getPlans(category?: string) {
  */
 export async function getAllPlansAdmin() {
   try {
+    const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.getAllPlansAdmin();
+    }
+
     await ensureDefaultPlansSeeded();
 
     return await prisma.membershipPlan.findMany({
@@ -133,6 +145,11 @@ export async function createPlan(data: {
 }) {
   try {
     const user = await getSessionUser();
+    if (user?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.createPlan(data);
+    }
+
     if (!user || (user.role !== "SUPERUSER" && user.role !== "ADMIN")) {
       return { success: false, error: "Unauthorized. Admin access required." };
     }
@@ -189,6 +206,11 @@ export async function updatePlan(
 ) {
   try {
     const user = await getSessionUser();
+    if (user?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.updatePlan(id, data);
+    }
+
     if (!user || (user.role !== "SUPERUSER" && user.role !== "ADMIN")) {
       return { success: false, error: "Unauthorized. Admin access required." };
     }
@@ -232,6 +254,11 @@ export async function updatePlan(
 export async function deletePlan(id: string) {
   try {
     const user = await getSessionUser();
+    if (user?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.deletePlan(id);
+    }
+
     if (!user || (user.role !== "SUPERUSER" && user.role !== "ADMIN")) {
       return { success: false, error: "Unauthorized. Admin access required." };
     }

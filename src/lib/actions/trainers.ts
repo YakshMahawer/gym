@@ -37,6 +37,12 @@ async function ensureDefaultTrainersSeeded() {
  */
 export async function getTrainers() {
   try {
+    const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.getTrainers();
+    }
+
     await ensureDefaultTrainersSeeded();
 
     const trainers = await prisma.trainer.findMany({
@@ -64,6 +70,12 @@ export async function getTrainers() {
  */
 export async function getAllTrainersAdmin() {
   try {
+    const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.getAllTrainersAdmin();
+    }
+
     await ensureDefaultTrainersSeeded();
 
     return await prisma.trainer.findMany({
@@ -86,6 +98,11 @@ export async function createTrainer(data: {
 }) {
   try {
     const user = await getSessionUser();
+    if (user?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.createTrainer(data);
+    }
+
     if (!user || (user.role !== "SUPERUSER" && user.role !== "ADMIN")) {
       return { success: false, error: "Unauthorized. Admin access required." };
     }
@@ -128,6 +145,11 @@ export async function updateTrainer(
 ) {
   try {
     const user = await getSessionUser();
+    if (user?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.updateTrainer(id, data);
+    }
+
     if (!user || (user.role !== "SUPERUSER" && user.role !== "ADMIN")) {
       return { success: false, error: "Unauthorized. Admin access required." };
     }
@@ -160,6 +182,11 @@ export async function updateTrainer(
 export async function deleteTrainer(id: string) {
   try {
     const user = await getSessionUser();
+    if (user?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.deleteTrainer(id);
+    }
+
     if (!user || (user.role !== "SUPERUSER" && user.role !== "ADMIN")) {
       return { success: false, error: "Unauthorized. Admin access required." };
     }

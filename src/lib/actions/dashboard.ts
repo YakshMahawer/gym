@@ -3,10 +3,17 @@
 import { prisma } from "@/lib/prisma";
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays } from "date-fns";
 import { sanitizeWhatsAppPhone } from "@/lib/whatsapp";
+import { getSessionUser } from "@/lib/auth";
 
 export type Timeframe = "today" | "week" | "month";
 
 export async function getDashboardData() {
+  const session = await getSessionUser();
+  if (session?.username === "developer") {
+    const { sandboxStore } = await import("@/lib/sandbox-store");
+    return sandboxStore.getDashboardData();
+  }
+
   const now = new Date();
 
   // Date ranges

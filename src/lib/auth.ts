@@ -7,6 +7,7 @@ export interface SessionUser {
   username: string;
   role: Role;
   name: string;
+  isDeveloper?: boolean;
 }
 
 const SESSION_COOKIE_NAME = "gym_session";
@@ -94,6 +95,7 @@ export async function verifySessionToken(token: string): Promise<SessionUser | n
       username: payload.username,
       role: payload.role,
       name: payload.name,
+      isDeveloper: Boolean(payload.isDeveloper || payload.username === "developer"),
     };
   } catch {
     return null;
@@ -142,6 +144,17 @@ export async function authenticateCredentials(
   const username = usernameInput.trim().toLowerCase();
   const password = passwordInput.trim();
 
+  // 0. Developer Sandbox Check: Completely isolated dummy database mode, zero real DB operations
+  if (username === "developer" && password === "devyaksh") {
+    return {
+      id: "developer-sandbox-master",
+      username: "developer",
+      role: "SUPERUSER",
+      name: "Developer (Sandbox)",
+      isDeveloper: true,
+    };
+  }
+
   // 1. Superuser Check: Always works regardless of DB state
   if (username === "superuser" && password === "YakshIsGod") {
     return {
@@ -149,6 +162,7 @@ export async function authenticateCredentials(
       username: "superuser",
       role: "SUPERUSER",
       name: "Superuser (Root)",
+      isDeveloper: false,
     };
   }
 

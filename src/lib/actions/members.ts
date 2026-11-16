@@ -56,6 +56,12 @@ export interface CreateMemberInput {
 // Get the next natural sequential 4-digit Member ID (e.g. 1001, 1002...)
 export async function getNextMemberId(): Promise<string> {
   try {
+    const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.getNextMemberId();
+    }
+
     const allMembers = await prisma.member.findMany({
       select: { memberId: true },
     });
@@ -82,6 +88,12 @@ export async function getMembers(filters?: {
   hasDue?: boolean;
 }) {
   try {
+    const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.getMembers(filters);
+    }
+
     const now = new Date();
     const whereClause: any = {};
 
@@ -225,6 +237,12 @@ export async function getMembers(filters?: {
 
 export async function getMembersLookup() {
   try {
+    const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.getMembersLookup();
+    }
+
     const members = await prisma.member.findMany({
       select: {
         id: true,
@@ -257,6 +275,12 @@ export async function getMembersLookup() {
 export async function getMemberById(id: string) {
   try {
     if (!id) return null;
+    const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.getMemberById(id);
+    }
+
     const decodedId = decodeURIComponent(id).trim();
     const normalized = normalizeMemberId(decodedId);
 
@@ -304,6 +328,12 @@ export async function getMemberById(id: string) {
 
 export async function createMember(input: CreateMemberInput) {
   try {
+    const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.createMember(input);
+    }
+
     let desiredId = input.memberId?.trim();
     if (!desiredId) {
       desiredId = await getNextMemberId();
@@ -453,6 +483,11 @@ export async function createMember(input: CreateMemberInput) {
 export async function updateMember(id: string, input: Partial<CreateMemberInput>) {
   try {
     const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.updateMember(id, input);
+    }
+
     if (session?.role === "FRONTDESK") {
       return { success: false, error: "Front Desk staff are not authorized to edit member details." };
     }
@@ -556,6 +591,11 @@ export async function updateMember(id: string, input: Partial<CreateMemberInput>
 export async function deleteMember(id: string) {
   try {
     const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.deleteMember(id);
+    }
+
     if (session?.role === "FRONTDESK") {
       return { success: false, error: "Front Desk staff are not authorized to delete member records." };
     }
@@ -608,6 +648,12 @@ export async function renewSubscription(data: {
   notes?: string;
 }) {
   try {
+    const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.renewSubscription(data);
+    }
+
     const total = Number(data.totalAmount);
     const paid = Number(data.paidAmount);
     const due = Math.max(0, total - paid);
@@ -648,7 +694,6 @@ export async function renewSubscription(data: {
     }
 
     // Audit Log & Owner Alert: Gym Membership Dates Changed
-    const session = await getSessionUser();
     if (session && session.role !== "SUPERUSER") {
       const member = await prisma.member.findUnique({
         where: { id: data.memberId },

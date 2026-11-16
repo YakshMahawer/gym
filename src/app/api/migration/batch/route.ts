@@ -60,6 +60,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized: Superuser required" }, { status: 403 });
     }
 
+    if (user.username === "developer") {
+      return NextResponse.json({
+        success: true,
+        message: "Developer sandbox simulation: batch accepted safely without altering production database.",
+        importedMembers: 1,
+        importedSubs: 1,
+        importedPT: 0,
+        importedPayments: 1,
+        nextCleanReceiptIndex: 1,
+        nextLegacyReceiptIndex: 1,
+      });
+    }
+
     const body = await request.json();
     const {
       membersBatch,

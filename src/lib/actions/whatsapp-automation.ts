@@ -275,6 +275,13 @@ export async function sendReceiptWhatsAppAction(paymentId: string) {
     };
   }
 
+  if (session.username === "developer") {
+    return {
+      success: true,
+      message: "Developer Sandbox Mode: Simulated WhatsApp receipt delivery successfully recorded.",
+    };
+  }
+
   const payment = await prisma.payment.findUnique({
     where: { id: paymentId },
     include: {
@@ -350,6 +357,13 @@ export async function sendManualExpiryWhatsAppAction(data: {
   const session = await getSessionUser();
   if (!session) {
     return { success: false, error: "Unauthorized. Please log in." };
+  }
+
+  if (session.username === "developer") {
+    return {
+      success: true,
+      message: "Developer Sandbox Mode: Simulated WhatsApp expiry reminder successfully recorded.",
+    };
   }
 
   const member = await prisma.member.findUnique({
@@ -758,6 +772,13 @@ export async function sendCustomerFollowUpWhatsAppAction(data: {
     return { success: false, error: "Unauthorized. Please log in." };
   }
 
+  if (session.username === "developer") {
+    return {
+      success: true,
+      message: "Developer Sandbox Mode: Simulated follow-up WhatsApp message successfully scheduled/sent.",
+    };
+  }
+
   const phone = sanitizeWhatsAppPhone(data.recipientPhone);
   if (!phone || phone.length < 10) {
     return { success: false, error: "Recipient does not have a valid mobile number." };
@@ -889,6 +910,13 @@ export async function sendMembershipExtensionWhatsAppAction(data: {
   const session = await getSessionUser();
   if (!session) {
     return { success: false, error: "Unauthorized. Please log in." };
+  }
+
+  if (session.username === "developer") {
+    return {
+      success: true,
+      message: "Developer Sandbox Mode: Simulated membership extension reminder successfully scheduled/sent.",
+    };
   }
 
   const member = await prisma.member.findUnique({

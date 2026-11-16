@@ -25,6 +25,12 @@ export async function getEnquiries(filters?: {
   status?: string;
 }) {
   try {
+    const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.getEnquiries(filters);
+    }
+
     const whereClause: any = {};
 
     if (filters?.search) {
@@ -88,6 +94,12 @@ export async function getEnquiries(filters?: {
 
 export async function createEnquiry(input: CreateEnquiryInput) {
   try {
+    const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.createEnquiry(input);
+    }
+
     const enquiry = await prisma.enquiry.create({
       data: {
         name: input.name.trim(),
@@ -105,7 +117,6 @@ export async function createEnquiry(input: CreateEnquiryInput) {
     });
 
     // Audit Log & Owner Alert
-    const session = await getSessionUser();
     if (session && session.role !== "SUPERUSER") {
       const { recordAuditLog } = await import("@/lib/audit");
       await recordAuditLog({
@@ -132,6 +143,11 @@ export async function createEnquiry(input: CreateEnquiryInput) {
 export async function updateEnquiryStatus(id: string, status: EnquiryStatus, notes?: string) {
   try {
     const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.updateEnquiryStatus(id, status, notes);
+    }
+
     if (session?.role === "FRONTDESK") {
       return { success: false, error: "Front Desk staff are not authorized to update enquiries." };
     }
@@ -171,6 +187,11 @@ export async function updateEnquiryStatus(id: string, status: EnquiryStatus, not
 export async function deleteEnquiry(id: string) {
   try {
     const session = await getSessionUser();
+    if (session?.username === "developer") {
+      const { sandboxStore } = await import("@/lib/sandbox-store");
+      return sandboxStore.deleteEnquiry(id);
+    }
+
     if (session?.role === "FRONTDESK") {
       return { success: false, error: "Front Desk staff are not authorized to delete enquiries." };
     }

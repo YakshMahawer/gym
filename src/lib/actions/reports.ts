@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { startOfMonth, subMonths, endOfMonth, format } from "date-fns";
 import { getPlans } from "./plans";
 import { formatInvoiceNo } from "@/lib/utils";
+import { getSessionUser } from "@/lib/auth";
 
 export interface PTPackageDistribution {
   name: string;
@@ -36,6 +37,12 @@ export interface OtherPaymentItem {
 }
 
 export async function getReportsData() {
+  const session = await getSessionUser();
+  if (session?.username === "developer") {
+    const { sandboxStore } = await import("@/lib/sandbox-store");
+    return sandboxStore.getReportsData();
+  }
+
   const now = new Date();
 
   // 1. Prepare 6 months date ranges for parallel execution
